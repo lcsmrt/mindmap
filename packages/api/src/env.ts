@@ -1,3 +1,6 @@
+import { config } from 'dotenv';
+config();
+
 const DATABASE_URL = process.env['DATABASE_URL'];
 if (!DATABASE_URL) {
   console.error('Missing required environment variable: DATABASE_URL');
