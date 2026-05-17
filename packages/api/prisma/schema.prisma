@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NodeStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+model Map {
+  id        String   @id @default(cuid())
+  title     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  nodes     Node[]
+
+  @@map("Map")
+}
+
+model Node {
+  id         String      @id @default(cuid())
+  mapId      String      @map("map_id")
+  parentId   String?     @map("parent_id")
+  title      String
+  sortOrder  Int         @default(0) @map("sort_order")
+  bgColor    String?     @map("bg_color")
+  textColor  String?     @map("text_color")
+  status     NodeStatus?
+  assignee   String?
+  isCritical Boolean     @default(false) @map("is_critical")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  map      Map    @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  parent   Node?  @relation("NodeChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children Node[] @relation("NodeChildren")
+
+  @@index([mapId])
+  @@index([parentId])
+  @@map("Node")
+}
