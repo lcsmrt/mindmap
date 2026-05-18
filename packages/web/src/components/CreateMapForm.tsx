@@ -33,9 +33,9 @@ export const CreateMapForm = ({ onSubmit, isPending }: CreateMapFormProps) => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Nome do novo mapa"
-          className={error ? 'border-red-500' : ''}
+          className={error ? 'border-destructive' : ''}
         />
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        {error && <span className="text-xs text-destructive">{error}</span>}
       </div>
       <Button type="submit" disabled={isPending}>
         Criar

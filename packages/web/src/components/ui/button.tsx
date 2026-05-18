@@ -5,20 +5,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/mergeClasses"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   {
     variants: {
       variant: {
         default:
-          "bg-slate-900 text-white shadow-xs hover:bg-slate-800 focus-visible:ring-slate-900",
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 focus-visible:ring-ring",
         destructive:
-          "bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-600",
+          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive",
         outline:
-          "border border-slate-200 bg-white shadow-xs hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-slate-900",
+          "border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring",
         secondary:
-          "bg-slate-100 text-slate-900 shadow-xs hover:bg-slate-200 focus-visible:ring-slate-900",
-        ghost: "hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-900",
-        link: "text-slate-900 underline-offset-4 hover:underline focus-visible:ring-slate-900",
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 focus-visible:ring-ring",
+        ghost: "hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring",
+        link: "text-primary underline-offset-4 hover:underline focus-visible:ring-ring",
       },
       size: {
         default: "h-9 px-4 py-2",
