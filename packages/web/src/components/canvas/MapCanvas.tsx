@@ -49,6 +49,18 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   const handleCancelEdit = useCallback(() => setEditingId(null), []);
 
+  const handleToggleCollapse = useCallback((id: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
   const { mutate: deleteNode } = useDeleteNode({
     onError: (err) => setCanvasError(err.message),
   });
@@ -119,7 +131,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           onCancelEdit: handleCancelEdit,
           onAddChild: () => handleAddChild(nodeDto.id),
           onDelete: () => handleDelete(nodeDto),
-          onToggleCollapse: () => console.warn('TODO T18: onToggleCollapse', nodeDto.id),
+          onToggleCollapse: () => handleToggleCollapse(nodeDto.id),
         };
         return {
           id: p.id,
