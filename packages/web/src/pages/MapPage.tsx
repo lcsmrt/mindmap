@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useMap } from '@/api/maps.js';
+import { MapCanvas } from '@/components/canvas/MapCanvas.js';
 
 export const MapPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,8 +34,8 @@ export const MapPage = () => {
         <h1 className="text-lg font-semibold text-foreground">{map?.title}</h1>
       </header>
 
-      <div className="flex flex-1 items-center justify-center bg-muted">
-        <p className="text-muted-foreground">Canvas — em breve</p>
+      <div className="flex flex-1 h-0">
+        <MapCanvas mapId={id!} />
       </div>
     </div>
   );
