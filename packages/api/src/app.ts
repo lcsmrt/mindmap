@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import type { HealthResponse } from '@mindmap/shared';
 import { prisma } from './prisma.js';
+import mapsPlugin from './routes/maps.js';
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -16,6 +17,8 @@ export function buildApp() {
       return reply.status(503).send(body);
     }
   });
+
+  app.register(mapsPlugin, { prefix: '/maps' });
 
   return app;
 }
