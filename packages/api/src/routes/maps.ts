@@ -1,111 +1,78 @@
-import type { FastifyPluginAsync } from 'fastify';
-import type {
-  MapListResponse,
-  MapDetail,
-  CreateMapBody,
-  UpdateMapBody,
-} from '@mindmap/shared';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { prisma } from '../prisma.js';
+import { NotFoundError } from '../errors.js';
+import { toMapDetail, toMapSummary } from '../mappers/maps.js';
 
-const mapsPlugin: FastifyPluginAsync = async (app) => {
-  app.get('/', async (_req, reply) => {
-    const maps = await prisma.map.findMany({
-      orderBy: { updatedAt: 'desc' },
-      select: { id: true, title: true, updatedAt: true },
-    });
+const IdParam = z.object({ id: z.string() });
+const TitleBody = z.object({ title: z.string().trim().min(1) });
 
-    const body: MapListResponse = {
-      maps: maps.map((m) => ({
-        id: m.id,
-        title: m.title,
-        updatedAt: m.updatedAt.toISOString(),
-      })),
-    };
-    return reply.status(200).send(body);
-  });
-
-  app.get<{ Params: { id: string } }>('/:id', async (req, reply) => {
-    const map = await prisma.map.findUnique({ where: { id: req.params.id } });
-    if (!map) {
-      return reply.status(404).send({ error: 'Map not found' });
-    }
-    const body: MapDetail = {
-      id: map.id,
-      title: map.title,
-      createdAt: map.createdAt.toISOString(),
-      updatedAt: map.updatedAt.toISOString(),
-    };
-    return reply.status(200).send(body);
-  });
-
-  app.post<{ Body: CreateMapBody }>('/', async (req, reply) => {
-    const title = req.body?.title?.trim();
-    if (!title) {
-      return reply.status(400).send({ error: 'Title is required' });
-    }
-
-    const map = await prisma.$transaction(async (tx) => {
-      const created = await tx.map.create({ data: { title } });
-      await tx.node.create({
-        data: {
-          mapId: created.id,
-          parentId: null,
-          title: 'Central',
-          sortOrder: 0,
-        },
+const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
+  app.get('/', {
+    handler: async () => {
+      const maps = await prisma.map.findMany({
+        orderBy: { updatedAt: 'desc' },
+        select: { id: true, title: true, updatedAt: true },
       });
-      return created;
-    });
-
-    const body: MapDetail = {
-      id: map.id,
-      title: map.title,
-      createdAt: map.createdAt.toISOString(),
-      updatedAt: map.updatedAt.toISOString(),
-    };
-    return reply.status(201).send(body);
+      return { maps: maps.map(toMapSummary) };
+    },
   });
 
-  app.patch<{ Params: { id: string }; Body: UpdateMapBody }>(
-    '/:id',
-    async (req, reply) => {
-      const title = req.body?.title?.trim();
-      if (!title) {
-        return reply.status(400).send({ error: 'Title is required' });
-      }
+  app.get('/:id', {
+    schema: { params: IdParam },
+    handler: async (req) => {
+      const map = await prisma.map.findUnique({ where: { id: req.params.id } });
+      if (!map) throw new NotFoundError('Map not found');
+      return toMapDetail(map);
+    },
+  });
 
+  app.post('/', {
+    schema: { body: TitleBody },
+    handler: async (req, reply) => {
+      const map = await prisma.$transaction(async (tx) => {
+        const created = await tx.map.create({ data: { title: req.body.title } });
+        await tx.node.create({
+          data: {
+            mapId: created.id,
+            parentId: null,
+            title: 'Central',
+            sortOrder: 0,
+          },
+        });
+        return created;
+      });
+      return reply.status(201).send(toMapDetail(map));
+    },
+  });
+
+  app.patch('/:id', {
+    schema: { params: IdParam, body: TitleBody },
+    handler: async (req) => {
       const existing = await prisma.map.findUnique({
         where: { id: req.params.id },
       });
-      if (!existing) {
-        return reply.status(404).send({ error: 'Map not found' });
-      }
+      if (!existing) throw new NotFoundError('Map not found');
 
       const map = await prisma.map.update({
         where: { id: req.params.id },
-        data: { title },
+        data: { title: req.body.title },
       });
+      return toMapDetail(map);
+    },
+  });
 
-      const body: MapDetail = {
-        id: map.id,
-        title: map.title,
-        createdAt: map.createdAt.toISOString(),
-        updatedAt: map.updatedAt.toISOString(),
-      };
-      return reply.status(200).send(body);
-    }
-  );
+  app.delete('/:id', {
+    schema: { params: IdParam },
+    handler: async (req, reply) => {
+      const existing = await prisma.map.findUnique({
+        where: { id: req.params.id },
+      });
+      if (!existing) throw new NotFoundError('Map not found');
 
-  app.delete<{ Params: { id: string } }>('/:id', async (req, reply) => {
-    const existing = await prisma.map.findUnique({
-      where: { id: req.params.id },
-    });
-    if (!existing) {
-      return reply.status(404).send({ error: 'Map not found' });
-    }
-
-    await prisma.map.delete({ where: { id: req.params.id } });
-    return reply.status(204).send();
+      await prisma.map.delete({ where: { id: req.params.id } });
+      return reply.status(204).send();
+    },
   });
 };
 

@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { prisma } from '../prisma.js';
 
@@ -8,13 +9,18 @@ async function cleanMaps() {
 }
 
 describe('Maps API', () => {
+  let app: FastifyInstance;
+
+  beforeAll(() => {
+    app = buildApp();
+  });
+
   beforeEach(async () => {
     await cleanMaps();
   });
 
   describe('GET /maps', () => {
     it('retorna lista vazia inicialmente', async () => {
-      const app = buildApp();
       const res = await app.inject({ method: 'GET', url: '/maps' });
 
       expect(res.statusCode).toBe(200);
@@ -22,8 +28,6 @@ describe('Maps API', () => {
     });
 
     it('retorna mapas ordenados por updatedAt desc', async () => {
-      const app = buildApp();
-
       await app.inject({
         method: 'POST',
         url: '/maps',
@@ -46,7 +50,6 @@ describe('Maps API', () => {
 
   describe('POST /maps', () => {
     it('cria mapa com título válido — 201 com body correto e nó raiz', async () => {
-      const app = buildApp();
       const res = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -66,7 +69,6 @@ describe('Maps API', () => {
     });
 
     it('rejeita título vazio — 400', async () => {
-      const app = buildApp();
       const res = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -77,7 +79,6 @@ describe('Maps API', () => {
     });
 
     it('rejeita título com só espaços — 400', async () => {
-      const app = buildApp();
       const res = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -90,7 +91,6 @@ describe('Maps API', () => {
 
   describe('GET /maps/:id', () => {
     it('retorna mapa existente — 200', async () => {
-      const app = buildApp();
       const created = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -104,7 +104,6 @@ describe('Maps API', () => {
     });
 
     it('retorna 404 para id inexistente', async () => {
-      const app = buildApp();
       const res = await app.inject({
         method: 'GET',
         url: '/maps/nao-existe',
@@ -115,7 +114,6 @@ describe('Maps API', () => {
 
   describe('PATCH /maps/:id', () => {
     it('atualiza título — 200 com título atualizado', async () => {
-      const app = buildApp();
       const created = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -134,7 +132,6 @@ describe('Maps API', () => {
     });
 
     it('rejeita título vazio — 400', async () => {
-      const app = buildApp();
       const created = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -152,7 +149,6 @@ describe('Maps API', () => {
     });
 
     it('retorna 404 para id inexistente', async () => {
-      const app = buildApp();
       const res = await app.inject({
         method: 'PATCH',
         url: '/maps/nao-existe',
@@ -164,7 +160,6 @@ describe('Maps API', () => {
 
   describe('DELETE /maps/:id', () => {
     it('deleta mapa existente — 204', async () => {
-      const app = buildApp();
       const created = await app.inject({
         method: 'POST',
         url: '/maps',
@@ -177,7 +172,6 @@ describe('Maps API', () => {
     });
 
     it('retorna 404 para id inexistente', async () => {
-      const app = buildApp();
       const res = await app.inject({
         method: 'DELETE',
         url: '/maps/nao-existe',

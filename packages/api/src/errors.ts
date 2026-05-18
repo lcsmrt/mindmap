@@ -1,0 +1,17 @@
+export class ApiError extends Error {
+  constructor(public statusCode: number, message: string) {
+    super(message);
+  }
+}
+
+export class NotFoundError extends ApiError {
+  constructor(message = 'Not found') {
+    super(404, message);
+  }
+}
+
+export class ConflictError extends ApiError {
+  constructor(message = 'Conflict') {
+    super(409, message);
+  }
+}
