@@ -2,7 +2,7 @@ import '@xyflow/react/dist/style.css';
 import { useState, useMemo, useCallback } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
-import { useNodes } from '@/api/nodes.js';
+import { useNodes, useCreateNode } from '@/api/nodes.js';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
 import { useLayoutedTree } from '@/lib/useLayoutedTree.js';
 import { MindNode } from './MindNode.js';
@@ -18,6 +18,20 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const { data, isLoading, isError } = useNodes(mapId);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [canvasError, setCanvasError] = useState<string | null>(null);
+
+  const { mutate: createNode } = useCreateNode({
+    onSuccess: (newNode) => setEditingId(newNode.id),
+    onError: (err) => setCanvasError(err.message),
+  });
+
+  const handleAddChild = useCallback(
+    (parentId: string) => {
+      setCanvasError(null);
+      createNode({ mapId, parentId, title: 'Novo nó' });
+    },
+    [createNode, mapId],
+  );
 
   const tree = useMemo(
     () => (data ? buildTree(data.nodes) : null),
@@ -59,7 +73,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           onStartEdit: () => console.warn('TODO T15: onStartEdit', nodeDto.id),
           onSubmitEdit: (title) => console.warn('TODO T15: onSubmitEdit', nodeDto.id, title),
           onCancelEdit: () => console.warn('TODO T15: onCancelEdit'),
-          onAddChild: () => console.warn('TODO T14: onAddChild', nodeDto.id),
+          onAddChild: () => handleAddChild(nodeDto.id),
           onDelete: () => console.warn('TODO T16: onDelete', nodeDto.id),
           onToggleCollapse: () => console.warn('TODO T18: onToggleCollapse', nodeDto.id),
         };
@@ -113,7 +127,13 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   }
 
   return (
-    <div className="flex-1 h-full">
+    <div className="flex-1 h-full relative">
+      {canvasError && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-md bg-destructive/90 px-4 py-2 text-sm text-white shadow">
+          {canvasError}
+          <button className="ml-3 underline" onClick={() => setCanvasError(null)}>×</button>
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
