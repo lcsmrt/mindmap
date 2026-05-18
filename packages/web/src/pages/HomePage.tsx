@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MapSummary } from '@mindmap/shared';
-import { listMaps, createMap, updateMap } from '../api/maps.js';
+import { listMaps, createMap, updateMap, deleteMap } from '../api/maps.js';
 import CreateMapForm from '../components/CreateMapForm.js';
 import RenameMapInput from '../components/RenameMapInput.js';
+import ConfirmDialog from '../components/ConfirmDialog.js';
 
 type State =
   | { kind: 'loading' }
@@ -19,6 +20,8 @@ const fmt = new Intl.DateTimeFormat('pt-BR', {
 export default function HomePage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MapSummary | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const navigate = useNavigate();
 
   function load() {
@@ -39,6 +42,18 @@ export default function HomePage() {
   async function handleRename(id: string, title: string) {
     await updateMap(id, { title });
     load();
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleteError('');
+    try {
+      await deleteMap(deleteTarget.id);
+      setDeleteTarget(null);
+      load();
+    } catch {
+      setDeleteError('Erro ao excluir mapa');
+    }
   }
 
   if (state.kind === 'loading') return <p>Carregando…</p>;
@@ -73,10 +88,23 @@ export default function HomePage() {
               <button type="button" onClick={() => setRenamingId(m.id)}>
                 Renomear
               </button>
+              <button type="button" onClick={() => { setDeleteError(''); setDeleteTarget(m); }}>
+                Excluir
+              </button>
             </li>
           ))}
         </ul>
       )}
+      {deleteError && <p style={{ color: 'red' }}>{deleteError}</p>}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Excluir mapa"
+        message={`Tem certeza? O mapa «${deleteTarget?.title ?? ''}» e todos os seus nós serão removidos permanentemente.`}
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </main>
   );
 }
