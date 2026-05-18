@@ -1,0 +1,68 @@
+import ELK from 'elkjs/lib/elk.bundled.js';
+import type { NodeDto } from '@mindmap/shared';
+
+const elk = new ELK();
+
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 40;
+
+export interface LayoutInput {
+  nodes: NodeDto[];
+  edges: Array<{ parentId: string; childId: string }>;
+}
+
+export interface PositionedNode {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface LayoutOutput {
+  positioned: PositionedNode[];
+}
+
+export interface LayoutError {
+  error: string;
+}
+
+self.onmessage = async (event: MessageEvent<LayoutInput>) => {
+  const { nodes, edges } = event.data;
+
+  try {
+    const graph = {
+      id: 'root',
+      layoutOptions: {
+        'elk.algorithm': 'layered',
+        'elk.direction': 'RIGHT',
+        'elk.spacing.nodeNode': '20',
+        'elk.layered.spacing.nodeNodeBetweenLayers': '60',
+      },
+      children: nodes.map((n) => ({
+        id: n.id,
+        width: NODE_WIDTH,
+        height: NODE_HEIGHT,
+      })),
+      edges: edges.map((e) => ({
+        id: `${e.parentId}-${e.childId}`,
+        sources: [e.parentId],
+        targets: [e.childId],
+      })),
+    };
+
+    const layout = await elk.layout(graph);
+
+    const positioned: PositionedNode[] = (layout.children ?? []).map((child) => ({
+      id: child.id,
+      x: child.x ?? 0,
+      y: child.y ?? 0,
+      width: child.width ?? NODE_WIDTH,
+      height: child.height ?? NODE_HEIGHT,
+    }));
+
+    self.postMessage({ positioned } satisfies LayoutOutput);
+  } catch (err) {
+    self.postMessage({ error: String(err) } satisfies LayoutError);
+  }
+};
