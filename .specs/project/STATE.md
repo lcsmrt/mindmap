@@ -1,11 +1,46 @@
 # State
 
-**Last Updated:** 2026-05-18
-**Current Work:** M2 concluído (T1–T9). Próximo milestone: M3 — Canvas e edição estrutural (US-02).
+**Last Updated:** 2026-05-17
+**Current Work:** M3 concluído (18 tasks, 18 commits). Canvas interativo funcional com add/rename/delete/move/collapse e persistência via API. Próximo: M4 (persistência formal — edge cases de rede, optimistic updates).
 
 ---
 
 ## Recent Decisions (Last 60 days)
+
+### AD-012: `GET /maps/:id/nodes` retorna lista plana (2026-05-17)
+
+**Decision:** Endpoint dedicado `GET /maps/:id/nodes` retorna `{ nodes: NodeDto[] }` em lista plana ordenada por `(parentId, sortOrder)`. Cliente monta a árvore. `MapDetail` permanece sem campo `nodes`.
+**Reason:** Desacopla leitura de metadata vs. estrutura. Tree-building em adjacency list é trivial no cliente. Evita server-side transform que viraria útil em outro lugar.
+**Trade-off:** Cliente paga custo (negligível) de construir a árvore. Duas chamadas para abrir um mapa (metadata + nodes) — mas TanStack Query cuida disso paralelamente.
+**Impact:** Hooks separados `useMap(id)` + `useNodes(mapId)` no frontend. Invalidação cirúrgica por query key.
+
+### AD-011: Move em M3 cobre apenas drag-to-reparent (2026-05-17)
+
+**Decision:** Em M3, drag-and-drop muda `parentId` (drop sobre outro nó) e coloca no final. Reorder entre irmãos do mesmo pai (drag vertical) não entra em M3.
+**Reason:** US-02 menciona apenas "mover nó para outro pai via drag-and-drop". Reorder dentro do mesmo pai é refinamento de UX — vira deferred idea.
+**Trade-off:** Usuário não consegue reordenar irmãos via drag em v1 (precisa de API direta ou da próxima iteração).
+**Impact:** `MoveNodeBody.index` existe e funciona, mas a UI sempre passa "último". Adicionar reorder depois é só implementar o detect-of-vertical-drop no frontend.
+
+### AD-010: M3 já persiste cada mutação estrutural (2026-05-17)
+
+**Decision:** Cada add/rename/delete/move no canvas chama a API imediatamente via TanStack Query mutation. M4 não introduz persistência — formaliza contrato, cobre edge cases de rede e restauração completa.
+**Reason:** Separar canvas funcional de canvas persistido criaria refactor amplo desnecessário; a infra de mutation/invalidate já está pronta (M2). Persistir desde o início também valida o contrato.
+**Trade-off:** M3 herda alguma responsabilidade de M4 (feedback de erro de rede). M4 fica mais leve.
+**Impact:** Tasks de M3 incluem `useMutation`+invalidate em cada interação. M4 pode focar em otimizações (optimistic, retries) e edge cases de offline/conflito.
+
+### AD-009: elkjs roda em web worker dedicado (2026-05-17)
+
+**Decision:** Layout via `elkjs` é executado em web worker (`layout.worker.ts`); main thread só envia/recebe mensagens.
+**Reason:** RNF-01 exige canvas responsivo até 500 nós. elkjs em árvores grandes pode levar centenas de ms — bloquear main thread mata pan/zoom.
+**Trade-off:** Setup ligeiramente mais complexo (Vite suporta `new Worker(new URL(...))` nativo). Worker isolado é mais difícil de testar — postergamos teste do worker em si.
+**Impact:** Hook `useLayoutedTree` encapsula a comunicação. Cleanup necessário no unmount. Decidir tamanho default de nó (180×40 sugerido) na implementação.
+
+### AD-008: `sortOrder` em inteiros com renumeração transacional (2026-05-17)
+
+**Decision:** `sortOrder` é `int` sequencial (0, 1, 2, …). Em `move`, renumeramos todos os irmãos afetados (origem e destino) dentro de transação Prisma. `create` apenas appenda `max+1`.
+**Reason:** Simplicidade > fractional indexing para o caso de uso (poucos irmãos por nó em mindmap pessoal). Previsível, sem precisão flutuante, sem degradação ao longo do tempo.
+**Trade-off:** Move custa O(N) writes para N irmãos. Aceitável; pode otimizar se aparecer dor.
+**Impact:** Endpoint `PATCH /nodes/:id/move` faz transação (anti-ciclo via `WITH RECURSIVE` + renumeração). `DELETE` não renumera (gaps são tolerados — ordenação relativa preserva).
 
 ### AD-001: Stack inteira definida no spec inicial (2026-05-17)
 
@@ -82,6 +117,11 @@ _Nenhuma registrada ainda._
 Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós-v1" do ROADMAP.
 
 - [ ] UI exata dos indicadores de tarefa no canvas — refinar iterativamente durante uso (§7 do spec)
+- [ ] Reorder entre irmãos do mesmo pai via drag (AD-011) — só drag-to-reparent em M3
+- [ ] Atalhos de teclado no canvas (Tab=add filho, Delete=excluir, etc.) — M3 só tem Enter/Escape no rename
+- [ ] Optimistic updates explícitos em mutations de Node (em vez de invalidate+refetch)
+- [ ] Restauração de expand/collapse entre sessões (AD-004 já marcou como candidato se incomodar)
+- [ ] Renumeração de `sortOrder` no DELETE para fechar gaps (atualmente tolerados)
 
 ---
 

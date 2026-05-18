@@ -53,7 +53,7 @@ export function MindNode({ data }: MindNodeProps) {
 
   return (
     <div
-      className="relative flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60 group"
+      className="relative flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60"
       style={{ minWidth: 160 }}
       onDoubleClick={!isEditing ? onStartEdit : undefined}
     >
@@ -92,13 +92,13 @@ export function MindNode({ data }: MindNodeProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onAddChild();
           }}
-          className="text-muted-foreground hover:text-foreground text-xs w-4 h-4 flex items-center justify-center"
+          className="text-muted-foreground hover:text-foreground text-sm w-5 h-5 flex items-center justify-center rounded hover:bg-muted"
           title="Adicionar filho"
         >
           +
@@ -110,7 +110,7 @@ export function MindNode({ data }: MindNodeProps) {
               e.stopPropagation();
               onDelete();
             }}
-            className="text-muted-foreground hover:text-destructive text-xs w-4 h-4 flex items-center justify-center"
+            className="text-muted-foreground/40 hover:text-destructive text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-muted"
             title="Excluir"
           >
             ×
