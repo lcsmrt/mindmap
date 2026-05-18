@@ -1,11 +1,25 @@
 # State
 
-**Last Updated:** 2026-05-17
-**Current Work:** M3 concluído (18 tasks, 18 commits). Canvas interativo funcional com add/rename/delete/move/collapse e persistência via API. Próximo: M4 (persistência formal — edge cases de rede, optimistic updates).
+**Last Updated:** 2026-05-18
+**Current Work:** Review pós-M3 (2026-05-18): funcionalidade entregue, mas com gate de lint aberto (B-001) e bug de "root não renomeável" relatado pelo usuário. Bugs/fragilidades catalogados em `.specs/codebase/CONCERNS.md`. Antes de seguir para M4: resolver B-001 e reproduzir o bug do canvas.
 
 ---
 
 ## Recent Decisions (Last 60 days)
+
+### AD-014: Playwright para smoke de UI em milestones com interação nova (2026-05-18)
+
+**Decision:** Milestones que entregam interação UI nova (drag, edit inline, dialogs, etc.) passam a ter pelo menos 1 spec Playwright por user story P1, cobrindo o "Independent Test" descrito na user story. Roda via `pnpm test:e2e` separado de `pnpm test` (Vitest). Começa enxuto — 1 happy path por story — e expande conforme dor aparecer.
+**Reason:** Review de M3 revelou 3 bugs que só apareceriam em uso interativo: buttons invisíveis até hover, worker layout sem update, "root não edita". AD-007 ("UI declarativa = sem testes") cobre componentes estáticos, mas falha em milestones com canvas/edição/drag. A própria AD-007 deixa porta aberta: "quando dor aparecer, adicionar". Apareceu.
+**Trade-off:** Setup inicial (Playwright + config + DB de teste isolado). Specs e2e são mais frágeis que unit (timing, seletores). Para ferramenta single-user o custo é não-trivial, mas a UI é o produto.
+**Impact:** Novo script `pnpm test:e2e` em `packages/web`. Pasta `packages/web/e2e/`. Em M4+, parte do Definition of Done é "specs e2e do milestone passam". AD-007 segue válido para componentes/lógica pura; substituído **apenas** para interação UI nova. Setup do Playwright vira feature/quick task própria — não entra em M3.
+
+### AD-013: Fase de Review obrigatória pós-Execute na TLC (2026-05-18)
+
+**Decision:** Adiciona uma fase "Review" entre Execute e o update do STATE.md para "concluído". Roda num chat separado (alinhado a [[feedback-plan-execute-split]]), preferencialmente delegando a um sub-agent independente que não viu o execute. Output mínimo: relatório de bugs + gaps + lições, com referências `file:linha`. Findings vão pra `.specs/codebase/CONCERNS.md` (técnicos) e `STATE.md` (processo/blockers/decisões). Milestone só pode ser marcado "concluído" depois.
+**Reason:** Review pós-M3 pegou: STATE.md mentindo sobre "18 commits" (eram 14, T3 vazio, T4-T6 nunca commitados), lint quebrando o próprio Success Criteria do spec, fragilidades de padrão React Flow não documentadas. Nada disso teria sido pego por hooks/regras/memórias dependentes de boa vontade do agente. Review independente é o cinto que pega o que automação não pega.
+**Trade-off:** Adiciona ~1 chat por milestone. Solo dev acumula latência. Mitigado por: review é barata (só leitura/análise, sem código), e o custo de não fazer é dívida silenciosa herdada pelo próximo milestone.
+**Impact:** Antes de atualizar `Current Work` no STATE.md para "X concluído", abrir chat de review apontando pro `tasks.md`/`spec.md` do milestone. Eventualmente formalizar como skill custom (extensão de `tlc-spec-driven`); por ora é convenção manual.
 
 ### AD-012: `GET /maps/:id/nodes` retorna lista plana (2026-05-17)
 
@@ -76,6 +90,7 @@
 **Reason:** Ferramenta single-user, custo de regressão baixo, ROI de integration/e2e tests não compensa setup em v1. Vitest é barato; entra onde tem ganho real.
 **Trade-off:** Regressões em SQL/Prisma podem passar despercebidas até o uso. Refatorações em endpoints sem cobertura ficam mais arriscadas.
 **Impact:** M1 configura Vitest mas não pede integration test. Tasks de UI puramente declarativa (React render sem lógica) ficam com `Tests: none`. Quando dor aparecer, adicionar integration tests com DB de teste.
+**Addendum (2026-05-18):** A postura "UI sem testes" foi parcialmente substituída por **AD-014** para milestones que entregam interação UI nova (drag, edit inline, dialogs). AD-007 segue válido para componentes/lógica pura e para milestones sem interação nova.
 
 ### AD-006: Postgres self-hosted em VPS Hostinger em vez de Supabase (2026-05-17)
 
@@ -95,13 +110,23 @@
 
 ## Active Blockers
 
-_Nenhum no momento._
+### B-001: Gate `pnpm lint` falha pós-M3 (2026-05-18)
+
+**Discovered:** 2026-05-18 durante review de M3.
+**Impact:** Success Criteria de M3 (`.specs/features/m3-canvas-editing/spec.md:295` — "`pnpm typecheck && pnpm lint && pnpm test` passa") não atendido. M3 está marcado como concluído no histórico de commits mas o gate formal está aberto. Bloqueia o gate de v1.
+**Workaround:** Nenhum.
+**Resolution:** Resolver erro `react-hooks/set-state-in-effect` em `packages/web/src/lib/useLayoutedTree.ts:52` (derivar reset do worker via `useMemo`/key ou aceitar com `// eslint-disable-next-line` justificado); limpar warnings em `packages/web/src/components/canvas/MapCanvas.tsx:102` (`allNodeIds` morto) e `:144` (deps do `useMemo` de `rfNodes`); remover `edges` não usado em `packages/web/src/lib/tree.test.ts:74`. Detalhes técnicos em `.specs/codebase/CONCERNS.md` → Known Bugs.
 
 ---
 
 ## Lessons Learned
 
-_Nenhuma registrada ainda._
+### L-001: Validar gates antes de marcar milestone como concluído (2026-05-18)
+
+**Context:** STATE.md afirmava "M3 concluído (18 tasks, 18 commits)" desde 2026-05-17. Review em 2026-05-18 mostrou: (a) só 14 commits `feat(m3)`/`test(m3)` existem — T3 é commit vazio e T4/T5/T6 nunca foram commitados (todo o backend de Node foi empacotado em T2, violando o princípio de atomicidade declarado em `tasks.md:22`); (b) `pnpm lint` falha contra o próprio Success Criteria do spec.
+**Problem:** "Concluído" foi declarado sem rodar a tríade do Success Criteria (`pnpm typecheck && pnpm lint && pnpm test`) e sem conferir o histórico de commits contra a lista de tasks.
+**Solution:** Antes de atualizar STATE.md/ROADMAP para "concluído": (1) rodar `pnpm typecheck && pnpm lint && pnpm test` localmente; (2) `git log --oneline | grep "feat(<scope>): T"` e cruzar com a lista de tasks em `tasks.md`; (3) reproduzir um caminho golden da feature no browser antes de fechar o milestone.
+**Prevents:** Marcar trabalho como pronto enquanto gates estão abertos; herdar dívida silenciosa para o próximo milestone (M4 começaria sobre lint quebrado e atomicidade ilusória).
 
 ---
 
@@ -122,12 +147,15 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 - [ ] Optimistic updates explícitos em mutations de Node (em vez de invalidate+refetch)
 - [ ] Restauração de expand/collapse entre sessões (AD-004 já marcou como candidato se incomodar)
 - [ ] Renumeração de `sortOrder` no DELETE para fechar gaps (atualmente tolerados)
+- [ ] Feedback visual de drop target durante drag (highlight do nó alvo) — hoje só há snap-back silencioso quando o drop é inválido
+- [ ] Toast/notificação melhor para erros do canvas — barra sticky atual sobrescreve em mutações sequenciais
 
 ---
 
 ## Todos
 
-_Sem pendências no momento._
+- [ ] Decidir o que fazer com `proOptions={{ hideAttribution: true }}` em `packages/web/src/components/canvas/MapCanvas.tsx:238` — viola termos do `@xyflow/react` MIT (ver `.specs/codebase/CONCERNS.md` → Dependencies at Risk). Opções: manter atribuição visível, assinar React Flow Pro, ou trocar de lib.
+- [ ] Reproduzir em browser o bug "root não edita" (`.specs/codebase/CONCERNS.md` → Known Bugs). Confirmar se é apenas falta de affordance ou se há re-mount do input durante o sync com React Flow.
 
 ---
 
