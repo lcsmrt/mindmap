@@ -232,6 +232,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={handleNodeDragStop}
+        proOptions={{ hideAttribution: true }}
         fitView
         panOnDrag
         zoomOnScroll
