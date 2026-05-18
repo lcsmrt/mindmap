@@ -10,6 +10,7 @@ import type { HealthResponse } from '@mindmap/shared';
 import { prisma } from './prisma.js';
 import { ApiError } from './errors.js';
 import mapsPlugin from './routes/maps.js';
+import nodesPlugin from './routes/nodes.js';
 
 export function buildApp() {
   const app = Fastify({ logger: true }).withTypeProvider<ZodTypeProvider>();
@@ -49,6 +50,7 @@ export function buildApp() {
   });
 
   app.register(mapsPlugin, { prefix: '/maps' });
+  app.register(nodesPlugin, { prefix: '/nodes' });
 
   return app;
 }

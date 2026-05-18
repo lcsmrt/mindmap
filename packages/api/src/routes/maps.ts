@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { NotFoundError } from '../errors.js';
 import { toMapDetail, toMapSummary } from '../mappers/maps.js';
+import { toNodeDto } from '../mappers/nodes.js';
 
 const IdParam = z.object({ id: z.string() });
 const TitleBody = z.object({ title: z.string().trim().min(1) });
@@ -59,6 +60,20 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
         data: { title: req.body.title },
       });
       return toMapDetail(map);
+    },
+  });
+
+  app.get('/:id/nodes', {
+    schema: { params: IdParam },
+    handler: async (req) => {
+      const map = await prisma.map.findUnique({ where: { id: req.params.id } });
+      if (!map) throw new NotFoundError('Map not found');
+
+      const nodes = await prisma.node.findMany({
+        where: { mapId: req.params.id },
+        orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
+      });
+      return { nodes: nodes.map(toNodeDto) };
     },
   });
 
