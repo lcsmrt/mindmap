@@ -13,7 +13,8 @@
   "dependencies": {
     "@mindmap/shared": "workspace:*",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^7.15.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.0",
