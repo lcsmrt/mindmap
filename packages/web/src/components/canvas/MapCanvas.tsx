@@ -1,5 +1,5 @@
 import '@xyflow/react/dist/style.css';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
@@ -155,8 +155,11 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [visEdges],
   );
 
-  const [nodes, , onNodesChange] = useNodesState(rfNodes);
-  const [edges, , onEdgesChange] = useEdgesState(rfEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
+
+  useEffect(() => { setNodes(rfNodes); }, [rfNodes, setNodes]);
+  useEffect(() => { setEdges(rfEdges); }, [rfEdges, setEdges]);
 
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, draggedNode: Node) => {
