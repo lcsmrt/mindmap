@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "learning-opportunities": {
+      "source": "tech-leads-club/agent-skills",
+      "sourceType": "github",
+      "skillPath": "packages/skills-catalog/skills/(learning)/learning-opportunities/SKILL.md",
+      "computedHash": "8acca3b3c22d3678ef28025504668e3a7d945c7b8a8d7117669fb7edcfc7c816"
+    },
+    "tlc-spec-driven": {
+      "source": "tech-leads-club/agent-skills",
+      "sourceType": "github",
+      "skillPath": "packages/skills-catalog/skills/(development)/tlc-spec-driven/SKILL.md",
+      "computedHash": "e43524680b1d22ae7ef160c0bd40902cb995f3048f96535e8b39ce3347042b23"
+    }
+  }
+}
