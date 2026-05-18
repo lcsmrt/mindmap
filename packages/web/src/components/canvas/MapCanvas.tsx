@@ -2,7 +2,7 @@ import '@xyflow/react/dist/style.css';
 import { useState, useMemo, useCallback } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
-import { useNodes, useCreateNode } from '@/api/nodes.js';
+import { useNodes, useCreateNode, useUpdateNode } from '@/api/nodes.js';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
 import { useLayoutedTree } from '@/lib/useLayoutedTree.js';
 import { MindNode } from './MindNode.js';
@@ -24,6 +24,25 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     onSuccess: (newNode) => setEditingId(newNode.id),
     onError: (err) => setCanvasError(err.message),
   });
+
+  const { mutate: updateNode } = useUpdateNode({
+    onError: (err) => setCanvasError(err.message),
+  });
+
+  const handleStartEdit = useCallback((id: string) => setEditingId(id), []);
+
+  const handleSubmitEdit = useCallback(
+    (id: string, title: string) => {
+      setEditingId(null);
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      setCanvasError(null);
+      updateNode({ id, body: { title: trimmed } });
+    },
+    [updateNode],
+  );
+
+  const handleCancelEdit = useCallback(() => setEditingId(null), []);
 
   const handleAddChild = useCallback(
     (parentId: string) => {
@@ -70,9 +89,9 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           hasChildren: hasChildrenMap.get(nodeDto.id) ?? false,
           isCollapsed: collapsedIds.has(nodeDto.id),
           isEditing: editingId === nodeDto.id,
-          onStartEdit: () => console.warn('TODO T15: onStartEdit', nodeDto.id),
-          onSubmitEdit: (title) => console.warn('TODO T15: onSubmitEdit', nodeDto.id, title),
-          onCancelEdit: () => console.warn('TODO T15: onCancelEdit'),
+          onStartEdit: () => handleStartEdit(nodeDto.id),
+          onSubmitEdit: (title) => handleSubmitEdit(nodeDto.id, title),
+          onCancelEdit: handleCancelEdit,
           onAddChild: () => handleAddChild(nodeDto.id),
           onDelete: () => console.warn('TODO T16: onDelete', nodeDto.id),
           onToggleCollapse: () => console.warn('TODO T18: onToggleCollapse', nodeDto.id),
