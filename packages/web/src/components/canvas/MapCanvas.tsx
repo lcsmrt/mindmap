@@ -2,7 +2,9 @@ import '@xyflow/react/dist/style.css';
 import { useState, useMemo, useCallback } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
-import { useNodes, useCreateNode, useUpdateNode } from '@/api/nodes.js';
+import { useNodes, useCreateNode, useUpdateNode, useDeleteNode } from '@/api/nodes.js';
+import { ConfirmDialog } from '@/components/ConfirmDialog.js';
+import type { NodeDto } from '@mindmap/shared';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
 import { useLayoutedTree } from '@/lib/useLayoutedTree.js';
 import { MindNode } from './MindNode.js';
@@ -19,6 +21,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [canvasError, setCanvasError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<NodeDto | null>(null);
 
   const { mutate: createNode } = useCreateNode({
     onSuccess: (newNode) => setEditingId(newNode.id),
@@ -43,6 +46,19 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   );
 
   const handleCancelEdit = useCallback(() => setEditingId(null), []);
+
+  const { mutate: deleteNode } = useDeleteNode({
+    onError: (err) => setCanvasError(err.message),
+  });
+
+  const handleDelete = useCallback((node: NodeDto) => setDeleteTarget(node), []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    setCanvasError(null);
+    deleteNode({ id: deleteTarget.id, mapId });
+    setDeleteTarget(null);
+  }, [deleteNode, deleteTarget, mapId]);
 
   const handleAddChild = useCallback(
     (parentId: string) => {
@@ -93,7 +109,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           onSubmitEdit: (title) => handleSubmitEdit(nodeDto.id, title),
           onCancelEdit: handleCancelEdit,
           onAddChild: () => handleAddChild(nodeDto.id),
-          onDelete: () => console.warn('TODO T16: onDelete', nodeDto.id),
+          onDelete: () => handleDelete(nodeDto),
           onToggleCollapse: () => console.warn('TODO T18: onToggleCollapse', nodeDto.id),
         };
         return {
@@ -146,6 +162,16 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!deleteTarget}
+      title="Excluir nó"
+      message={`"${deleteTarget?.title ?? ''}" e todos os seus descendentes serão removidos.`}
+      confirmLabel="Excluir"
+      destructive
+      onConfirm={handleConfirmDelete}
+      onCancel={() => setDeleteTarget(null)}
+    />
     <div className="flex-1 h-full relative">
       {canvasError && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-md bg-destructive/90 px-4 py-2 text-sm text-white shadow">
@@ -169,6 +195,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         <Background />
       </ReactFlow>
     </div>
+    </>
   );
 }
 
