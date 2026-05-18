@@ -1,44 +1,45 @@
 import { useState } from 'react';
+import { Input } from '@/components/ui/input.js';
+import { Button } from '@/components/ui/button.js';
 
-interface CreateMapFormProps {
-  onSubmit: (title: string) => Promise<void>;
-}
+type CreateMapFormProps = {
+  onSubmit: (title: string) => Promise<unknown>;
+  isPending?: boolean;
+};
 
-export default function CreateMapForm({ onSubmit }: CreateMapFormProps) {
+export const CreateMapForm = ({ onSubmit, isPending }: CreateMapFormProps) => {
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       setError('Título não pode ser vazio');
       return;
     }
     setError('');
-    setSubmitting(true);
     try {
       await onSubmit(title.trim());
       setTitle('');
     } catch {
       setError('Erro ao criar mapa');
-    } finally {
-      setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Nome do novo mapa"
-        style={{ borderColor: error ? 'red' : undefined }}
-      />
-      <button type="submit" disabled={submitting}>
+    <form onSubmit={handleSubmit} className="flex items-start gap-2">
+      <div className="flex flex-col gap-1">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Nome do novo mapa"
+          className={error ? 'border-red-500' : ''}
+        />
+        {error && <span className="text-xs text-red-500">{error}</span>}
+      </div>
+      <Button type="submit" disabled={isPending}>
         Criar
-      </button>
-      {error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
+      </Button>
     </form>
   );
-}
+};

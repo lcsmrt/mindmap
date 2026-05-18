@@ -1,15 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js';
+import { CreateMapForm } from '@/components/CreateMapForm.js';
+import { RenameMapInput } from '@/components/RenameMapInput.js';
+import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { MapSummary } from '@mindmap/shared';
-import { listMaps, createMap, updateMap, deleteMap } from '../api/maps.js';
-import CreateMapForm from '../components/CreateMapForm.js';
-import RenameMapInput from '../components/RenameMapInput.js';
-import ConfirmDialog from '../components/ConfirmDialog.js';
-
-type State =
-  | { kind: 'loading' }
-  | { kind: 'ok'; maps: MapSummary[] }
-  | { kind: 'error' };
 
 const fmt = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -17,94 +12,89 @@ const fmt = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
 });
 
-export default function HomePage() {
-  const [state, setState] = useState<State>({ kind: 'loading' });
+export const HomePage = () => {
+  const navigate = useNavigate();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MapSummary | null>(null);
-  const [deleteError, setDeleteError] = useState('');
-  const navigate = useNavigate();
 
-  function load() {
-    listMaps()
-      .then((res) => setState({ kind: 'ok', maps: res.maps }))
-      .catch(() => setState({ kind: 'error' }));
-  }
+  const { data, isLoading, isError } = useMaps();
+  const { mutateAsync: createMap, isPending: isCreating } = useCreateMap();
+  const { mutateAsync: updateMap } = useUpdateMap();
+  const { mutate: deleteMap } = useDeleteMap({
+    onSuccess: () => setDeleteTarget(null),
+  });
 
-  useEffect(() => {
-    load();
-  }, []);
+  if (isLoading) return <p className="p-4 text-slate-500">Carregando…</p>;
+  if (isError) return <p className="p-4 text-red-500">Erro ao carregar mapas</p>;
 
-  async function handleCreate(title: string) {
-    await createMap({ title });
-    load();
-  }
-
-  async function handleRename(id: string, title: string) {
-    await updateMap(id, { title });
-    load();
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleteError('');
-    try {
-      await deleteMap(deleteTarget.id);
-      setDeleteTarget(null);
-      load();
-    } catch {
-      setDeleteError('Erro ao excluir mapa');
-    }
-  }
-
-  if (state.kind === 'loading') return <p>Carregando…</p>;
-  if (state.kind === 'error') return <p>Erro ao carregar mapas</p>;
-
-  const { maps } = state;
+  const maps = data?.maps ?? [];
 
   return (
-    <main>
-      <h1>Meus Mapas</h1>
-      <CreateMapForm onSubmit={handleCreate} />
+    <main className="mx-auto max-w-2xl p-6">
+      <h1 className="mb-6 text-2xl font-bold text-slate-900">Meus Mapas</h1>
+
+      <div className="mb-6">
+        <CreateMapForm
+          onSubmit={(title) => createMap({ title })}
+          isPending={isCreating}
+        />
+      </div>
+
       {maps.length === 0 ? (
-        <p>Nenhum mapa encontrado.</p>
+        <p className="text-slate-500">Nenhum mapa encontrado.</p>
       ) : (
-        <ul>
+        <ul className="flex flex-col gap-2">
           {maps.map((m) => (
-            <li key={m.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <li
+              key={m.id}
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-xs"
+            >
               {renamingId === m.id ? (
                 <RenameMapInput
                   initialTitle={m.title}
-                  onConfirm={(t) => handleRename(m.id, t)}
+                  onConfirm={(title) => updateMap({ id: m.id, body: { title } })}
                   onCancel={() => setRenamingId(null)}
                 />
               ) : (
-                <span
-                  style={{ cursor: 'pointer', flex: 1 }}
+                <button
+                  type="button"
+                  className="flex-1 text-left text-sm font-medium text-slate-800 hover:text-slate-600"
                   onClick={() => navigate(`/maps/${m.id}`)}
                 >
-                  {m.title} — {fmt.format(new Date(m.updatedAt))}
-                </span>
+                  {m.title}
+                  <span className="ml-2 text-xs font-normal text-slate-400">
+                    {fmt.format(new Date(m.updatedAt))}
+                  </span>
+                </button>
               )}
-              <button type="button" onClick={() => setRenamingId(m.id)}>
+              <button
+                type="button"
+                className="text-xs text-slate-400 hover:text-slate-600"
+                onClick={() => setRenamingId(m.id)}
+              >
                 Renomear
               </button>
-              <button type="button" onClick={() => { setDeleteError(''); setDeleteTarget(m); }}>
+              <button
+                type="button"
+                className="text-xs text-red-400 hover:text-red-600"
+                onClick={() => setDeleteTarget(m)}
+              >
                 Excluir
               </button>
             </li>
           ))}
         </ul>
       )}
-      {deleteError && <p style={{ color: 'red' }}>{deleteError}</p>}
+
       <ConfirmDialog
         open={deleteTarget !== null}
         title="Excluir mapa"
         message={`Tem certeza? O mapa «${deleteTarget?.title ?? ''}» e todos os seus nós serão removidos permanentemente.`}
         confirmLabel="Excluir"
         destructive
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMap(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
       />
     </main>
   );
-}
+};

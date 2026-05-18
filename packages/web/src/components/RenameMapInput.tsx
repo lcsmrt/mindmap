@@ -1,16 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
+import { Input } from '@/components/ui/input.js';
 
-interface RenameMapInputProps {
+type RenameMapInputProps = {
   initialTitle: string;
-  onConfirm: (title: string) => Promise<void>;
+  onConfirm: (title: string) => Promise<unknown>;
   onCancel: () => void;
-}
+};
 
-export default function RenameMapInput({
-  initialTitle,
-  onConfirm,
-  onCancel,
-}: RenameMapInputProps) {
+export const RenameMapInput = ({ initialTitle, onConfirm, onCancel }: RenameMapInputProps) => {
   const [value, setValue] = useState(initialTitle);
   const ref = useRef<HTMLInputElement>(null);
 
@@ -18,7 +15,7 @@ export default function RenameMapInput({
     ref.current?.select();
   }, []);
 
-  async function handleBlur() {
+  const handleBlur = async () => {
     const trimmed = value.trim();
     if (!trimmed || trimmed === initialTitle) {
       onCancel();
@@ -29,25 +26,24 @@ export default function RenameMapInput({
     } catch {
       onCancel();
     }
-  }
+  };
 
-  function handleKeyDown(e: React.KeyboardEvent) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       ref.current?.blur();
     }
-    if (e.key === 'Escape') {
-      onCancel();
-    }
-  }
+    if (e.key === 'Escape') onCancel();
+  };
 
   return (
-    <input
+    <Input
       ref={ref}
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
+      className="h-8"
     />
   );
-}
+};

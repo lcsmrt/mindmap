@@ -1,9 +1,13 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   MapListResponse,
   MapDetail,
   CreateMapBody,
   UpdateMapBody,
 } from '@mindmap/shared';
+import type { QueryOptions, MutationOptions } from './types.js';
+
+// --- API functions ---
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -15,15 +19,15 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function listMaps(): Promise<MapListResponse> {
+async function fetchMaps(): Promise<MapListResponse> {
   return request<MapListResponse>('/api/maps');
 }
 
-export function getMap(id: string): Promise<MapDetail> {
+async function fetchMap(id: string): Promise<MapDetail> {
   return request<MapDetail>(`/api/maps/${id}`);
 }
 
-export function createMap(body: CreateMapBody): Promise<MapDetail> {
+async function createMapRequest(body: CreateMapBody): Promise<MapDetail> {
   return request<MapDetail>('/api/maps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -31,7 +35,7 @@ export function createMap(body: CreateMapBody): Promise<MapDetail> {
   });
 }
 
-export function updateMap(id: string, body: UpdateMapBody): Promise<MapDetail> {
+async function updateMapRequest(id: string, body: UpdateMapBody): Promise<MapDetail> {
   return request<MapDetail>(`/api/maps/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -39,6 +43,60 @@ export function updateMap(id: string, body: UpdateMapBody): Promise<MapDetail> {
   });
 }
 
-export function deleteMap(id: string): Promise<void> {
+async function deleteMapRequest(id: string): Promise<void> {
   return request<void>(`/api/maps/${id}`, { method: 'DELETE' });
 }
+
+// --- Hooks ---
+
+export const useMaps = (options?: QueryOptions<MapListResponse>) =>
+  useQuery({ queryKey: ['maps'], queryFn: fetchMaps, ...options });
+
+export const useMap = (id?: string, options?: QueryOptions<MapDetail>) =>
+  useQuery({
+    queryKey: ['map', id],
+    queryFn: () => fetchMap(id!),
+    enabled: !!id && (options?.enabled ?? true),
+    ...options,
+  });
+
+export const useCreateMap = (options?: MutationOptions<MapDetail, CreateMapBody>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createMapRequest,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['maps'] });
+      options?.onSuccess?.(data, variables);
+    },
+    onError: (error) => options?.onError?.(error),
+  });
+};
+
+export const useUpdateMap = (
+  options?: MutationOptions<MapDetail, { id: string; body: UpdateMapBody }>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateMapBody }) =>
+      updateMapRequest(id, body),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['maps'] });
+      queryClient.invalidateQueries({ queryKey: ['map', variables.id] });
+      options?.onSuccess?.(data, variables);
+    },
+    onError: (error) => options?.onError?.(error),
+  });
+};
+
+export const useDeleteMap = (options?: MutationOptions<void, string>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteMapRequest,
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['maps'] });
+      queryClient.removeQueries({ queryKey: ['map', id] });
+      options?.onSuccess?.(data, id);
+    },
+    onError: (error) => options?.onError?.(error),
+  });
+};

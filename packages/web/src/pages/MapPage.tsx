@@ -1,66 +1,38 @@
-import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { MapDetail } from '@mindmap/shared';
-import { getMap } from '../api/maps.js';
+import { useMap } from '@/api/maps.js';
 
-type State =
-  | { kind: 'loading' }
-  | { kind: 'ok'; map: MapDetail }
-  | { kind: 'not_found' }
-  | { kind: 'error' };
-
-export default function MapPage() {
+export const MapPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const { data: map, isLoading, isError, error } = useMap(id);
 
-  useEffect(() => {
-    if (!id) return;
-    getMap(id)
-      .then((map) => setState({ kind: 'ok', map }))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : '';
-        setState({ kind: msg.includes('404') || msg.includes('Map not found') ? 'not_found' : 'error' });
-      });
-  }, [id]);
+  if (isLoading) return <p className="p-4 text-slate-500">Carregando…</p>;
 
-  if (state.kind === 'loading') return <p>Carregando…</p>;
-
-  if (state.kind === 'not_found') {
+  if (isError) {
+    const isNotFound = error instanceof Error && error.message.includes('Map not found');
     return (
-      <>
-        <p>Mapa não encontrado.</p>
-        <Link to="/">← Voltar para mapas</Link>
-      </>
-    );
-  }
-
-  if (state.kind === 'error') {
-    return (
-      <>
-        <p>Erro ao carregar mapa.</p>
-        <Link to="/">← Voltar para mapas</Link>
-      </>
+      <div className="p-6">
+        <p className="mb-4 text-slate-700">
+          {isNotFound ? 'Mapa não encontrado.' : 'Erro ao carregar mapa.'}
+        </p>
+        <Link to="/" className="text-sm text-slate-500 underline hover:text-slate-700">
+          ← Voltar para mapas
+        </Link>
+      </div>
     );
   }
 
   return (
-    <>
-      <h1>{state.map.title}</h1>
-      <div
-        style={{
-          border: '2px dashed #ccc',
-          background: '#f9f9f9',
-          height: 400,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 8,
-          margin: '16px 0',
-        }}
-      >
-        Canvas — em breve
+    <div className="flex h-screen flex-col">
+      <header className="flex items-center gap-4 border-b border-slate-200 px-6 py-3">
+        <Link to="/" className="text-sm text-slate-400 hover:text-slate-600">
+          ← Mapas
+        </Link>
+        <h1 className="text-lg font-semibold text-slate-900">{map?.title}</h1>
+      </header>
+
+      <div className="flex flex-1 items-center justify-center bg-slate-50">
+        <p className="text-slate-400">Canvas — em breve</p>
       </div>
-      <Link to="/">← Voltar para mapas</Link>
-    </>
+    </div>
   );
-}
+};
