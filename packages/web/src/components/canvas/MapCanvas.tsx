@@ -2,7 +2,8 @@ import '@xyflow/react/dist/style.css';
 import { useState, useMemo, useCallback } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
-import { useNodes, useCreateNode, useUpdateNode, useDeleteNode } from '@/api/nodes.js';
+import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
+import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto } from '@mindmap/shared';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
@@ -17,6 +18,7 @@ interface MapCanvasInnerProps {
 }
 
 function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError } = useNodes(mapId);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -52,6 +54,13 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   });
 
   const handleDelete = useCallback((node: NodeDto) => setDeleteTarget(node), []);
+
+  const { mutate: moveNode } = useMoveNode({
+    onError: (err) => {
+      setCanvasError(err.message);
+      queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
+    },
+  });
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -138,11 +147,36 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const [edges, , onEdgesChange] = useEdgesState(rfEdges);
 
   const handleNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      if (!allNodeIds.has(node.id)) return;
-      console.warn('TODO T17: drag-and-drop reparent', node.id);
+    (_event: React.MouseEvent, draggedNode: Node) => {
+      if (!data) return;
+      const draggedDto = data.nodes.find((n) => n.id === draggedNode.id);
+      if (!draggedDto || draggedDto.parentId === null) return;
+
+      const dx = draggedNode.position.x;
+      const dy = draggedNode.position.y;
+
+      // Detecta alvo por overlap do centro do nó arrastado com a bounding box de outro nó
+      const target = nodes.find((n) => {
+        if (n.id === draggedNode.id) return false;
+        const tw = n.measured?.width ?? 180;
+        const th = n.measured?.height ?? 40;
+        return (
+          dx + 90 >= n.position.x &&
+          dx + 90 <= n.position.x + tw &&
+          dy + 20 >= n.position.y &&
+          dy + 20 <= n.position.y + th
+        );
+      });
+
+      if (!target) {
+        queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
+        return;
+      }
+
+      setCanvasError(null);
+      moveNode({ id: draggedNode.id, body: { parentId: target.id, index: Number.MAX_SAFE_INTEGER } });
     },
-    [allNodeIds],
+    [data, nodes, moveNode, queryClient, mapId],
   );
 
   if (isLoading) {
