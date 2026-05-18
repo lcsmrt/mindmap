@@ -1,2 +1,2 @@
-// shared types — populated in later tasks
 export * from './health.js';
+export * from './map.js';
