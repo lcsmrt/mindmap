@@ -1,7 +1,7 @@
 # State
 
-**Last Updated:** 2026-05-18
-**Current Work:** Review pós-M3 (2026-05-18): funcionalidade entregue, mas com gate de lint aberto (B-001) e bug de "root não renomeável" relatado pelo usuário. Bugs/fragilidades catalogados em `.specs/codebase/CONCERNS.md`. Antes de seguir para M4: resolver B-001 e reproduzir o bug do canvas.
+**Last Updated:** 2026-05-19
+**Current Work:** B-001 resolvido, Playwright configurado, bug de edição do nó raiz corrigido, banco de testes isolado. Pronto para M4.
 
 ---
 
@@ -110,12 +110,7 @@
 
 ## Active Blockers
 
-### B-001: Gate `pnpm lint` falha pós-M3 (2026-05-18)
-
-**Discovered:** 2026-05-18 durante review de M3.
-**Impact:** Success Criteria de M3 (`.specs/features/m3-canvas-editing/spec.md:295` — "`pnpm typecheck && pnpm lint && pnpm test` passa") não atendido. M3 está marcado como concluído no histórico de commits mas o gate formal está aberto. Bloqueia o gate de v1.
-**Workaround:** Nenhum.
-**Resolution:** Resolver erro `react-hooks/set-state-in-effect` em `packages/web/src/lib/useLayoutedTree.ts:52` (derivar reset do worker via `useMemo`/key ou aceitar com `// eslint-disable-next-line` justificado); limpar warnings em `packages/web/src/components/canvas/MapCanvas.tsx:102` (`allNodeIds` morto) e `:144` (deps do `useMemo` de `rfNodes`); remover `edges` não usado em `packages/web/src/lib/tree.test.ts:74`. Detalhes técnicos em `.specs/codebase/CONCERNS.md` → Known Bugs.
+*(nenhum blocker ativo)*
 
 ---
 
@@ -134,6 +129,9 @@
 
 | #   | Description | Date | Commit | Status |
 | --- | ----------- | ---- | ------ | ------ |
+| Q-001 | B-001: fix lint (useLayoutedTree, MapCanvas, tree.test) | 2026-05-19 | 632e58c | concluído |
+| Q-002 | Setup Playwright (AD-014): config, `pnpm test:e2e`, pasta `e2e/`, `vitest.config.ts` | 2026-05-19 | 632e58c | concluído |
+| Q-003 | Nó raiz usa título do mapa + clique-para-editar no texto + banco de testes isolado | 2026-05-19 | 018885f | concluído |
 
 ---
 
@@ -155,7 +153,7 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 ## Todos
 
 - [ ] Decidir o que fazer com `proOptions={{ hideAttribution: true }}` em `packages/web/src/components/canvas/MapCanvas.tsx:238` — viola termos do `@xyflow/react` MIT (ver `.specs/codebase/CONCERNS.md` → Dependencies at Risk). Opções: manter atribuição visível, assinar React Flow Pro, ou trocar de lib.
-- [ ] Reproduzir em browser o bug "root não edita" (`.specs/codebase/CONCERNS.md` → Known Bugs). Confirmar se é apenas falta de affordance ou se há re-mount do input durante o sync com React Flow.
+- [x] ~~Bug de edição no canvas~~ — resolvido em Q-003: clique no texto do nó dispara edição diretamente via `onStartEdit`, sem depender do `onNodeDoubleClick` do React Flow.
 
 ---
 
