@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { ChevronRight, ChevronDown, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import type { MindNodeData } from './types.js';
@@ -80,7 +81,7 @@ export function MindNode({ data }: MindNodeProps) {
           className="shrink-0 text-muted-foreground hover:text-foreground text-xs w-4 h-auto p-0"
           title={isCollapsed ? 'Expandir' : 'Colapsar'}
         >
-          {isCollapsed ? '▶' : '▼'}
+          {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </Button>
       )}
 
@@ -119,7 +120,7 @@ export function MindNode({ data }: MindNodeProps) {
           className="text-muted-foreground hover:text-foreground text-sm w-5 h-5"
           title="Adicionar filho"
         >
-          +
+          <Plus className="w-3 h-3" />
         </Button>
 
         {!isRoot && (
@@ -133,7 +134,7 @@ export function MindNode({ data }: MindNodeProps) {
             className="text-muted-foreground/40 hover:text-destructive text-xs w-5 h-5"
             title="Excluir"
           >
-            ×
+            <X className="w-3 h-3" />
           </Button>
         )}
       </div>

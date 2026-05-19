@@ -2,6 +2,7 @@ import '@xyflow/react/dist/style.css';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
+import { X } from 'lucide-react';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button.js';
@@ -230,7 +231,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       {canvasError && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-md bg-destructive/90 px-4 py-2 text-sm text-white shadow">
           {canvasError}
-          <Button variant="ghost" className="ml-3 underline h-auto p-0 text-white hover:text-white/80" onClick={() => setCanvasError(null)}>×</Button>
+          <Button variant="ghost" className="ml-3 h-auto p-0 text-white hover:text-white/80" onClick={() => setCanvasError(null)}><X className="w-4 h-4" /></Button>
         </div>
       )}
       <ReactFlow
