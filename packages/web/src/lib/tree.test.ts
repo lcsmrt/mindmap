@@ -71,7 +71,7 @@ describe('visibleNodes', () => {
 
   it('collapsedIds oculta subárvore mas mantém o nó colapsado', () => {
     const tree = buildTree([root, child1, child2, grandchild])!;
-    const { nodes, edges } = visibleNodes(tree, new Set(['c1']));
+    const { nodes } = visibleNodes(tree, new Set(['c1']));
     const ids = nodes.map((n) => n.id);
     expect(ids).toContain('c1');
     expect(ids).not.toContain('gc1');

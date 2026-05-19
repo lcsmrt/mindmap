@@ -48,11 +48,10 @@ export function useLayoutedTree(
 
   useEffect(() => {
     const worker = workerRef.current;
-    // Resetar resultado do worker quando os inputs mudam
-    setWorkerPositioned(null);
 
     if (!worker || nodes.length === 0) return;
 
+    setWorkerPositioned(null);
     setIsLayouting(true);
     setError(null);
 

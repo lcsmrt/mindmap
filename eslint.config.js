@@ -6,7 +6,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/prisma/migrations/**'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/prisma/migrations/**', '**/e2e/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
