@@ -65,7 +65,7 @@ describe('Maps API', () => {
         where: { mapId: body.id, parentId: null },
       });
       expect(rootNode).not.toBeNull();
-      expect(rootNode?.title).toBe('Central');
+      expect(rootNode?.title).toBe('Meu Mapa');
     });
 
     it('rejeita título vazio — 400', async () => {

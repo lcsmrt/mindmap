@@ -24,9 +24,15 @@ export function MindNode({ data }: MindNodeProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.select();
-    }
+    if (!isEditing) return;
+    const raf = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+      return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [isEditing]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -55,7 +61,6 @@ export function MindNode({ data }: MindNodeProps) {
     <div
       className="relative flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60"
       style={{ minWidth: 160 }}
-      onDoubleClick={!isEditing ? onStartEdit : undefined}
     >
       <Handle
         type="target"
@@ -88,7 +93,15 @@ export function MindNode({ data }: MindNodeProps) {
             autoFocus
           />
         ) : (
-          <span className="text-sm truncate block">{node.title}</span>
+          <span
+            className="text-sm truncate block cursor-text"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStartEdit();
+            }}
+          >
+            {node.title}
+          </span>
         )}
       </div>
 

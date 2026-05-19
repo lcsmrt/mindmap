@@ -6,10 +6,10 @@ export interface MindNodeData extends Record<string, unknown> {
   hasChildren: boolean;
   isCollapsed: boolean;
   isEditing: boolean;
-  onStartEdit: () => void;
   onSubmitEdit: (title: string) => void;
   onCancelEdit: () => void;
   onAddChild: () => void;
   onDelete: () => void;
+  onStartEdit: () => void;
   onToggleCollapse: () => void;
 }

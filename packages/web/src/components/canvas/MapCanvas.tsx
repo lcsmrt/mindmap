@@ -99,11 +99,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [tree, collapsedIds],
   );
 
-  const allNodeIds = useMemo(
-    () => new Set(data?.nodes.map((n) => n.id) ?? []),
-    [data],
-  );
-
   const hasChildrenMap = useMemo(() => {
     const map = new Map<string, boolean>();
     if (!data) return map;
@@ -126,9 +121,9 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           hasChildren: hasChildrenMap.get(nodeDto.id) ?? false,
           isCollapsed: collapsedIds.has(nodeDto.id),
           isEditing: editingId === nodeDto.id,
-          onStartEdit: () => handleStartEdit(nodeDto.id),
           onSubmitEdit: (title) => handleSubmitEdit(nodeDto.id, title),
           onCancelEdit: handleCancelEdit,
+          onStartEdit: () => handleStartEdit(nodeDto.id),
           onAddChild: () => handleAddChild(nodeDto.id),
           onDelete: () => handleDelete(nodeDto),
           onToggleCollapse: () => handleToggleCollapse(nodeDto.id),
@@ -141,7 +136,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           draggable: !isRoot,
         };
       }),
-    [positioned, data, collapsedIds, editingId, hasChildrenMap],
+    [positioned, data, collapsedIds, editingId, hasChildrenMap, handleStartEdit, handleAddChild, handleCancelEdit, handleDelete, handleSubmitEdit, handleToggleCollapse],
   );
 
   const rfEdges: Edge[] = useMemo(
@@ -160,6 +155,15 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   useEffect(() => { setNodes(rfNodes); }, [rfNodes, setNodes]);
   useEffect(() => { setEdges(rfEdges); }, [rfEdges, setEdges]);
+
+  const handleNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, rfNode: Node) => {
+      if (editingId !== rfNode.id) {
+        handleStartEdit(rfNode.id);
+      }
+    },
+    [editingId, handleStartEdit],
+  );
 
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, draggedNode: Node) => {
@@ -234,6 +238,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDoubleClick={handleNodeDoubleClick}
         onNodeDragStop={handleNodeDragStop}
         proOptions={{ hideAttribution: true }}
         fitView

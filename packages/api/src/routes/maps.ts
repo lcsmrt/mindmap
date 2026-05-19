@@ -37,7 +37,7 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
           data: {
             mapId: created.id,
             parentId: null,
-            title: 'Central',
+            title: req.body.title,
             sortOrder: 0,
           },
         });
