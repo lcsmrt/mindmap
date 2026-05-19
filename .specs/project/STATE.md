@@ -132,6 +132,7 @@
 | Q-001 | B-001: fix lint (useLayoutedTree, MapCanvas, tree.test) | 2026-05-19 | 632e58c | concluído |
 | Q-002 | Setup Playwright (AD-014): config, `pnpm test:e2e`, pasta `e2e/`, `vitest.config.ts` | 2026-05-19 | 632e58c | concluído |
 | Q-003 | Nó raiz usa título do mapa + clique-para-editar no texto + banco de testes isolado | 2026-05-19 | 018885f | concluído |
+| Q-004 | Refactor(web): colocação de componentes por página + reuso do design system | 2026-05-19 | — | concluído |
 
 ---
 
@@ -152,7 +153,7 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 
 ## Todos
 
-- [ ] Decidir o que fazer com `proOptions={{ hideAttribution: true }}` em `packages/web/src/components/canvas/MapCanvas.tsx:238` — viola termos do `@xyflow/react` MIT (ver `.specs/codebase/CONCERNS.md` → Dependencies at Risk). Opções: manter atribuição visível, assinar React Flow Pro, ou trocar de lib.
+- [ ] Decidir o que fazer com `proOptions={{ hideAttribution: true }}` em `packages/web/src/pages/map/components/MapCanvas.tsx` — viola termos do `@xyflow/react` MIT (ver `.specs/codebase/CONCERNS.md` → Dependencies at Risk). Opções: manter atribuição visível, assinar React Flow Pro, ou trocar de lib.
 - [x] ~~Bug de edição no canvas~~ — resolvido em Q-003: clique no texto do nó dispara edição diretamente via `onStartEdit`, sem depender do `onNodeDoubleClick` do React Flow.
 
 ---

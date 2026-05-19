@@ -1,5 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { Button } from '@/components/ui/button.js';
+import { Input } from '@/components/ui/input.js';
 import type { MindNodeData } from './types.js';
 
 interface MindNodeProps {
@@ -69,27 +71,28 @@ export function MindNode({ data }: MindNodeProps) {
       />
 
       {hasChildren && (
-        <button
+        <Button
+          variant="ghost"
           onClick={(e) => {
             e.stopPropagation();
             onToggleCollapse();
           }}
-          className="shrink-0 text-muted-foreground hover:text-foreground text-xs w-4"
+          className="shrink-0 text-muted-foreground hover:text-foreground text-xs w-4 h-auto p-0"
           title={isCollapsed ? 'Expandir' : 'Colapsar'}
         >
           {isCollapsed ? '▶' : '▼'}
-        </button>
+        </Button>
       )}
 
       <div className="flex-1 min-w-0">
         {isEditing ? (
-          <input
+          <Input
             ref={inputRef}
             defaultValue={node.title}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
             onClick={(e) => e.stopPropagation()}
-            className="w-full bg-transparent outline-none text-sm text-foreground"
+            className="w-full bg-transparent border-none shadow-none text-sm text-foreground h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             autoFocus
           />
         ) : (
@@ -106,28 +109,32 @@ export function MindNode({ data }: MindNodeProps) {
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={(e) => {
             e.stopPropagation();
             onAddChild();
           }}
-          className="text-muted-foreground hover:text-foreground text-sm w-5 h-5 flex items-center justify-center rounded hover:bg-muted"
+          className="text-muted-foreground hover:text-foreground text-sm w-5 h-5"
           title="Adicionar filho"
         >
           +
-        </button>
+        </Button>
 
         {!isRoot && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
             }}
-            className="text-muted-foreground/40 hover:text-destructive text-xs w-5 h-5 flex items-center justify-center rounded hover:bg-muted"
+            className="text-muted-foreground/40 hover:text-destructive text-xs w-5 h-5"
             title="Excluir"
           >
             ×
-          </button>
+          </Button>
         )}
       </div>
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js';
-import { CreateMapForm } from '@/components/CreateMapForm.js';
-import { RenameMapInput } from '@/components/RenameMapInput.js';
+import { Button } from '@/components/ui/button.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
+import { CreateMapForm } from './components/CreateMapForm.js';
+import { RenameMapInput } from './components/RenameMapInput.js';
 import type { MapSummary } from '@mindmap/shared';
 
 const fmt = new Intl.DateTimeFormat('pt-BR', {
@@ -58,31 +59,33 @@ export const HomePage = () => {
                   onCancel={() => setRenamingId(null)}
                 />
               ) : (
-                <button
-                  type="button"
-                  className="flex-1 text-left text-sm font-medium text-foreground hover:text-primary"
+                <Button
+                  variant="ghost"
+                  className="flex-1 justify-start text-left text-sm font-medium text-foreground hover:text-primary h-auto p-0"
                   onClick={() => navigate(`/maps/${m.id}`)}
                 >
                   {m.title}
                   <span className="ml-2 text-xs font-normal text-muted-foreground">
                     {fmt.format(new Date(m.updatedAt))}
                   </span>
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => setRenamingId(m.id)}
               >
                 Renomear
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-xs text-muted-foreground hover:text-destructive"
                 onClick={() => setDeleteTarget(m)}
               >
                 Excluir
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

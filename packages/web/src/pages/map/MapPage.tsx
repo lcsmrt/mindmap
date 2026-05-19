@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useMap } from '@/api/maps.js';
-import { MapCanvas } from '@/components/canvas/MapCanvas.js';
+import { MapCanvas } from './components/MapCanvas.js';
 
 export const MapPage = () => {
   const { id } = useParams<{ id: string }>();

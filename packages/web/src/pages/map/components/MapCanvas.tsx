@@ -4,6 +4,7 @@ import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState 
 import type { Node, Edge } from '@xyflow/react';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto } from '@mindmap/shared';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
@@ -229,7 +230,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       {canvasError && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-md bg-destructive/90 px-4 py-2 text-sm text-white shadow">
           {canvasError}
-          <button className="ml-3 underline" onClick={() => setCanvasError(null)}>×</button>
+          <Button variant="ghost" className="ml-3 underline h-auto p-0 text-white hover:text-white/80" onClick={() => setCanvasError(null)}>×</Button>
         </div>
       )}
       <ReactFlow
