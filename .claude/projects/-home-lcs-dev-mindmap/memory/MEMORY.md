@@ -1,4 +1,0 @@
-- [User language](user_language.md) — usuário prefere pt-BR em conversa, docs e commits; código/identificadores em inglês
-- [Project: Mindmap tool](project_mindmap.md) — web mindmap pessoal, stack React Flow + Fastify + Prisma + Supabase, escolhas fixadas no spec inicial
-- [Feedback: plan/execute split](feedback_plan_execute_split.md) — planejamento e execução sempre em chats separados para preservar contexto
-- [Feedback: bypass permissions](feedback_bypass_permissions.md) — bypassPermissions configurado; executar diretamente sem pedir confirmação
