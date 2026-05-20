@@ -24,7 +24,9 @@ export interface CreateNodeBody {
 }
 
 export interface UpdateNodeBody {
-  title: string;
+  title?: string;
+  bgColor?: string | null;
+  textColor?: string | null;
 }
 
 export interface MoveNodeBody {

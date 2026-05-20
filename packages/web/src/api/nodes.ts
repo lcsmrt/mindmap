@@ -125,7 +125,7 @@ export const useUpdateNode = () => {
       if (snapshot) {
         queryClient.setQueryData<NodeListResponse>(['nodes', mapId], {
           nodes: snapshot.nodes.map((n) =>
-            n.id === id ? { ...n, title: body.title } : n,
+            n.id === id ? { ...n, ...body } : n,
           ),
         });
       }
@@ -135,7 +135,7 @@ export const useUpdateNode = () => {
       if (context?.snapshot) {
         queryClient.setQueryData(['nodes', mapId], context.snapshot);
       }
-      toast({ variant: 'error', description: `Erro ao renomear nó: ${error.message}` });
+      toast({ variant: 'error', description: `Erro ao atualizar nó: ${error.message}` });
     },
     onSettled: (_data, _error, { mapId }) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
