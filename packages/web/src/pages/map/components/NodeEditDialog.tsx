@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,24 +17,34 @@ interface NodeEditDialogProps {
 }
 
 export function NodeEditDialog({ node, onUpdateNode, onClose }: NodeEditDialogProps) {
-  const [title, setTitle] = useState('');
+  return (
+    <Dialog open={node !== null} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar nó</DialogTitle>
+        </DialogHeader>
+        {node && (
+          <NodeEditForm key={node.id} node={node} onUpdateNode={onUpdateNode} />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface NodeEditFormProps {
+  node: NodeDto;
+  onUpdateNode: (fields: UpdateNodeBody) => void;
+}
+
+function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
+  const [title, setTitle] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (node) {
-      setTitle(node.title);
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
-    }
-  }, [node]);
-
-  function handleTitleSubmit() {
+  const handleTitleSubmit = useCallback(() => {
     const trimmed = title.trim();
-    if (!trimmed || !node || trimmed === node.title) return;
+    if (!trimmed || trimmed === node.title) return;
     onUpdateNode({ title: trimmed });
-  }
+  }, [title, node.title, onUpdateNode]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
@@ -45,42 +55,35 @@ export function NodeEditDialog({ node, onUpdateNode, onClose }: NodeEditDialogPr
   }
 
   return (
-    <Dialog open={node !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar nó</DialogTitle>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <label htmlFor="node-title" className="text-xs font-medium text-muted-foreground">
+          Título
+        </label>
+        <Input
+          ref={inputRef}
+          id="node-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleTitleSubmit}
+          autoFocus
+        />
+      </div>
 
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="node-title" className="text-xs font-medium text-muted-foreground">
-              Título
-            </label>
-            <Input
-              ref={inputRef}
-              id="node-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={handleTitleSubmit}
-            />
-          </div>
+      <ColorSwatchGrid
+        label="Cor de fundo"
+        colors={BG_PALETTE}
+        value={node.bgColor}
+        onSelect={(color) => onUpdateNode({ bgColor: color })}
+      />
 
-          <ColorSwatchGrid
-            label="Cor de fundo"
-            colors={BG_PALETTE}
-            value={node?.bgColor ?? null}
-            onSelect={(color) => onUpdateNode({ bgColor: color })}
-          />
-
-          <ColorSwatchGrid
-            label="Cor de texto"
-            colors={TEXT_PALETTE}
-            value={node?.textColor ?? null}
-            onSelect={(color) => onUpdateNode({ textColor: color })}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+      <ColorSwatchGrid
+        label="Cor de texto"
+        colors={TEXT_PALETTE}
+        value={node.textColor}
+        onSelect={(color) => onUpdateNode({ textColor: color })}
+      />
+    </div>
   );
 }

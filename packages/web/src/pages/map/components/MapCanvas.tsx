@@ -5,7 +5,8 @@ import type { Node, Edge } from '@xyflow/react';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
-import type { NodeDto } from '@mindmap/shared';
+import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
+import { NodeEditDialog } from './NodeEditDialog.js';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
 import { useLayoutedTree } from '@/lib/useLayoutedTree.js';
 import { MindNode } from './MindNode.js';
@@ -23,6 +24,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NodeDto | null>(null);
+  const [editDialogNodeId, setEditDialogNodeId] = useState<string | null>(null);
   const isMutating = useIsMutating();
 
   const { mutate: createNode } = useCreateNode({
@@ -76,6 +78,19 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [createNode, mapId],
   );
 
+  const editDialogNode = useMemo(
+    () => (editDialogNodeId ? data?.nodes.find((n) => n.id === editDialogNodeId) ?? null : null),
+    [editDialogNodeId, data],
+  );
+
+  const handleDialogUpdate = useCallback(
+    (fields: UpdateNodeBody) => {
+      if (!editDialogNodeId) return;
+      updateNode({ id: editDialogNodeId, mapId, body: fields });
+    },
+    [updateNode, editDialogNodeId, mapId],
+  );
+
   const tree = useMemo(
     () => (data ? buildTree(data.nodes) : null),
     [data],
@@ -114,7 +129,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           onAddChild: () => handleAddChild(nodeDto.id),
           onDelete: () => handleDelete(nodeDto),
           onToggleCollapse: () => handleToggleCollapse(nodeDto.id),
-          onOpenEditDialog: () => {},
+          onOpenEditDialog: () => setEditDialogNodeId(nodeDto.id),
         };
         return {
           id: p.id,
@@ -202,6 +217,11 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   return (
     <>
+    <NodeEditDialog
+      node={editDialogNode}
+      onUpdateNode={handleDialogUpdate}
+      onClose={() => setEditDialogNodeId(null)}
+    />
     <ConfirmDialog
       open={!!deleteTarget}
       title="Excluir nó"
