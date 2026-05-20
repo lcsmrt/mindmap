@@ -92,10 +92,6 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
           throw new ApiError(400, 'Parent and node must belong to the same map');
         }
 
-        if (newParentId === id) {
-          throw new ApiError(400, 'Cannot move node into itself or its descendant');
-        }
-
         const descendants = await tx.$queryRaw<{ id: string }[]>`
           WITH RECURSIVE descendants AS (
             SELECT id FROM "Node" WHERE id = ${id}
