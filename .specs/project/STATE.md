@@ -1,7 +1,7 @@
 # State
 
-**Last Updated:** 2026-05-19
-**Current Work:** M4 implementado (T1–T9). Pendente review independente (AD-013) antes de marcar concluído.
+**Last Updated:** 2026-05-20
+**Current Work:** M5 implementado (T1–T7). Pendente review independente (AD-013) antes de marcar concluído.
 
 ---
 
