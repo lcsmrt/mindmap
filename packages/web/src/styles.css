@@ -1,8 +1,15 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Geist Variable", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: var(--font-sans);
   --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --radius: 0.625rem;
 
   --color-background: #1a1a1a;
   --color-foreground: #e8e6e3;
@@ -42,6 +49,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    @apply border-border outline-ring/50;
   }
 
   body {
@@ -50,6 +58,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    @apply bg-background text-foreground;
   }
 
   code,
@@ -57,5 +66,8 @@
   kbd,
   samp {
     font-family: var(--font-mono);
+  }
+  html {
+    @apply font-sans;
   }
 }
