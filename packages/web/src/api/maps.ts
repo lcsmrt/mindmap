@@ -6,18 +6,7 @@ import type {
   UpdateMapBody,
 } from '@mindmap/shared';
 import type { QueryOptions, MutationOptions } from './types.js';
-
-// --- API functions ---
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `HTTP ${res.status}`);
-  }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
-}
+import { request } from './_request.js';
 
 async function fetchMaps(): Promise<MapListResponse> {
   return request<MapListResponse>('/api/maps');

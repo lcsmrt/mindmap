@@ -7,16 +7,7 @@ import type {
   MoveNodeBody,
 } from '@mindmap/shared';
 import type { QueryOptions, MutationOptions } from './types.js';
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `HTTP ${res.status}`);
-  }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
-}
+import { request } from './_request.js';
 
 async function fetchNodes(mapId: string): Promise<NodeListResponse> {
   return request<NodeListResponse>(`/api/maps/${mapId}/nodes`);
