@@ -177,7 +177,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         return;
       }
 
-      moveNode({ id: draggedNode.id, body: { parentId: target.id, index: Number.MAX_SAFE_INTEGER } });
+      moveNode({ id: draggedNode.id, mapId, body: { parentId: target.id, index: Number.MAX_SAFE_INTEGER } });
     },
     [data, nodes, moveNode, queryClient, mapId],
   );

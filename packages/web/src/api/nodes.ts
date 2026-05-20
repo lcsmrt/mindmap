@@ -192,15 +192,38 @@ export const useMoveNode = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: MoveNodeBody }) =>
+    mutationFn: ({ id, body }: { id: string; mapId: string; body: MoveNodeBody }) =>
       moveNodeRequest(id, body),
     retry: shouldRetry,
     retryDelay,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['nodes', data.mapId] });
+    onMutate: async ({ id, mapId, body }) => {
+      await queryClient.cancelQueries({ queryKey: ['nodes', mapId] });
+      const snapshot = queryClient.getQueryData<NodeListResponse>(['nodes', mapId]);
+      if (snapshot) {
+        const siblings = snapshot.nodes.filter(
+          (n) => n.parentId === body.parentId && n.id !== id,
+        );
+        const newSortOrder = siblings.length > 0
+          ? Math.max(...siblings.map((n) => n.sortOrder)) + 1
+          : 0;
+        queryClient.setQueryData<NodeListResponse>(['nodes', mapId], {
+          nodes: snapshot.nodes.map((n) =>
+            n.id === id
+              ? { ...n, parentId: body.parentId, sortOrder: newSortOrder }
+              : n,
+          ),
+        });
+      }
+      return { snapshot };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, { mapId }, context) => {
+      if (context?.snapshot) {
+        queryClient.setQueryData(['nodes', mapId], context.snapshot);
+      }
       toast({ variant: 'error', description: `Erro ao mover nó: ${error.message}` });
+    },
+    onSettled: (_data, _error, { mapId }) => {
+      queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
     },
   });
 };
