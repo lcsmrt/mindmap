@@ -2,10 +2,8 @@ import '@xyflow/react/dist/style.css';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
-import { X } from 'lucide-react';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto } from '@mindmap/shared';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
@@ -24,17 +22,13 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const { data, isLoading, isError } = useNodes(mapId);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [canvasError, setCanvasError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NodeDto | null>(null);
 
   const { mutate: createNode } = useCreateNode({
     onSuccess: (newNode) => setEditingId(newNode.id),
-    onError: (err) => setCanvasError(err.message),
   });
 
-  const { mutate: updateNode } = useUpdateNode({
-    onError: (err) => setCanvasError(err.message),
-  });
+  const { mutate: updateNode } = useUpdateNode();
 
   const handleStartEdit = useCallback((id: string) => setEditingId(id), []);
 
@@ -43,7 +37,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       setEditingId(null);
       const trimmed = title.trim();
       if (!trimmed) return;
-      setCanvasError(null);
       updateNode({ id, body: { title: trimmed } });
     },
     [updateNode],
@@ -63,29 +56,20 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     });
   }, []);
 
-  const { mutate: deleteNode } = useDeleteNode({
-    onError: (err) => setCanvasError(err.message),
-  });
+  const { mutate: deleteNode } = useDeleteNode();
 
   const handleDelete = useCallback((node: NodeDto) => setDeleteTarget(node), []);
 
-  const { mutate: moveNode } = useMoveNode({
-    onError: (err) => {
-      setCanvasError(err.message);
-      queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
-    },
-  });
+  const { mutate: moveNode } = useMoveNode();
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
-    setCanvasError(null);
     deleteNode({ id: deleteTarget.id, mapId });
     setDeleteTarget(null);
   }, [deleteNode, deleteTarget, mapId]);
 
   const handleAddChild = useCallback(
     (parentId: string) => {
-      setCanvasError(null);
       createNode({ mapId, parentId, title: 'Novo nó' });
     },
     [createNode, mapId],
@@ -176,7 +160,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       const dx = draggedNode.position.x;
       const dy = draggedNode.position.y;
 
-      // Detecta alvo por overlap do centro do nó arrastado com a bounding box de outro nó
       const target = nodes.find((n) => {
         if (n.id === draggedNode.id) return false;
         const tw = n.measured?.width ?? 180;
@@ -194,7 +177,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         return;
       }
 
-      setCanvasError(null);
       moveNode({ id: draggedNode.id, body: { parentId: target.id, index: Number.MAX_SAFE_INTEGER } });
     },
     [data, nodes, moveNode, queryClient, mapId],
@@ -228,12 +210,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       onCancel={() => setDeleteTarget(null)}
     />
     <div className="flex-1 h-full relative">
-      {canvasError && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-md bg-destructive/90 px-4 py-2 text-sm text-white shadow">
-          {canvasError}
-          <Button variant="ghost" className="ml-3 h-auto p-0 text-white hover:text-white/80" onClick={() => setCanvasError(null)}><X className="w-4 h-4" /></Button>
-        </div>
-      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}

@@ -6,8 +6,19 @@ import type {
   UpdateNodeBody,
   MoveNodeBody,
 } from '@mindmap/shared';
-import type { QueryOptions, MutationOptions } from './types.js';
-import { request } from './_request.js';
+import type { QueryOptions } from './types.js';
+import { ApiError, request } from './_request.js';
+import { useToast } from '@/components/ui/toast.js';
+
+function shouldRetry(failureCount: number, error: Error): boolean {
+  if (failureCount >= 3) return false;
+  if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false;
+  return true;
+}
+
+function retryDelay(attempt: number): number {
+  return Math.min(1000 * 2 ** attempt, 4000);
+}
 
 async function fetchNodes(mapId: string): Promise<NodeListResponse> {
   return request<NodeListResponse>(`/api/maps/${mapId}/nodes`);
@@ -49,58 +60,69 @@ export const useNodes = (mapId?: string, options?: QueryOptions<NodeListResponse
     ...options,
   });
 
-export const useCreateNode = (options?: MutationOptions<NodeDto, CreateNodeBody>) => {
+export const useCreateNode = (options?: { onSuccess?: (data: NodeDto) => void }) => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   return useMutation({
     mutationFn: createNodeRequest,
-    onSuccess: (data, variables) => {
+    retry: shouldRetry,
+    retryDelay,
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', data.mapId] });
-      options?.onSuccess?.(data, variables);
+      options?.onSuccess?.(data);
     },
-    onError: (error) => options?.onError?.(error),
+    onError: (error: Error) => {
+      toast({ variant: 'error', description: `Erro ao criar nó: ${error.message}` });
+    },
   });
 };
 
-export const useUpdateNode = (
-  options?: MutationOptions<NodeDto, { id: string; body: UpdateNodeBody }>,
-) => {
+export const useUpdateNode = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateNodeBody }) =>
       updateNodeRequest(id, body),
-    onSuccess: (data, variables) => {
+    retry: shouldRetry,
+    retryDelay,
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', data.mapId] });
-      options?.onSuccess?.(data, variables);
     },
-    onError: (error) => options?.onError?.(error),
+    onError: (error: Error) => {
+      toast({ variant: 'error', description: `Erro ao renomear nó: ${error.message}` });
+    },
   });
 };
 
-export const useDeleteNode = (
-  options?: MutationOptions<void, { id: string; mapId: string }>,
-) => {
+export const useDeleteNode = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   return useMutation({
     mutationFn: ({ id }: { id: string; mapId: string }) => deleteNodeRequest(id),
-    onSuccess: (data, variables) => {
+    retry: shouldRetry,
+    retryDelay,
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', variables.mapId] });
-      options?.onSuccess?.(data, variables);
     },
-    onError: (error) => options?.onError?.(error),
+    onError: (error: Error) => {
+      toast({ variant: 'error', description: `Erro ao excluir nó: ${error.message}` });
+    },
   });
 };
 
-export const useMoveNode = (
-  options?: MutationOptions<NodeDto, { id: string; body: MoveNodeBody }>,
-) => {
+export const useMoveNode = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: MoveNodeBody }) =>
       moveNodeRequest(id, body),
-    onSuccess: (data, variables) => {
+    retry: shouldRetry,
+    retryDelay,
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', data.mapId] });
-      options?.onSuccess?.(data, variables);
     },
-    onError: (error) => options?.onError?.(error),
+    onError: (error: Error) => {
+      toast({ variant: 'error', description: `Erro ao mover nó: ${error.message}` });
+    },
   });
 };
