@@ -67,12 +67,46 @@ export const useCreateNode = (options?: { onSuccess?: (data: NodeDto) => void })
     mutationFn: createNodeRequest,
     retry: shouldRetry,
     retryDelay,
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({ queryKey: ['nodes', body.mapId] });
+      const snapshot = queryClient.getQueryData<NodeListResponse>(['nodes', body.mapId]);
+      if (snapshot) {
+        const siblings = snapshot.nodes.filter((n) => n.parentId === body.parentId);
+        const maxSort = siblings.length > 0
+          ? Math.max(...siblings.map((n) => n.sortOrder))
+          : -1;
+        const tempNode: NodeDto = {
+          id: `temp-${crypto.randomUUID()}`,
+          mapId: body.mapId,
+          parentId: body.parentId,
+          title: body.title,
+          sortOrder: maxSort + 1,
+          bgColor: null,
+          textColor: null,
+          status: null,
+          assignee: null,
+          isCritical: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        queryClient.setQueryData<NodeListResponse>(['nodes', body.mapId], {
+          nodes: [...snapshot.nodes, tempNode],
+        });
+      }
+      return { snapshot };
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', data.mapId] });
       options?.onSuccess?.(data);
     },
-    onError: (error: Error) => {
+    onError: (error: Error, body, context) => {
+      if (context?.snapshot) {
+        queryClient.setQueryData(['nodes', body.mapId], context.snapshot);
+      }
       toast({ variant: 'error', description: `Erro ao criar nó: ${error.message}` });
+    },
+    onSettled: (_data, _error, body) => {
+      queryClient.invalidateQueries({ queryKey: ['nodes', body.mapId] });
     },
   });
 };
@@ -81,18 +115,48 @@ export const useUpdateNode = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateNodeBody }) =>
+    mutationFn: ({ id, body }: { id: string; mapId: string; body: UpdateNodeBody }) =>
       updateNodeRequest(id, body),
     retry: shouldRetry,
     retryDelay,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['nodes', data.mapId] });
+    onMutate: async ({ id, mapId, body }) => {
+      await queryClient.cancelQueries({ queryKey: ['nodes', mapId] });
+      const snapshot = queryClient.getQueryData<NodeListResponse>(['nodes', mapId]);
+      if (snapshot) {
+        queryClient.setQueryData<NodeListResponse>(['nodes', mapId], {
+          nodes: snapshot.nodes.map((n) =>
+            n.id === id ? { ...n, title: body.title } : n,
+          ),
+        });
+      }
+      return { snapshot };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, { mapId }, context) => {
+      if (context?.snapshot) {
+        queryClient.setQueryData(['nodes', mapId], context.snapshot);
+      }
       toast({ variant: 'error', description: `Erro ao renomear nó: ${error.message}` });
+    },
+    onSettled: (_data, _error, { mapId }) => {
+      queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
     },
   });
 };
+
+function collectDescendants(nodeId: string, nodes: NodeDto[]): Set<string> {
+  const ids = new Set<string>([nodeId]);
+  const queue = [nodeId];
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    for (const n of nodes) {
+      if (n.parentId === current && !ids.has(n.id)) {
+        ids.add(n.id);
+        queue.push(n.id);
+      }
+    }
+  }
+  return ids;
+}
 
 export const useDeleteNode = () => {
   const queryClient = useQueryClient();
@@ -101,11 +165,25 @@ export const useDeleteNode = () => {
     mutationFn: ({ id }: { id: string; mapId: string }) => deleteNodeRequest(id),
     retry: shouldRetry,
     retryDelay,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['nodes', variables.mapId] });
+    onMutate: async ({ id, mapId }) => {
+      await queryClient.cancelQueries({ queryKey: ['nodes', mapId] });
+      const snapshot = queryClient.getQueryData<NodeListResponse>(['nodes', mapId]);
+      if (snapshot) {
+        const toRemove = collectDescendants(id, snapshot.nodes);
+        queryClient.setQueryData<NodeListResponse>(['nodes', mapId], {
+          nodes: snapshot.nodes.filter((n) => !toRemove.has(n.id)),
+        });
+      }
+      return { snapshot };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, { mapId }, context) => {
+      if (context?.snapshot) {
+        queryClient.setQueryData(['nodes', mapId], context.snapshot);
+      }
       toast({ variant: 'error', description: `Erro ao excluir nó: ${error.message}` });
+    },
+    onSettled: (_data, _error, { mapId }) => {
+      queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
     },
   });
 };

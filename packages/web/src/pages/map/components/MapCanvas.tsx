@@ -37,7 +37,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       setEditingId(null);
       const trimmed = title.trim();
       if (!trimmed) return;
-      updateNode({ id, body: { title: trimmed } });
+      updateNode({ id, mapId, body: { title: trimmed } });
     },
     [updateNode],
   );
