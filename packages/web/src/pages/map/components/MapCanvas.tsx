@@ -40,7 +40,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       if (!trimmed) return;
       updateNode({ id, mapId, body: { title: trimmed } });
     },
-    [updateNode],
+    [updateNode, mapId],
   );
 
   const handleCancelEdit = useCallback(() => setEditingId(null), []);
