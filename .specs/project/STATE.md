@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-05-19
-**Current Work:** Cleanup pré-M4 concluído (shadcn/ui v2, hideAttribution, request<T>, código morto). Pronto para M4.
+**Current Work:** M4 implementado (T1–T9). Pendente review independente (AD-013) antes de marcar concluído.
 
 ---
 
@@ -144,11 +144,11 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 - [ ] UI exata dos indicadores de tarefa no canvas — refinar iterativamente durante uso (§7 do spec)
 - [ ] Reorder entre irmãos do mesmo pai via drag (AD-011) — só drag-to-reparent em M3
 - [ ] Atalhos de teclado no canvas (Tab=add filho, Delete=excluir, etc.) — M3 só tem Enter/Escape no rename
-- [ ] Optimistic updates explícitos em mutations de Node (em vez de invalidate+refetch)
+- [x] ~~Optimistic updates explícitos em mutations de Node~~ — implementado em M4 (T3–T6)
 - [ ] Restauração de expand/collapse entre sessões (AD-004 já marcou como candidato se incomodar)
 - [ ] Renumeração de `sortOrder` no DELETE para fechar gaps (atualmente tolerados)
 - [ ] Feedback visual de drop target durante drag (highlight do nó alvo) — hoje só há snap-back silencioso quando o drop é inválido
-- [ ] Toast/notificação melhor para erros do canvas — barra sticky atual sobrescreve em mutações sequenciais
+- [x] ~~Toast/notificação melhor para erros do canvas~~ — implementado em M4 (T1–T2, toast queue substitui banner)
 - [x] ~~Migrar shadcn/ui de v1 (Radix) para v2/Base UI~~ — migrado em Q-005
 
 ---
