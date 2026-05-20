@@ -6,16 +6,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Known Bugs
 
-**Root ("Central") não é renomeável via UI (relato do usuário):**
-
-- Symptoms: Usuário não consegue renomear o nó central pela UI.
-- Trigger: Não confirmado. Único trigger de rename é duplo-clique no nó, sem affordance visível (diferente de "+" e "×", que viraram botões fixos no commit `92a4c0e`).
-- Files: `packages/web/src/components/canvas/MindNode.tsx:58` (handler de dblclick), `packages/web/src/components/canvas/MindNode.tsx:83` (input com `defaultValue`), `packages/web/src/components/canvas/MapCanvas.tsx:158-162` (sync de estado, ver Fragile Areas).
-- Workaround: `PATCH /api/nodes/:id` direto via API funciona — código não bloqueia rename do root.
-- Root cause: Duas hipóteses, precisam repro em browser:
-  1. **Affordance:** usuário não sabe que duplo-clique edita.
-  2. **Re-mount silencioso:** o sync `setNodes(rfNodes)` (ver Fragile Areas) re-monta o MindNode durante a edição, recriando o input com `defaultValue=node.title` e perdendo o que foi digitado.
-- Blocked by: Reprodução em browser com DevTools (verificar se o dblclick dispara `setEditingId`, se o input aparece, se mantém foco/valor durante digitação).
+~~**Root ("Central") não é renomeável via UI (relato do usuário):**~~ — resolvido em Q-003: clique no texto do nó dispara edição via `onStartEdit`, sem depender de `onNodeDoubleClick`.
 
 ~~**Lint quebra Success Criteria de M3:**~~ — resolvido em Q-001.
 
@@ -23,17 +14,16 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 **Sincronização entre `rfNodes` derivado e `useNodesState` do React Flow:**
 
-- Files: `packages/web/src/components/canvas/MapCanvas.tsx:158-162`
+- Files: `packages/web/src/pages/map/components/MapCanvas.tsx:155-159`
 - Why fragile: Há dois "donos" do mesmo estado — o estado interno de `useNodesState` e o `rfNodes` memoizado. Um `useEffect` força `setNodes(rfNodes)` toda vez que `rfNodes` muda (que é toda vez que `editingId`, `collapsedIds`, `data` ou `positioned` mudam). Cada sync pode interferir com o que o React Flow está fazendo internamente (drag em andamento, foco no input do MindNode, seleção).
-- Common failures: Os 4 commits `fix(web): ...` recentes (`b0f1c85`, `92a4c0e`, `8df0e6a`, `6967671`) giram em torno desse padrão. Antes do `8df0e6a` o canvas nem refletia o resultado do worker. Forte candidato à co-causa do "root não edita".
+- Common failures: Os 4 commits `fix(web): ...` recentes (`b0f1c85`, `92a4c0e`, `8df0e6a`, `6967671`) giram em torno desse padrão.
 - Safe modification: Trocar por modo controlado — passar `nodes={rfNodes}` direto sem `useNodesState`, capturando drag intermediário num `useRef`. Ou usar `useNodesState` como única fonte de verdade e aplicar mudanças derivadas (`editingId`, `collapsedIds`) via `setNodes(prev => ...)` em vez de reatribuição.
 - Test coverage: Nenhum — UI interativa não tem testes (AD-007). Regressões só aparecem em uso manual.
 
 **Input de rename inline usa `defaultValue` (uncontrolled):**
 
-- Files: `packages/web/src/components/canvas/MindNode.tsx:83`
+- Files: `packages/web/src/pages/map/components/MindNode.tsx:92`
 - Why fragile: Se o MindNode re-monta durante a edição (provável durante o sync acima), o input recria com `defaultValue=node.title` e o que o usuário digitou é perdido silenciosamente.
-- Common failures: Provável co-causa de "root não edita".
 - Safe modification: Subir o valor para state local (`useState` no MindNode) com handler `onChange`, e usar controlled input.
 - Test coverage: Nenhum.
 
@@ -61,4 +51,4 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ---
 
-_Concerns audit: 2026-05-18_
+_Concerns audit: 2026-05-19_
