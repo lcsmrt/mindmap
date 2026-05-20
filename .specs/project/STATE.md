@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-05-19
-**Current Work:** B-001 resolvido, Playwright configurado, bug de edição do nó raiz corrigido, banco de testes isolado. Pronto para M4.
+**Current Work:** Cleanup pré-M4 concluído (shadcn/ui v2, hideAttribution, request<T>, código morto). Pronto para M4.
 
 ---
 
@@ -133,6 +133,7 @@
 | Q-002 | Setup Playwright (AD-014): config, `pnpm test:e2e`, pasta `e2e/`, `vitest.config.ts` | 2026-05-19 | 632e58c | concluído |
 | Q-003 | Nó raiz usa título do mapa + clique-para-editar no texto + banco de testes isolado | 2026-05-19 | 018885f | concluído |
 | Q-004 | Refactor(web): colocação de componentes por página + reuso do design system | 2026-05-19 | 8868233 | concluído |
+| Q-005 | Cleanup pré-M4: shadcn/ui v2 (Base UI), remove hideAttribution, extrai request<T>, remove código morto | 2026-05-19 | — | concluído |
 
 ---
 
@@ -148,12 +149,13 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 - [ ] Renumeração de `sortOrder` no DELETE para fechar gaps (atualmente tolerados)
 - [ ] Feedback visual de drop target durante drag (highlight do nó alvo) — hoje só há snap-back silencioso quando o drop é inválido
 - [ ] Toast/notificação melhor para erros do canvas — barra sticky atual sobrescreve em mutações sequenciais
+- [x] ~~Migrar shadcn/ui de v1 (Radix) para v2/Base UI~~ — migrado em Q-005
 
 ---
 
 ## Todos
 
-- [ ] Decidir o que fazer com `proOptions={{ hideAttribution: true }}` em `packages/web/src/pages/map/components/MapCanvas.tsx` — viola termos do `@xyflow/react` MIT (ver `.specs/codebase/CONCERNS.md` → Dependencies at Risk). Opções: manter atribuição visível, assinar React Flow Pro, ou trocar de lib.
+- [x] ~~Decidir o que fazer com `proOptions={{ hideAttribution: true }}`~~ — removido em Q-005, atribuição visível.
 - [x] ~~Bug de edição no canvas~~ — resolvido em Q-003: clique no texto do nó dispara edição diretamente via `onStartEdit`, sem depender do `onNodeDoubleClick` do React Flow.
 
 ---

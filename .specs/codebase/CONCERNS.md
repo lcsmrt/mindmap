@@ -1,6 +1,6 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-05-18
+**Analysis Date:** 2026-05-19
 
 Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resolvidos ou novos forem descobertos.
 
@@ -17,18 +17,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
   2. **Re-mount silencioso:** o sync `setNodes(rfNodes)` (ver Fragile Areas) re-monta o MindNode durante a edição, recriando o input com `defaultValue=node.title` e perdendo o que foi digitado.
 - Blocked by: Reprodução em browser com DevTools (verificar se o dblclick dispara `setEditingId`, se o input aparece, se mantém foco/valor durante digitação).
 
-**Lint quebra Success Criteria de M3:**
-
-- Symptoms: `pnpm lint` retorna exit 1.
-- Trigger: `pnpm lint` ou `pnpm -r run lint`.
-- Files:
-  - `packages/web/src/lib/useLayoutedTree.ts:52` — erro `react-hooks/set-state-in-effect` (`setWorkerPositioned(null)` síncrono em effect body).
-  - `packages/web/src/components/canvas/MapCanvas.tsx:102` — warning `allNodeIds` não usado.
-  - `packages/web/src/components/canvas/MapCanvas.tsx:144` — warning `useMemo` omite handlers das deps (`handleAddChild`, `handleCancelEdit`, `handleDelete`, `handleStartEdit`, `handleSubmitEdit`, `handleToggleCollapse`).
-  - `packages/web/src/lib/tree.test.ts:74` — warning `edges` não usado.
-- Workaround: Nenhum.
-- Root cause: Implementação aceita pelo executor sem rodar `pnpm lint` antes de marcar tasks como done.
-- Blocked by: Decidir entre derivar o reset do worker via `useMemo`/key, mover para handler vs aceitar regra com `// eslint-disable-next-line` justificado. Detalhes técnicos: o reset existe para invalidar resultado obsoleto do worker quando inputs mudam.
+~~**Lint quebra Success Criteria de M3:**~~ — resolvido em Q-001.
 
 ## Fragile Areas
 
@@ -60,35 +49,15 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Tech Debt
 
-**Helper `request<T>` duplicado entre módulos de API web:**
+~~**Helper `request<T>` duplicado entre módulos de API web:**~~ — resolvido: extraído para `packages/web/src/api/_request.ts`.
 
-- Issue: Função `request<T>` aparece em `packages/web/src/api/nodes.ts:11-19` e em `packages/web/src/api/maps.ts` com a mesma implementação.
-- Why: `tasks.md` de M3 deu a opção "extrair para `_request.ts` ou redeclarar"; foi escolhido redeclarar para reduzir blast radius da task T8.
-- Impact: Próximas mutations (de Node ou outra entidade) tendem a duplicar de novo. Mudança no contrato de erro força edição em N lugares.
-- Fix approach: Extrair para `packages/web/src/api/_request.ts` e reimportar em ambos os módulos.
+~~**Verificação anti-ciclo redundante no `move`:**~~ — resolvido: guard `if (newParentId === id)` removido; CTE recursivo já cobre.
 
-**Verificação anti-ciclo redundante no `move`:**
-
-- Issue: `if (newParentId === id) throw new ApiError(400, '...')` é coberto pelo CTE recursivo logo abaixo (o id é seu próprio descendente no anchor do CTE).
-- Files: `packages/api/src/routes/nodes.ts:95-97`
-- Impact: Código morto, confunde leitura.
-- Fix approach: Remover o `if` e deixar só o CTE.
-
-**Código morto `allNodeIds`:**
-
-- Issue: `allNodeIds` é calculado num `useMemo` e nunca lido.
-- Files: `packages/web/src/components/canvas/MapCanvas.tsx:102-105`
-- Why: Sobra de plano de pré-validar drop client-side (que ficou para o backend).
-- Impact: Warning de ESLint; ruído de leitura.
-- Fix approach: Remover.
+~~**Código morto `allNodeIds`:**~~ — resolvido em Q-004.
 
 ## Dependencies at Risk
 
-**`@xyflow/react` com `hideAttribution: true` exige licença paga:**
-
-- Risk: Os termos de uso do React Flow (versão MIT) exigem assinatura React Flow Pro para esconder a atribuição. `proOptions={{ hideAttribution: true }}` em `packages/web/src/components/canvas/MapCanvas.tsx:238` viola os termos se houver deploy comercial/público.
-- Impact: Para ferramenta single-user privada provavelmente irrelevante. Qualquer publicação online é problema de licença.
-- Migration plan: (a) manter atribuição visível, (b) assinar React Flow Pro, ou (c) trocar de lib. Decisão registrada como Todo no STATE.md.
+~~**`@xyflow/react` com `hideAttribution: true` exige licença paga:**~~ — resolvido: `proOptions` removido, atribuição visível.
 
 ---
 
