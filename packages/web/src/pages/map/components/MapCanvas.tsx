@@ -242,7 +242,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         onEdgesChange={onEdgesChange}
         onNodeDoubleClick={handleNodeDoubleClick}
         onNodeDragStop={handleNodeDragStop}
-        proOptions={{ hideAttribution: true }}
         fitView
         panOnDrag
         zoomOnScroll
