@@ -43,15 +43,28 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
   app.patch('/:id', {
     schema: {
       params: IdParam,
-      body: z.object({ title: z.string().trim().min(1) }),
+      body: z.object({
+        title: z.string().trim().min(1).optional(),
+        bgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+        textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+      }).refine(
+        (d) => d.title !== undefined || d.bgColor !== undefined || d.textColor !== undefined,
+        { message: 'At least one field must be provided' },
+      ),
     },
     handler: async (req) => {
       const existing = await prisma.node.findUnique({ where: { id: req.params.id } });
       if (!existing) throw new NotFoundError('Node not found');
 
+      const { title, bgColor, textColor } = req.body;
+      const data: Record<string, unknown> = {};
+      if (title !== undefined) data.title = title;
+      if (bgColor !== undefined) data.bgColor = bgColor;
+      if (textColor !== undefined) data.textColor = textColor;
+
       const updated = await prisma.node.update({
         where: { id: req.params.id },
-        data: { title: req.body.title },
+        data,
       });
       return toNodeDto(updated);
     },

@@ -151,6 +151,112 @@ describe('Nodes API', () => {
       });
       expect(res.statusCode).toBe(404);
     });
+
+    it('PATCH com apenas bgColor retorna 200 com bgColor atualizado e título inalterado', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Original' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { bgColor: '#fecaca' },
+      });
+      expect(patch.statusCode).toBe(200);
+      const body = patch.json<{ title: string; bgColor: string | null }>();
+      expect(body.bgColor).toBe('#fecaca');
+      expect(body.title).toBe('Original');
+    });
+
+    it('PATCH com bgColor null retorna 200 com bgColor null (reset)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { bgColor: '#fecaca' },
+      });
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { bgColor: null },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ bgColor: string | null }>().bgColor).toBeNull();
+    });
+
+    it('PATCH com apenas textColor retorna 200 com textColor atualizado', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { textColor: '#dc2626' },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ textColor: string | null }>().textColor).toBe('#dc2626');
+    });
+
+    it('PATCH com body vazio retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: {},
+      });
+      expect(patch.statusCode).toBe(400);
+    });
+
+    it('PATCH com bgColor inválido retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { bgColor: 'invalid' },
+      });
+      expect(patch.statusCode).toBe(400);
+    });
   });
 
   describe('DELETE /nodes/:id', () => {
