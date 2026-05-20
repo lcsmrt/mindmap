@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { ChevronRight, ChevronDown, Plus, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, X, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import type { MindNodeData } from './types.js';
@@ -22,6 +22,7 @@ export function MindNode({ data }: MindNodeProps) {
     onAddChild,
     onDelete,
     onToggleCollapse,
+    onOpenEditDialog,
   } = data;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +64,11 @@ export function MindNode({ data }: MindNodeProps) {
   return (
     <div
       className="relative flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60"
-      style={{ minWidth: 160 }}
+      style={{
+        minWidth: 160,
+        backgroundColor: node.bgColor ?? undefined,
+        color: node.textColor ?? undefined,
+      }}
     >
       <Handle
         type="target"
@@ -121,6 +126,19 @@ export function MindNode({ data }: MindNodeProps) {
           title="Adicionar filho"
         >
           <Plus className="w-3 h-3" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenEditDialog();
+          }}
+          className="text-muted-foreground hover:text-foreground text-sm w-5 h-5"
+          title="Editar nó"
+        >
+          <Palette className="w-3 h-3" />
         </Button>
 
         {!isRoot && (

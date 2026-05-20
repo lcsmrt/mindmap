@@ -114,6 +114,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           onAddChild: () => handleAddChild(nodeDto.id),
           onDelete: () => handleDelete(nodeDto),
           onToggleCollapse: () => handleToggleCollapse(nodeDto.id),
+          onOpenEditDialog: () => {},
         };
         return {
           id: p.id,

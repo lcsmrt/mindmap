@@ -12,4 +12,5 @@ export interface MindNodeData extends Record<string, unknown> {
   onDelete: () => void;
   onStartEdit: () => void;
   onToggleCollapse: () => void;
+  onOpenEditDialog: () => void;
 }
