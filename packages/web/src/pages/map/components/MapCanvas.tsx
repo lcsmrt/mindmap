@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto } from '@mindmap/shared';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
@@ -23,6 +23,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NodeDto | null>(null);
+  const isMutating = useIsMutating();
 
   const { mutate: createNode } = useCreateNode({
     onSuccess: (newNode) => setEditingId(newNode.id),
@@ -210,6 +211,11 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       onCancel={() => setDeleteTarget(null)}
     />
     <div className="flex-1 h-full relative">
+      {isMutating > 0 && (
+        <div className="absolute top-3 right-3 z-10 rounded-md bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm transition-opacity duration-200">
+          Salvando…
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
