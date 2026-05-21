@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { ChevronRight, ChevronDown, Plus, X, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
@@ -25,19 +25,22 @@ export function MindNode({ data }: MindNodeProps) {
     onOpenEditDialog,
   } = data;
 
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!isEditing) return;
-    const raf = requestAnimationFrame(() => {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
+  const focusInput = useCallback((el: HTMLInputElement | null) => {
+    if (!el) return;
+    el.focus();
+    el.select();
+    requestAnimationFrame(() => {
+      if (!el.isConnected) return;
+      el.focus();
+      el.select();
+      setTimeout(() => {
+        if (el.isConnected && el.ownerDocument.activeElement !== el) {
+          el.focus();
+          el.select();
+        }
       }, 0);
-      return () => clearTimeout(timer);
     });
-    return () => cancelAnimationFrame(raf);
-  }, [isEditing]);
+  }, []);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
@@ -93,17 +96,17 @@ export function MindNode({ data }: MindNodeProps) {
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <Input
-            ref={inputRef}
+            ref={focusInput}
             defaultValue={node.title}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
             onClick={(e) => e.stopPropagation()}
             className="w-full bg-transparent border-none shadow-none text-sm text-foreground h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-            autoFocus
           />
         ) : (
           <span
             className="text-sm truncate block cursor-text"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onStartEdit();
