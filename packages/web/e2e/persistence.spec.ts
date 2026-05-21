@@ -133,6 +133,47 @@ test.describe('persistência e restauração (M4)', () => {
     await restoreInput.press('Enter');
   });
 
+  test('mover nó para outro pai persiste após reload', async ({ page }) => {
+    await openFirstMap(page);
+
+    const addBtn = page.locator('.react-flow__node').first().getByTitle('Adicionar filho');
+    await addBtn.click();
+    await page.waitForTimeout(500);
+    await addBtn.click();
+    await page.waitForTimeout(1_000);
+
+    const mapId = page.url().split('/maps/').pop()!;
+    const res = await page.request.get(`/api/maps/${mapId}/nodes`);
+    const { nodes } = (await res.json()) as {
+      nodes: { id: string; parentId: string | null }[];
+    };
+
+    const root = nodes.find((n) => n.parentId === null)!;
+    const children = nodes.filter((n) => n.parentId === root.id);
+    expect(children.length).toBeGreaterThanOrEqual(2);
+
+    const source = children[0]!;
+    const target = children[children.length - 1]!;
+
+    await page.request.patch(`/api/nodes/${source.id}/move`, {
+      data: { parentId: target.id, index: 0 },
+    });
+
+    await page.reload();
+    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
+
+    const resAfter = await page.request.get(`/api/maps/${mapId}/nodes`);
+    const { nodes: after } = (await resAfter.json()) as {
+      nodes: { id: string; parentId: string | null }[];
+    };
+    const moved = after.find((n) => n.id === source.id)!;
+    expect(moved.parentId).toBe(target.id);
+
+    await page.request.patch(`/api/nodes/${source.id}/move`, {
+      data: { parentId: root.id, index: 0 },
+    });
+  });
+
   test('todos os nós expandidos ao reabrir (AD-004)', async ({ page }) => {
     await openFirstMap(page);
 
