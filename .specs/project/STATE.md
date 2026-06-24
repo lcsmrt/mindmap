@@ -1,7 +1,7 @@
 # State
 
-**Last Updated:** 2026-05-20
-**Current Work:** M5 concluído (T1–T7, 8 commits). Review independente (AD-013) executada em 2026-05-20 — milestone aprovado.
+**Last Updated:** 2026-06-23
+**Current Work:** M6 **executado** (T1–T9, 9 commits atômicos `0dcb547`→`1d9154c`). Gates finais verdes: typecheck ✅, lint ✅, test ✅ (api 42, web 36), e2e ✅ (22 specs, 6 novos M6). **Pendente: Review AD-013** em chat separado antes de marcar "concluído". M5 concluído e aprovado (review AD-013, 2026-05-20).
 
 ---
 
