@@ -8,7 +8,7 @@
 
 - **T1** ✅ `feat(m8): T1 layout bidirecional com split balanceado` (`abc4ad8`) — `computeTreeLayout` reescrito; `useTreeLayout.test.ts` 6→13 testes (raiz centrada, bilateral x<0/x>0, split por peso, filho único→direita, espelhamento, sem sobreposição, edge no centro, bounds bilaterais). Gate quick verde.
 - **T2** ✅ `feat(m8): T2 edges horizontais bidirecionais no canvas` (`2889ac1`) — `LinkVertical`→`LinkHorizontal`. Gate quick verde.
-- **T3** ✅ sem commit de código (nada precisou ajuste). Gate full verde: typecheck ✅, lint ✅, test (api 42, web 48) ✅, **e2e 22/22** ✅ (incl. `persistence.spec.ts:136`, flaky histórico, verde). Diff só frontend (3 arquivos); backend/schema/AD-002 intactos; sem toggle de direção. Smokes de interação cobertos pela suíte e2e.
+- **T3** ✅ `fix(m8): T3 conecta edges aos cards (acessores do LinkHorizontal)` (`5e9fad1`) — smoke visual via screenshot Playwright revelou que o `LinkHorizontal` do visx troca x↔y por padrão (convenção d3-tree), desenhando as edges com eixos invertidos (saíam do centro mas terminavam no vazio). Corrigido sobrescrevendo os acessores `x`/`y` para usar as coordenadas de tela reais. Reconfirmado por screenshot: edges ancoram na borda interna dos cards nos dois lados. Gate full antes do fix: typecheck ✅, lint ✅, test (api 42, web 48) ✅, **e2e 22/22** ✅ (incl. `persistence.spec.ts:136`, flaky histórico, verde). Pós-fix: typecheck ✅, lint ✅. Diff só frontend (3 arquivos); backend/schema/AD-002 intactos; sem toggle de direção.
 
 ---
 
