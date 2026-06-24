@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** nenhum (feature pequena — decisão do usuário 2026-06-24; algoritmo capturado nas "Notas para Design" da spec).
-**Status:** Executado (T1–T3) — pendente review AD-013
+**Status:** Concluído e aprovado (review AD-013, 2026-06-24 — ver STATE.md L-005)
 
 **Resultado da execução (2026-06-24):**
 

@@ -21,7 +21,24 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ~~**`smoke.spec.ts:9` — teste de foco no inline edit falha consistentemente (pré-M5):**~~ — resolvido em Q-007: causa raiz era o componente `Input` (shadcn/ui Base UI) sem `forwardRef` — em React 18, o ref nunca chegava ao `<input>` nativo. Fix: `forwardRef` no Input + ref callback no MindNode com foco imediato + rAF + setTimeout(0) como fallback + `onMouseDown.stopPropagation` no span do título.
 
+## Test Gaps
+
+**`useTreeLayout.test.ts:165-189` — teste "alturas variáveis não se sobrepõem" é vacuoso (review AD-013 de M8):**
+
+- Files: `packages/web/src/lib/useTreeLayout.test.ts:165-189`
+- Symptom: o teste cria a raiz com **2 filhos**; `splitChildren` manda exatamente 1 para cada lado, então cada grupo `sameSide` tem 1 nó e o loop de comparação de sobreposição (linha 183) **nunca executa** — não assere nada. O próprio comentário (linhas 171-172) admite que forçar 2 nós no mesmo lado "não é trivial via API pública".
+- Cobertura faltante: o caso real que importa — irmãos de **alturas diferentes no mesmo lado** sem sobreposição vertical (o que o flextree deve garantir, M8-03) — fica descoberto.
+- Severity: Low — a matemática está correta (verificada manualmente + por reviewer independente); é lacuna de teste, não bug.
+- Fix: usar 3+ filhos para garantir ≥2 do mesmo lado, ou expor `computeTreeLayout` com split injetável. Candidato a quick task.
+
+**CONCERNS.md desatualizado pós-M7 (descoberto no review AD-013 de M8):**
+
+- As entradas abaixo referenciam arquivos/símbolos que o M7 (migração React Flow → visx, AD-015) **removeu** e portanto estão obsoletas: a Fragile Area `rfNodes`↔`useNodesState` (eliminada por design — ver L-004), os Performance Bottlenecks de `useLayoutedTree.ts`/`treeLayout.ts`/`simpleTreeLayout` (arquivos removidos), e o seletor `.react-flow__node` citado no Known Bug `persistence.spec.ts:136` (migrado para `data-testid` em M7-T5 — o bug em si pode ter mudado de natureza).
+- Severity: Medium (documentação enganosa) — candidato a reconciliação dedicada (não feito aqui para não extrapolar o escopo do review de M8).
+
 ## Fragile Areas
+
+> ⚠️ Seção parcialmente obsoleta pós-M7 — ver "CONCERNS.md desatualizado pós-M7" acima.
 
 **Sincronização entre `rfNodes` derivado e `useNodesState` do React Flow:**
 
