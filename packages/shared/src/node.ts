@@ -27,6 +27,9 @@ export interface UpdateNodeBody {
   title?: string;
   bgColor?: string | null;
   textColor?: string | null;
+  status?: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED' | null;
+  assignee?: string | null;
+  isCritical?: boolean;
 }
 
 export interface MoveNodeBody {
