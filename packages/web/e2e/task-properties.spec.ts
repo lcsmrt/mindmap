@@ -4,7 +4,7 @@ import type { Locator, Page } from '@playwright/test';
 async function openFirstMap(page: Page) {
   await page.goto('/');
   await page.locator('ul button').first().click();
-  await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 }
 
 // Cria um filho da raiz com um título único via API e o devolve como locator.
@@ -30,10 +30,10 @@ async function createUniqueNode(page: Page, label: string): Promise<Locator> {
   createdNodeIds.push(created.id);
 
   await page.reload();
-  await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 
   const node = page
-    .locator('.react-flow__node')
+    .locator('[data-testid="mind-node"]')
     .filter({ has: page.locator('.truncate', { hasText: label }) });
   await expect(node).toBeVisible({ timeout: 5_000 });
   return node;
@@ -171,10 +171,10 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
 
     await page.waitForTimeout(1_000);
     await page.reload();
-    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 
     const reloadedNode = page
-      .locator('.react-flow__node')
+      .locator('[data-testid="mind-node"]')
       .filter({ has: page.locator('.truncate', { hasText: label }) });
     const reloadedIndicators = reloadedNode.getByTestId('node-task-indicators');
     await expect(reloadedIndicators).toBeVisible({ timeout: 3_000 });

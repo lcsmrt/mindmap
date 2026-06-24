@@ -3,11 +3,11 @@ import { test, expect } from '@playwright/test';
 async function openFirstMap(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.locator('ul button').first().click();
-  await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 }
 
 async function openEditDialog(page: import('@playwright/test').Page) {
-  const node = page.locator('.react-flow__node').first();
+  const node = page.locator('[data-testid="mind-node"]').first();
   const editBtn = node.getByTitle('Editar nó');
   await editBtn.click();
   await expect(page.getByText('Editar nó')).toBeVisible({ timeout: 3_000 });
@@ -18,7 +18,7 @@ test.describe('dialog de edição e cores (M5)', () => {
   test('clicar no botão Palette abre dialog com título correto', async ({ page }) => {
     await openFirstMap(page);
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const titleSpan = node.locator('.truncate');
     const originalTitle = await titleSpan.textContent();
 
@@ -32,7 +32,7 @@ test.describe('dialog de edição e cores (M5)', () => {
   test('editar título no dialog atualiza nó no canvas', async ({ page }) => {
     await openFirstMap(page);
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const titleSpan = node.locator('.truncate');
     const originalTitle = await titleSpan.textContent();
 
@@ -65,7 +65,7 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     await page.keyboard.press('Escape');
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const nodeDiv = node.locator('div').first();
     await expect(nodeDiv).toHaveCSS('background-color', 'rgb(254, 202, 202)', { timeout: 3_000 });
 
@@ -86,7 +86,7 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     await page.keyboard.press('Escape');
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const nodeDiv = node.locator('div').first();
     await expect(nodeDiv).toHaveCSS('color', 'rgb(220, 38, 38)', { timeout: 3_000 });
 
@@ -108,9 +108,9 @@ test.describe('dialog de edição e cores (M5)', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(1_000);
     await page.reload();
-    await expect(page.locator('.react-flow__node').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const nodeDiv = node.locator('div').first();
     await expect(nodeDiv).toHaveCSS('background-color', 'rgb(191, 219, 254)', { timeout: 3_000 });
 
@@ -134,7 +134,7 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     await page.keyboard.press('Escape');
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const nodeDiv = node.locator('div').first();
     const bgColor = await nodeDiv.evaluate((el) => el.style.backgroundColor);
     expect(bgColor).toBe('');
@@ -143,7 +143,7 @@ test.describe('dialog de edição e cores (M5)', () => {
   test('fechar dialog via Escape funciona sem efeito colateral', async ({ page }) => {
     await openFirstMap(page);
 
-    const node = page.locator('.react-flow__node').first();
+    const node = page.locator('[data-testid="mind-node"]').first();
     const titleSpan = node.locator('.truncate');
     const originalTitle = await titleSpan.textContent();
 

@@ -10,7 +10,7 @@ test('clique no texto do nó abre edição inline com foco', async ({ page }) =>
   await page.goto('/');
   await page.locator('ul button').first().click();
 
-  const node = page.locator('.react-flow__node').first();
+  const node = page.locator('[data-testid="mind-node"]').first();
   await expect(node).toBeVisible({ timeout: 10_000 });
 
   const titleSpan = node.locator('.truncate');
