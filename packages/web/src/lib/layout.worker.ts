@@ -1,10 +1,8 @@
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { NodeDto } from '@mindmap/shared';
+import { NODE_HEIGHT_BASE, NODE_WIDTH, nodeHeight } from './nodeSize.js';
 
 const elk = new ELK();
-
-const NODE_WIDTH = 180;
-const NODE_HEIGHT = 40;
 
 export interface LayoutInput {
   nodes: NodeDto[];
@@ -42,7 +40,7 @@ self.onmessage = async (event: MessageEvent<LayoutInput>) => {
       children: nodes.map((n) => ({
         id: n.id,
         width: NODE_WIDTH,
-        height: NODE_HEIGHT,
+        height: nodeHeight(n),
       })),
       edges: edges.map((e) => ({
         id: `${e.parentId}-${e.childId}`,
@@ -58,7 +56,7 @@ self.onmessage = async (event: MessageEvent<LayoutInput>) => {
       x: child.x ?? 0,
       y: child.y ?? 0,
       width: child.width ?? NODE_WIDTH,
-      height: child.height ?? NODE_HEIGHT,
+      height: child.height ?? NODE_HEIGHT_BASE,
     }));
 
     self.postMessage({ positioned } satisfies LayoutOutput);
