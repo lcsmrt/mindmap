@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-05-20
-**Current Work:** M5 implementado (T1–T7). Pendente review independente (AD-013) antes de marcar concluído.
+**Current Work:** M5 concluído (T1–T7, 8 commits). Review independente (AD-013) executada em 2026-05-20 — milestone aprovado.
 
 ---
 
@@ -123,6 +123,12 @@
 **Solution:** Antes de atualizar STATE.md/ROADMAP para "concluído": (1) rodar `pnpm typecheck && pnpm lint && pnpm test` localmente; (2) `git log --oneline | grep "feat(<scope>): T"` e cruzar com a lista de tasks em `tasks.md`; (3) reproduzir um caminho golden da feature no browser antes de fechar o milestone.
 **Prevents:** Marcar trabalho como pronto enquanto gates estão abertos; herdar dívida silenciosa para o próximo milestone (M4 começaria sobre lint quebrado e atomicidade ilusória).
 
+### L-002: Review independente M5 — processo saudável, bug pré-existente exposto (2026-05-20)
+
+**Context:** Review AD-013 do M5. Gates: typecheck ✅, lint ✅, API tests 36/36 ✅, e2e 15/16 (8 M5 tests ✅). A falha `smoke.spec.ts:9` (foco no inline edit) é pré-existente — reproduz sem commits M5 (confirmado via `git stash`). Commits: 8 atômicos (T1–T7 + chore), todos no formato correto. Cobertura: 22/22 requisitos (M5-01 a M5-22) implementados. Nenhum bug funcional novo introduzido.
+**Findings registrados em CONCERNS.md:** (1) `smoke.spec.ts:9` falha por race entre foco do MindNode e sync `rfNodes`/`useNodesState`; (2) cleanup do `useEffect` de foco não cancela `setTimeout`; (3) inline edit ignora `textColor` customizado (cosmético); (4) `persistence.spec.ts` tem teste de move não commitado (remanescente M4).
+**Takeaway:** M5 é o primeiro milestone a passar review AD-013 sem findings bloqueantes. A disciplina de atomic commits e gates funcionou. O bug de foco pré-existente valida a decisão de documentar fragile areas — o padrão `rfNodes`/`useNodesState` continua sendo a raiz de problemas.
+
 ---
 
 ## Quick Tasks Completed
@@ -134,6 +140,8 @@
 | Q-003 | Nó raiz usa título do mapa + clique-para-editar no texto + banco de testes isolado | 2026-05-19 | 018885f | concluído |
 | Q-004 | Refactor(web): colocação de componentes por página + reuso do design system | 2026-05-19 | 8868233 | concluído |
 | Q-005 | Cleanup pré-M4: shadcn/ui v2 (Base UI), remove hideAttribution, extrai request<T>, remove código morto | 2026-05-19 | — | concluído |
+| Q-006 | Commitar teste de move em `persistence.spec.ts` (remanescente M4) | 2026-05-20 | ad520ec | concluído |
+| Q-007 | Fix foco no inline edit do MindNode (`smoke.spec.ts:9`): forwardRef no Input + ref callback | 2026-05-20 | 46773e4 | concluído |
 
 ---
 
@@ -157,6 +165,8 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 
 - [x] ~~Decidir o que fazer com `proOptions={{ hideAttribution: true }}`~~ — removido em Q-005, atribuição visível.
 - [x] ~~Bug de edição no canvas~~ — resolvido em Q-003: clique no texto do nó dispara edição diretamente via `onStartEdit`, sem depender do `onNodeDoubleClick` do React Flow.
+- [x] ~~Commitar teste de move em `persistence.spec.ts` (remanescente M4, não commitado)~~ — Q-006
+- [x] ~~Fix `smoke.spec.ts:9` — foco no inline edit (bug pré-existente, ver CONCERNS.md)~~ — Q-007
 
 ---
 

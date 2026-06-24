@@ -10,6 +10,8 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ~~**Lint quebra Success Criteria de M3:**~~ — resolvido em Q-001.
 
+~~**`smoke.spec.ts:9` — teste de foco no inline edit falha consistentemente (pré-M5):**~~ — resolvido em Q-007: causa raiz era o componente `Input` (shadcn/ui Base UI) sem `forwardRef` — em React 18, o ref nunca chegava ao `<input>` nativo. Fix: `forwardRef` no Input + ref callback no MindNode com foco imediato + rAF + setTimeout(0) como fallback + `onMouseDown.stopPropagation` no span do título.
+
 ## Fragile Areas
 
 **Sincronização entre `rfNodes` derivado e `useNodesState` do React Flow:**
@@ -37,6 +39,15 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Cause: O fallback foi introduzido (commit `6967671`) para evitar tela vazia enquanto o worker calcula, mas ficou no caminho crítico de todo render, não só do primeiro.
 - Improvement path: Rodar o fallback só quando ainda não há resultado do worker para o input atual (gate por `workerPositioned == null`). Ou rodá-lo dentro do próprio worker como degradado em caso de erro.
 
+## UX Inconsistencies
+
+**Inline edit ignora `textColor` customizado:**
+
+- Files: `packages/web/src/pages/map/components/MindNode.tsx:101`
+- Symptom: Quando um nó tem `textColor` customizado e o usuário inicia edição inline (clique no texto), o `<Input>` tem classe `text-foreground` que sobrescreve a cor herdada do inline style do wrapper. O texto do input aparece na cor do tema, não na cor customizada.
+- Severity: Low/Cosmetic — não viola spec (spec cobre renderização no canvas, não estado de edição). A edição é transiente.
+- Fix: Remover `text-foreground` da className do Input de edição, ou aplicar `style={{ color: node.textColor ?? undefined }}` diretamente no Input.
+
 ## Tech Debt
 
 ~~**Helper `request<T>` duplicado entre módulos de API web:**~~ — resolvido: extraído para `packages/web/src/api/_request.ts`.
@@ -45,10 +56,12 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ~~**Código morto `allNodeIds`:**~~ — resolvido em Q-004.
 
+~~**`persistence.spec.ts` tem mudanças não commitadas (teste de move node):**~~ — resolvido em Q-006 (commit `ad520ec`).
+
 ## Dependencies at Risk
 
 ~~**`@xyflow/react` com `hideAttribution: true` exige licença paga:**~~ — resolvido: `proOptions` removido, atribuição visível.
 
 ---
 
-_Concerns audit: 2026-05-19_
+_Concerns audit: 2026-05-20 (M5 review)_
