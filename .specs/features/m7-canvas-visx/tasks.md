@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** [`design.md`](./design.md)
-**Status:** Executado (T1–T6 ✅) — pronto para Review AD-013
+**Status:** Concluído (T1–T6 ✅) — Review AD-013 aprovado (2026-06-24, ver STATE.md L-004)
 
 ---
 

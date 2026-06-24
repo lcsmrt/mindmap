@@ -24,7 +24,7 @@ Explicitamente excluído para manter a migração focada em paridade.
 | Item | Motivo |
 | --- | --- |
 | **Posicionamento livre / persistir x,y** | Decisão adiada pós-conversão (Deferred Ideas). AD-002 segue valendo: posições não são persistidas. |
-| **Mudar a direção do layout** (vertical/radial/alternável) | Decisão adiada. Migração mantém **horizontal (esq→dir)** por paridade com hoje. |
+| **Escolher/alternar a direção do layout** (radial/alternável) | Decisão adiada. A migração fixa **uma** direção pelo menor esforço (design escolheu **vertical, raiz no topo**); *escolher* a direção continua fora de escopo. |
 | **Reorder entre irmãos via drag** (AD-011) | Já era deferred; revisitar junto com os pontos acima depois da conversão. M7 mantém só drag-to-reparent. |
 | **Curvas de edge "mais naturais"** além da paridade | A migração replica o visual atual (curva equivalente ao `smoothstep`). Refino estético é decisão adiada. |
 | **Highlight de drop target no drag** | Já era deferred (STATE.md). Comportamento atual = snap-back silencioso, preservado. |
@@ -193,7 +193,7 @@ Explicitamente excluído para manter a migração focada em paridade.
 - [ ] `@xyflow/react` e `elkjs` removidos do `package.json`; `layout.worker.ts` deletado.
 - [ ] Nenhum teste que estava verde fica vermelho por causa da migração; seletores e2e migrados.
 - [ ] `pnpm typecheck && pnpm lint && pnpm test` passa; specs e2e do milestone passam (AD-014).
-- [ ] Os 3 pontos de UX adiados continuam **fora** do diff (verificável: sem colunas x/y, direção segue horizontal, sem reorder de irmãos).
+- [ ] Os 3 pontos de UX adiados continuam **fora** do diff (verificável: sem colunas x/y, direção fixa pelo menor esforço — vertical, sem *escolha*/alternância — sem reorder de irmãos).
 
 ---
 
