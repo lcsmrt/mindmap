@@ -30,7 +30,8 @@ export interface LayoutResult {
   bounds: LayoutBounds;
 }
 
-// Espaço extra entre nós: GAP_X separa irmãos, GAP_Y separa níveis.
+// Espaço extra entre nós: GAP_Y separa irmãos (eixo vertical/breadth),
+// GAP_X separa níveis (eixo horizontal/depth).
 const GAP_X = 24;
 const GAP_Y = 24;
 
@@ -40,48 +41,120 @@ const EMPTY_LAYOUT: LayoutResult = {
   bounds: { width: 0, height: 0, minX: 0, minY: 0 },
 };
 
+/** Quantidade de nós (visíveis) na subárvore — peso usado pelo split balanceado. */
+function subtreeSize(t: TreeNode): number {
+  let total = 1;
+  for (const child of t.children) total += subtreeSize(child);
+  return total;
+}
+
+/**
+ * Reparte os filhos de 1º nível entre os dois lados balanceando o peso de subárvore.
+ * Guloso e determinístico: ordena por peso desc (desempate por `sortOrder`, depois
+ * índice) e atribui cada filho ao lado atualmente mais leve. Empate de peso entre os
+ * lados → direita, logo um filho único também vai para a direita.
+ */
+function splitChildren(children: TreeNode[]): { right: TreeNode[]; left: TreeNode[] } {
+  const weighted = children.map((child, idx) => ({
+    child,
+    weight: subtreeSize(child),
+    sortOrder: child.node.sortOrder,
+    idx,
+  }));
+  weighted.sort((a, b) => b.weight - a.weight || a.sortOrder - b.sortOrder || a.idx - b.idx);
+
+  const right: TreeNode[] = [];
+  const left: TreeNode[] = [];
+  let weightRight = 0;
+  let weightLeft = 0;
+  for (const w of weighted) {
+    if (weightRight <= weightLeft) {
+      right.push(w.child);
+      weightRight += w.weight;
+    } else {
+      left.push(w.child);
+      weightLeft += w.weight;
+    }
+  }
+  return { right, left };
+}
+
 /**
  * Layout síncrono de altura variável via d3-flextree. Função pura (sem React/DOM),
- * unit-testável. Direção vertical: raiz no topo, profundidade para baixo.
+ * unit-testável. Direção **bidirecional horizontal** (estilo MindMeister): a raiz fica
+ * centrada na origem; os filhos de 1º nível são repartidos entre dois lados
+ * balanceados por peso de subárvore; cada lado é uma árvore horizontal que cresce
+ * afastando-se da raiz (direita → +x; esquerda → −x, espelhada).
  *
- * O flextree posiciona cada nó com `x` no centro da largura e `y` na borda superior
- * do nó (van der Ploeg 2013). Convertemos para coordenadas top-left para casar com o
- * posicionamento absoluto dos nós HTML e com o hit-test do drag (`findDropTarget`).
+ * Geometria do flextree na horizontal: `nodeSize = [breadth=altura, depth=largura]`,
+ * então `n.x` é o centro vertical (breadth) do nó e `n.y` a borda do nó no eixo de
+ * profundidade (van der Ploeg 2013). Rodamos um flextree por lado (raiz + filhos do
+ * lado), alinhamos ambos no ponto da raiz subtraindo o `x` da raiz, e espelhamos o
+ * lado esquerdo. As coordenadas finais são top-left, para casar com os nós HTML e o
+ * hit-test do drag (`findDropTarget`).
  */
 export function computeTreeLayout(
   tree: TreeNode,
   nodeSizeFn: (node: NodeDto) => number = nodeHeight,
 ): LayoutResult {
-  const layout = flextree<TreeNode>({
-    // [breadth, depth] = [largura, altura] no layout vertical.
-    nodeSize: (n) => [NODE_WIDTH + GAP_X, nodeSizeFn(n.data.node) + GAP_Y],
-    spacing: 0,
-  });
-
-  const root = layout.hierarchy(tree, (d) => d.children);
-  layout(root);
-
   const positioned: PositionedNode[] = [];
   const links: LayoutLink[] = [];
 
-  root.each((n) => {
-    const height = nodeSizeFn(n.data.node);
-    positioned.push({
-      id: n.data.node.id,
-      x: n.x - NODE_WIDTH / 2,
-      y: n.y,
-      width: NODE_WIDTH,
-      height,
-    });
-
-    if (n.parent) {
-      links.push({
-        // do centro-base do pai ao centro-topo do filho
-        source: { x: n.parent.x, y: n.parent.y + nodeSizeFn(n.parent.data.node) },
-        target: { x: n.x, y: n.y },
-      });
-    }
+  // Raiz centrada na origem; a edge raiz→1º nível parte do seu centro (M8-09).
+  const rootHeight = nodeSizeFn(tree.node);
+  positioned.push({
+    id: tree.node.id,
+    x: -NODE_WIDTH / 2,
+    y: -rootHeight / 2,
+    width: NODE_WIDTH,
+    height: rootHeight,
   });
+  const rootCenter = { x: 0, y: 0 };
+
+  const { right, left } = splitChildren(tree.children);
+
+  // Posiciona um lado: roda flextree na raiz + filhos do lado, alinha no ponto da raiz
+  // e converte para top-left. `dir` = +1 (direita) ou −1 (esquerda, espelhado).
+  function layoutSide(sideChildren: TreeNode[], dir: 1 | -1): void {
+    if (sideChildren.length === 0) return;
+
+    const sideTree: TreeNode = { node: tree.node, children: sideChildren };
+    const layout = flextree<TreeNode>({
+      // [breadth, depth] = [altura, largura] no layout horizontal.
+      nodeSize: (n) => [nodeSizeFn(n.data.node) + GAP_Y, NODE_WIDTH + GAP_X],
+      spacing: 0,
+    });
+    const sideRoot = layout.hierarchy(sideTree, (d) => d.children);
+    layout(sideRoot);
+
+    // Alinha a raiz deste lado no centro vertical (breadth) global.
+    const breadthOffset = sideRoot.x;
+
+    sideRoot.each((n) => {
+      if (n === sideRoot) return; // raiz já emitida uma única vez
+
+      const height = nodeSizeFn(n.data.node);
+      const cy = n.x - breadthOffset; // centro vertical do nó no mundo
+      const worldX = dir * n.y - NODE_WIDTH / 2; // top-left x (espelhado à esquerda)
+      positioned.push({ id: n.data.node.id, x: worldX, y: cy - height / 2, width: NODE_WIDTH, height });
+
+      // Âncora do nó voltada para a raiz (borda interna).
+      const nearX = dir * (n.y - NODE_WIDTH / 2);
+      if (n.parent === sideRoot) {
+        // 1º nível: sai do centro da raiz (M8-09) em direção ao lado.
+        links.push({ source: rootCenter, target: { x: nearX, y: cy } });
+      } else {
+        // Níveis profundos: horizontal pai→filho no mesmo lado (M8-10).
+        const p = n.parent!;
+        const parentCy = p.x - breadthOffset;
+        const parentFarX = dir * (p.y + NODE_WIDTH / 2); // borda externa do pai
+        links.push({ source: { x: parentFarX, y: parentCy }, target: { x: nearX, y: cy } });
+      }
+    });
+  }
+
+  layoutSide(right, 1);
+  layoutSide(left, -1);
 
   let minX = Infinity;
   let minY = Infinity;
