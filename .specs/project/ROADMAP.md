@@ -53,6 +53,26 @@ Milestones de v1 organizados por dependência técnica. Cada milestone agrupa um
 
 ---
 
+## Pós-v1 — entregue
+
+### M7 — Migração do canvas para visx (AD-015) ✅ concluído (2026-06-24)
+
+- Substitui `@xyflow/react` (logo Pro = dealbreaker ético) pela stack visx: `@visx/zoom` + `@visx/shape` + `d3-flextree`. `elkjs`/worker de layout removidos. Paridade funcional + remoção da logo; queixas de UX do canvas seguem adiadas (Deferred Ideas). Feature em `.specs/features/m7-canvas-visx/`.
+
+### M8 — Layout bidirecional horizontal (AD-016) ✅ concluído (2026-06-24)
+
+- Primeira das "Deferred Ideas — direção do layout" (AD-015). Troca o layout vertical (raiz no topo) por **bidirecional horizontal** estilo MindMeister: raiz no centro, ramos de 1º nível repartidos e **balanceados** entre esquerda/direita, cada lado uma árvore horizontal. Direção **fixa** (sem toggle). Só frontend (`useTreeLayout.ts` + edges no `MapCanvas.tsx`); backend e AD-002 intactos. Design pulado (feature pequena). Feature em `.specs/features/m8-layout-bidirectional/`. **Review AD-013 aprovado (L-005); gates verdes (e2e 22/22).**
+
+---
+
+## Pós-v1 — em planejamento
+
+### M9 — Drag-to-place unificado (AD-011/AD-017/AD-018) 📝 spec pronta (2026-06-24)
+
+- Unifica o gesto de arraste num modelo **"soltar num slot"** `(pai, posição)`: reorder (mesmo pai), reparent **já posicionado** (outro pai) e troca de **lado** (slot de 1º nível) viram o mesmo gesto, com **card-fantasma** indicando o alvo. **Lado persistido** (modelo b): filhos de 1º nível ganham um campo de lado no schema; o usuário arrasta um ramo para o outro lado e ele fica (inclusive tudo de um lado). Balance do M8 **rebaixado a default de criação**. **Full-stack** (schema+migration+backend+frontend), revisa AD-016 e parcialmente AD-002 (persiste só 1 bit de lado, **sem x/y**). Spec em `.specs/features/m9-drag-to-place/spec.md`. **Design + tasks pendentes** (chat separado).
+
+---
+
 ## Pós-v1 (deferred)
 
 Itens que **não** entram em v1 mas podem virar features futuras. Veja `STATE.md` para registro de ideias adiadas que surjam durante a implementação.
