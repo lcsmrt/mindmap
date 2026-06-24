@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Zoom } from '@visx/zoom';
 import type { ProvidedZoom, ZoomState } from '@visx/zoom';
-import { LinkVertical } from '@visx/shape';
+import { LinkHorizontal } from '@visx/shape';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
@@ -95,7 +95,7 @@ function CanvasLayers({
       <svg width={width} height={height} className="absolute inset-0">
         <g transform={transform}>
           {links.map((l) => (
-            <LinkVertical
+            <LinkHorizontal
               key={`${l.source.x},${l.source.y}-${l.target.x},${l.target.y}`}
               data={l}
               className="stroke-border fill-none"
