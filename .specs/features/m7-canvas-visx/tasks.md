@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** [`design.md`](./design.md)
-**Status:** Draft — aguardando aprovação para Execute (em chat separado, ver [[feedback-plan-execute-split]])
+**Status:** Executado (T1–T6 ✅) — pronto para Review AD-013
 
 ---
 
