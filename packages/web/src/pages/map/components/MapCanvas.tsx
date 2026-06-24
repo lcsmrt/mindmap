@@ -98,6 +98,11 @@ function CanvasLayers({
             <LinkHorizontal
               key={`${l.source.x},${l.source.y}-${l.target.x},${l.target.y}`}
               data={l}
+              // LinkHorizontal troca x↔y por padrão (convenção d3-tree: x=breadth,
+              // y=depth). Nossos links já são coordenadas de tela reais, então
+              // sobrescrevemos os acessores para usá-las sem inversão.
+              x={(d: { x: number; y: number }) => d.x}
+              y={(d: { x: number; y: number }) => d.y}
               className="stroke-border fill-none"
               strokeWidth={1.5}
             />
