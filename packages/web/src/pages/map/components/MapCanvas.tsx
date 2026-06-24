@@ -1,18 +1,150 @@
-import '@xyflow/react/dist/style.css';
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ReactFlow, ReactFlowProvider, Background, useNodesState, useEdgesState } from '@xyflow/react';
-import type { Node, Edge } from '@xyflow/react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Zoom } from '@visx/zoom';
+import type { ProvidedZoom, ZoomState } from '@visx/zoom';
+import { LinkVertical } from '@visx/shape';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
 import { NodeEditDialog } from './NodeEditDialog.js';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
-import { useLayoutedTree } from '@/lib/useLayoutedTree.js';
+import { useTreeLayout } from '@/lib/useTreeLayout.js';
+import type { PositionedNode, LayoutLink, LayoutBounds } from '@/lib/useTreeLayout.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
+import { useNodeDrag } from './useNodeDrag.js';
 
-const nodeTypes = { mind: MindNode } as const;
+const SCALE_MIN = 0.1;
+const SCALE_MAX = 3;
+
+type ZoomApi = ProvidedZoom<HTMLDivElement> & ZoomState;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+interface CanvasLayersProps {
+  zoom: ZoomApi;
+  width: number;
+  height: number;
+  positioned: PositionedNode[];
+  links: LayoutLink[];
+  bounds: LayoutBounds;
+  nodeDataById: Map<string, MindNodeData>;
+  isRoot: (id: string) => boolean;
+  onReparent: (childId: string, parentId: string) => void;
+  onInvalidDrop: () => void;
+}
+
+function CanvasLayers({
+  zoom,
+  width,
+  height,
+  positioned,
+  links,
+  bounds,
+  nodeDataById,
+  isRoot,
+  onReparent,
+  onInvalidDrop,
+}: CanvasLayersProps) {
+  // O <Zoom> do visx entrega `zoom` (com containerRef) no render-prop e exige ler
+  // toString()/transformMatrix/applyInverseToPoint e fixar containerRef durante o render —
+  // uso correto da API, mas o react-hooks/refs (v7) o trata como leitura de ref proibida.
+  /* eslint-disable react-hooks/refs */
+  const clientToWorld = useCallback(
+    (clientX: number, clientY: number) => {
+      const rect = zoom.containerRef.current?.getBoundingClientRect();
+      return zoom.applyInverseToPoint({
+        x: clientX - (rect?.left ?? 0),
+        y: clientY - (rect?.top ?? 0),
+      });
+    },
+    [zoom],
+  );
+
+  const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset } =
+    useNodeDrag({ positioned, clientToWorld, onReparent, onInvalidDrop, isRoot });
+
+  // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem.
+  const fittedRef = useRef(false);
+  useEffect(() => {
+    if (fittedRef.current) return;
+    if (!width || !height || bounds.width === 0 || bounds.height === 0) return;
+    const scale = clamp(
+      Math.min(width / bounds.width, height / bounds.height) * 0.9,
+      SCALE_MIN,
+      SCALE_MAX,
+    );
+    const translateX = (width - bounds.width * scale) / 2 - bounds.minX * scale;
+    const translateY = (height - bounds.height * scale) / 2 - bounds.minY * scale;
+    zoom.setTransformMatrix({ scaleX: scale, scaleY: scale, translateX, translateY, skewX: 0, skewY: 0 });
+    fittedRef.current = true;
+  }, [width, height, bounds, zoom]);
+
+  const scale = zoom.transformMatrix.scaleX || 1;
+  const transform = zoom.toString();
+
+  return (
+    <div
+      // visx tipa o ref como RefObject<T | null>; o ref de div do React 18 espera T não-nulo.
+      ref={zoom.containerRef as React.Ref<HTMLDivElement>}
+      className="relative h-full w-full touch-none overflow-hidden bg-muted/30 cursor-grab active:cursor-grabbing"
+    >
+      {/* Camada de arestas (SVG) */}
+      <svg width={width} height={height} className="absolute inset-0">
+        <g transform={transform}>
+          {links.map((l) => (
+            <LinkVertical
+              key={`${l.source.x},${l.source.y}-${l.target.x},${l.target.y}`}
+              data={l}
+              className="stroke-border fill-none"
+              strokeWidth={1.5}
+            />
+          ))}
+        </g>
+      </svg>
+
+      {/* Camada de nós (HTML) — mesma matriz, origem 0 0 */}
+      <div
+        className="absolute left-0 top-0"
+        style={{ transform, transformOrigin: '0 0' }}
+      >
+        {positioned.map((p) => {
+          const data = nodeDataById.get(p.id);
+          if (!data) return null;
+          const isDragging = draggingId === p.id;
+          return (
+            <div
+              key={p.id}
+              className="absolute"
+              data-testid="mind-node"
+              data-node-id={p.id}
+              data-node-title={data.node.title}
+              style={{
+                left: p.x,
+                top: p.y,
+                width: p.width,
+                cursor: data.isRoot ? 'default' : 'grab',
+                transform: isDragging
+                  ? `translate(${ghostOffset.x / scale}px, ${ghostOffset.y / scale}px)`
+                  : undefined,
+                zIndex: isDragging ? 10 : undefined,
+                opacity: isDragging ? 0.85 : undefined,
+              }}
+              onPointerDown={(e) => onNodePointerDown(p.id, e)}
+              onPointerMove={onNodePointerMove}
+              onPointerUp={onNodePointerUp}
+            >
+              <MindNode data={data} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+  /* eslint-enable react-hooks/refs */
+}
 
 interface MapCanvasInnerProps {
   mapId: string;
@@ -26,6 +158,24 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const [deleteTarget, setDeleteTarget] = useState<NodeDto | null>(null);
   const [editDialogNodeId, setEditDialogNodeId] = useState<string | null>(null);
   const isMutating = useIsMutating();
+
+  // Medição do container para o <Zoom> (sem dep nova). Callback ref para medir assim que
+  // o container monta — ele só aparece depois do estado de carregamento, então um
+  // useEffect([]) não o observaria.
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const measureRef = useCallback((el: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    if (!el) {
+      observerRef.current = null;
+      return;
+    }
+    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight });
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    observerRef.current = observer;
+  }, []);
 
   const { mutate: createNode } = useCreateNode({
     onSuccess: (newNode) => setEditingId(newNode.id),
@@ -91,10 +241,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [updateNode, editDialogNodeId, mapId],
   );
 
-  const tree = useMemo(
-    () => (data ? buildTree(data.nodes) : null),
-    [data],
-  );
+  const tree = useMemo(() => (data ? buildTree(data.nodes) : null), [data]);
 
   const { nodes: visNodes, edges: visEdges } = useMemo(
     () => visibleNodes(tree, collapsedIds),
@@ -110,94 +257,65 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     return map;
   }, [data]);
 
-  const { positioned } = useLayoutedTree(visNodes, visEdges);
+  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges);
 
-  const rfNodes: Node[] = useMemo(
-    () =>
-      positioned.map((p) => {
-        const nodeDto = data!.nodes.find((n) => n.id === p.id)!;
-        const isRoot = nodeDto.parentId === null;
-        const nodeData: MindNodeData = {
-          node: nodeDto,
-          isRoot,
-          hasChildren: hasChildrenMap.get(nodeDto.id) ?? false,
-          isCollapsed: collapsedIds.has(nodeDto.id),
-          isEditing: editingId === nodeDto.id,
-          onSubmitEdit: (title) => handleSubmitEdit(nodeDto.id, title),
-          onCancelEdit: handleCancelEdit,
-          onStartEdit: () => handleStartEdit(nodeDto.id),
-          onAddChild: () => handleAddChild(nodeDto.id),
-          onDelete: () => handleDelete(nodeDto),
-          onToggleCollapse: () => handleToggleCollapse(nodeDto.id),
-          onOpenEditDialog: () => setEditDialogNodeId(nodeDto.id),
-        };
-        return {
-          id: p.id,
-          position: { x: p.x, y: p.y },
-          type: 'mind',
-          data: nodeData,
-          draggable: !isRoot,
-        };
-      }),
-    [positioned, data, collapsedIds, editingId, hasChildrenMap, handleStartEdit, handleAddChild, handleCancelEdit, handleDelete, handleSubmitEdit, handleToggleCollapse],
-  );
+  const nodeById = useMemo(() => {
+    const map = new Map<string, NodeDto>();
+    for (const n of data?.nodes ?? []) map.set(n.id, n);
+    return map;
+  }, [data]);
 
-  const rfEdges: Edge[] = useMemo(
-    () =>
-      visEdges.map((e) => ({
-        id: `${e.parentId}-${e.childId}`,
-        source: e.parentId,
-        target: e.childId,
-        type: 'smoothstep',
-      })),
-    [visEdges],
-  );
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(rfNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
-
-  useEffect(() => { setNodes(rfNodes); }, [rfNodes, setNodes]);
-  useEffect(() => { setEdges(rfEdges); }, [rfEdges, setEdges]);
-
-  const handleNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, rfNode: Node) => {
-      if (editingId !== rfNode.id) {
-        handleStartEdit(rfNode.id);
-      }
-    },
-    [editingId, handleStartEdit],
-  );
-
-  const handleNodeDragStop = useCallback(
-    (_event: React.MouseEvent, draggedNode: Node) => {
-      if (!data) return;
-      const draggedDto = data.nodes.find((n) => n.id === draggedNode.id);
-      if (!draggedDto || draggedDto.parentId === null) return;
-
-      const dx = draggedNode.position.x;
-      const dy = draggedNode.position.y;
-
-      const target = nodes.find((n) => {
-        if (n.id === draggedNode.id) return false;
-        const tw = n.measured?.width ?? 180;
-        const th = n.measured?.height ?? 40;
-        return (
-          dx + 90 >= n.position.x &&
-          dx + 90 <= n.position.x + tw &&
-          dy + 20 >= n.position.y &&
-          dy + 20 <= n.position.y + th
-        );
+  const nodeDataById = useMemo(() => {
+    const map = new Map<string, MindNodeData>();
+    for (const p of positioned) {
+      const nodeDto = nodeById.get(p.id);
+      if (!nodeDto) continue;
+      const isRoot = nodeDto.parentId === null;
+      map.set(p.id, {
+        node: nodeDto,
+        isRoot,
+        hasChildren: hasChildrenMap.get(nodeDto.id) ?? false,
+        isCollapsed: collapsedIds.has(nodeDto.id),
+        isEditing: editingId === nodeDto.id,
+        onSubmitEdit: (title) => handleSubmitEdit(nodeDto.id, title),
+        onCancelEdit: handleCancelEdit,
+        onStartEdit: () => handleStartEdit(nodeDto.id),
+        onAddChild: () => handleAddChild(nodeDto.id),
+        onDelete: () => handleDelete(nodeDto),
+        onToggleCollapse: () => handleToggleCollapse(nodeDto.id),
+        onOpenEditDialog: () => setEditDialogNodeId(nodeDto.id),
       });
+    }
+    return map;
+  }, [
+    positioned,
+    nodeById,
+    hasChildrenMap,
+    collapsedIds,
+    editingId,
+    handleSubmitEdit,
+    handleCancelEdit,
+    handleStartEdit,
+    handleAddChild,
+    handleDelete,
+    handleToggleCollapse,
+  ]);
 
-      if (!target) {
-        queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
-        return;
-      }
-
-      moveNode({ id: draggedNode.id, mapId, body: { parentId: target.id, index: Number.MAX_SAFE_INTEGER } });
-    },
-    [data, nodes, moveNode, queryClient, mapId],
+  const isRoot = useCallback(
+    (id: string) => nodeById.get(id)?.parentId === null,
+    [nodeById],
   );
+
+  const handleReparent = useCallback(
+    (childId: string, parentId: string) => {
+      moveNode({ id: childId, mapId, body: { parentId, index: Number.MAX_SAFE_INTEGER } });
+    },
+    [moveNode, mapId],
+  );
+
+  const handleInvalidDrop = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['nodes', mapId] });
+  }, [queryClient, mapId]);
 
   if (isLoading) {
     return (
@@ -217,43 +335,50 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   return (
     <>
-    <NodeEditDialog
-      node={editDialogNode}
-      onUpdateNode={handleDialogUpdate}
-      onClose={() => setEditDialogNodeId(null)}
-    />
-    <ConfirmDialog
-      open={!!deleteTarget}
-      title="Excluir nó"
-      message={`"${deleteTarget?.title ?? ''}" e todos os seus descendentes serão removidos.`}
-      confirmLabel="Excluir"
-      destructive
-      onConfirm={handleConfirmDelete}
-      onCancel={() => setDeleteTarget(null)}
-    />
-    <div className="flex-1 h-full relative">
-      {isMutating > 0 && (
-        <div className="absolute top-3 right-3 z-10 rounded-md bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm transition-opacity duration-200">
-          Salvando…
-        </div>
-      )}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeDoubleClick={handleNodeDoubleClick}
-        onNodeDragStop={handleNodeDragStop}
-        fitView
-        panOnDrag
-        zoomOnScroll
-        minZoom={0.1}
-        maxZoom={3}
-      >
-        <Background />
-      </ReactFlow>
-    </div>
+      <NodeEditDialog
+        node={editDialogNode}
+        onUpdateNode={handleDialogUpdate}
+        onClose={() => setEditDialogNodeId(null)}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Excluir nó"
+        message={`"${deleteTarget?.title ?? ''}" e todos os seus descendentes serão removidos.`}
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <div ref={measureRef} className="relative h-full flex-1">
+        {isMutating > 0 && (
+          <div className="absolute right-3 top-3 z-10 rounded-md bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm transition-opacity duration-200">
+            Salvando…
+          </div>
+        )}
+        <Zoom<HTMLDivElement>
+          width={size.width}
+          height={size.height}
+          scaleXMin={SCALE_MIN}
+          scaleXMax={SCALE_MAX}
+          scaleYMin={SCALE_MIN}
+          scaleYMax={SCALE_MAX}
+        >
+          {(zoom) => (
+            <CanvasLayers
+              zoom={zoom}
+              width={size.width}
+              height={size.height}
+              positioned={positioned}
+              links={links}
+              bounds={bounds}
+              nodeDataById={nodeDataById}
+              isRoot={isRoot}
+              onReparent={handleReparent}
+              onInvalidDrop={handleInvalidDrop}
+            />
+          )}
+        </Zoom>
+      </div>
     </>
   );
 }
@@ -263,9 +388,5 @@ interface MapCanvasProps {
 }
 
 export function MapCanvas({ mapId }: MapCanvasProps) {
-  return (
-    <ReactFlowProvider>
-      <MapCanvasInner mapId={mapId} />
-    </ReactFlowProvider>
-  );
+  return <MapCanvasInner mapId={mapId} />;
 }

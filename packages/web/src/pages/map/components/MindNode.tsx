@@ -1,5 +1,4 @@
-import { useCallback } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { memo, useCallback, useState } from 'react';
 import { ChevronRight, ChevronDown, Plus, X, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
@@ -10,7 +9,7 @@ interface MindNodeProps {
   data: MindNodeData;
 }
 
-export function MindNode({ data }: MindNodeProps) {
+function MindNodeBase({ data }: MindNodeProps) {
   const {
     node,
     isRoot,
@@ -25,6 +24,15 @@ export function MindNode({ data }: MindNodeProps) {
     onToggleCollapse,
     onOpenEditDialog,
   } = data;
+
+  // Input inline controlado: o rascunho é reinicializado a cada início de edição
+  // ajustando o estado durante o render (padrão React, sem efeito).
+  const [draft, setDraft] = useState(node.title);
+  const [wasEditing, setWasEditing] = useState(isEditing);
+  if (isEditing !== wasEditing) {
+    setWasEditing(isEditing);
+    if (isEditing) setDraft(node.title);
+  }
 
   const focusInput = useCallback((el: HTMLInputElement | null) => {
     if (!el) return;
@@ -43,21 +51,8 @@ export function MindNode({ data }: MindNodeProps) {
     });
   }, []);
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      const value = e.currentTarget.value.trim();
-      if (value) {
-        onSubmitEdit(value);
-      } else {
-        onCancelEdit();
-      }
-    } else if (e.key === 'Escape') {
-      onCancelEdit();
-    }
-  }
-
-  function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const value = e.currentTarget.value.trim();
+  function commit() {
+    const value = draft.trim();
     if (value) {
       onSubmitEdit(value);
     } else {
@@ -65,21 +60,22 @@ export function MindNode({ data }: MindNodeProps) {
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      commit();
+    } else if (e.key === 'Escape') {
+      onCancelEdit();
+    }
+  }
+
   return (
     <div
-      className="relative flex flex-col rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60"
+      className="relative flex w-full flex-col rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60"
       style={{
-        minWidth: 160,
         backgroundColor: node.bgColor ?? undefined,
         color: node.textColor ?? undefined,
       }}
     >
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-2 !h-2 !bg-muted-foreground/40 !border-none"
-      />
-
       <div className="flex items-center gap-1">
         {hasChildren && (
           <Button
@@ -99,10 +95,12 @@ export function MindNode({ data }: MindNodeProps) {
           {isEditing ? (
             <Input
               ref={focusInput}
-              defaultValue={node.title}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
-              onBlur={handleBlur}
+              onBlur={commit}
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               className="w-full bg-transparent border-none shadow-none text-sm text-foreground h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           ) : (
@@ -164,12 +162,8 @@ export function MindNode({ data }: MindNodeProps) {
       </div>
 
       <NodeTaskIndicators node={node} />
-
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!w-2 !h-2 !bg-muted-foreground/40 !border-none"
-      />
     </div>
   );
 }
+
+export const MindNode = memo(MindNodeBase);

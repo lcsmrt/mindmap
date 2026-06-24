@@ -39,6 +39,7 @@ interface UseNodeDragArgs {
 
 interface DragState {
   id: string;
+  pointerId: number;
   startX: number;
   startY: number;
   moved: boolean;
@@ -68,34 +69,48 @@ export function useNodeDrag({
     (id: string, e: React.PointerEvent) => {
       if (isRoot(id)) return; // raiz não é arrastável
       e.stopPropagation(); // não inicia o pan do <Zoom>
-      e.currentTarget.setPointerCapture(e.pointerId);
-      stateRef.current = { id, startX: e.clientX, startY: e.clientY, moved: false };
+      stateRef.current = {
+        id,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        moved: false,
+      };
     },
     [isRoot],
   );
 
   const onNodePointerMove = useCallback((e: React.PointerEvent) => {
     const st = stateRef.current;
-    if (!st) return;
-    const dist = Math.hypot(e.clientX - st.startX, e.clientY - st.startY);
-    if (!st.moved && dist < DRAG_THRESHOLD) return; // abaixo do limiar = clique
-    st.moved = true;
-    setDraggingId((prev) => (prev === st.id ? prev : st.id));
+    if (!st || e.pointerId !== st.pointerId) return;
+    if (!st.moved) {
+      const dist = Math.hypot(e.clientX - st.startX, e.clientY - st.startY);
+      if (dist < DRAG_THRESHOLD) return; // abaixo do limiar = clique, não drag
+      st.moved = true;
+      // Captura só ao virar drag, para um clique simples ainda atingir botões/título.
+      try {
+        e.currentTarget.setPointerCapture(st.pointerId);
+      } catch {
+        // captura indisponível — ignorar
+      }
+      setDraggingId(st.id);
+    }
     setGhostOffset({ x: e.clientX - st.startX, y: e.clientY - st.startY });
   }, []);
 
   const onNodePointerUp = useCallback(
     (e: React.PointerEvent) => {
       const st = stateRef.current;
+      if (st && e.pointerId !== st.pointerId) return;
       stateRef.current = null;
       setDraggingId(null);
       setGhostOffset({ x: 0, y: 0 });
+      if (!st || !st.moved) return; // foi clique: deixa os handlers de clique rodarem
       try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        e.currentTarget.releasePointerCapture(st.pointerId);
       } catch {
         // ponteiro já liberado — ignorar
       }
-      if (!st || !st.moved) return; // foi clique: deixa os handlers de clique rodarem
 
       const world = clientToWorld(e.clientX, e.clientY);
       const targetId = findDropTarget(world, positioned, { excludeId: st.id });
