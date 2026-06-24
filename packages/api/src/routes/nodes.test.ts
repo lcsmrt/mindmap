@@ -257,6 +257,154 @@ describe('Nodes API', () => {
       });
       expect(patch.statusCode).toBe(400);
     });
+
+    it('PATCH com status retorna 200 com status atualizado e demais campos inalterados', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Tarefa' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { status: 'IN_PROGRESS' },
+      });
+      expect(patch.statusCode).toBe(200);
+      const body = patch.json<{ status: string | null; title: string }>();
+      expect(body.status).toBe('IN_PROGRESS');
+      expect(body.title).toBe('Tarefa');
+    });
+
+    it('PATCH com status null retorna 200 com status null (reset)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Tarefa' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { status: 'DONE' },
+      });
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { status: null },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ status: string | null }>().status).toBeNull();
+    });
+
+    it('PATCH com status inválido retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Tarefa' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { status: 'INVALIDO' },
+      });
+      expect(patch.statusCode).toBe(400);
+    });
+
+    it('PATCH com assignee retorna 200 com assignee atualizado', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Tarefa' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { assignee: 'Lucas' },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ assignee: string | null }>().assignee).toBe('Lucas');
+    });
+
+    it('PATCH com assignee null retorna 200 com assignee null (reset)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Tarefa' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { assignee: 'Lucas' },
+      });
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { assignee: null },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ assignee: string | null }>().assignee).toBeNull();
+    });
+
+    it('PATCH com isCritical true retorna 200 e preserva title/cores', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Tarefa' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { bgColor: '#fecaca', textColor: '#dc2626' },
+      });
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { isCritical: true },
+      });
+      expect(patch.statusCode).toBe(200);
+      const body = patch.json<{
+        isCritical: boolean;
+        title: string;
+        bgColor: string | null;
+        textColor: string | null;
+      }>();
+      expect(body.isCritical).toBe(true);
+      expect(body.title).toBe('Tarefa');
+      expect(body.bgColor).toBe('#fecaca');
+      expect(body.textColor).toBe('#dc2626');
+    });
   });
 
   describe('DELETE /nodes/:id', () => {

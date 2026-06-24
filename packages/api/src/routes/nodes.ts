@@ -47,8 +47,11 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
         title: z.string().trim().min(1).optional(),
         bgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
         textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+        status: z.enum(['PENDING', 'IN_PROGRESS', 'DONE', 'BLOCKED']).nullable().optional(),
+        assignee: z.string().trim().min(1).nullable().optional(),
+        isCritical: z.boolean().optional(),
       }).refine(
-        (d) => d.title !== undefined || d.bgColor !== undefined || d.textColor !== undefined,
+        (d) => Object.values(d).some((v) => v !== undefined),
         { message: 'At least one field must be provided' },
       ),
     },
@@ -56,11 +59,14 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       const existing = await prisma.node.findUnique({ where: { id: req.params.id } });
       if (!existing) throw new NotFoundError('Node not found');
 
-      const { title, bgColor, textColor } = req.body;
+      const { title, bgColor, textColor, status, assignee, isCritical } = req.body;
       const data: Record<string, unknown> = {};
       if (title !== undefined) data.title = title;
       if (bgColor !== undefined) data.bgColor = bgColor;
       if (textColor !== undefined) data.textColor = textColor;
+      if (status !== undefined) data.status = status;
+      if (assignee !== undefined) data.assignee = assignee;
+      if (isCritical !== undefined) data.isCritical = isCritical;
 
       const updated = await prisma.node.update({
         where: { id: req.params.id },
