@@ -1,11 +1,19 @@
 # State
 
 **Last Updated:** 2026-06-23
-**Current Work:** M6 **executado** (T1–T9, 9 commits atômicos `0dcb547`→`1d9154c`). Gates finais verdes: typecheck ✅, lint ✅, test ✅ (api 42, web 36), e2e ✅ (22 specs, 6 novos M6). **Pendente: Review AD-013** em chat separado antes de marcar "concluído". M5 concluído e aprovado (review AD-013, 2026-05-20).
+**Current Work:** M6 **concluído e aprovado** (review AD-013, 2026-06-23 — ver L-003). Com isso, as cinco user stories de v1 (US-01 a US-05) estão entregues via M1–M6. **O Gate de qualidade v1 (RNF-01 500 nós + smoke manual das US) NÃO foi executado e está conscientemente adiado:** o usuário vai iniciar uma rodada de upgrades/refactors que muda muita coisa, então fechar v1 agora seria validar algo prestes a mudar. Próxima fase: **upgrades** (escopo a definir com o usuário). Não declarar v1 até o usuário decidir estabilizar e rodar o Gate. **Upgrade em andamento:** M7 — migração do canvas de React Flow → visx (ver AD-015). **Planejamento completo** (`spec.md` + `design.md` + `tasks.md` em `.specs/features/m7-canvas-visx/`), aguardando **Execute em chat separado** ([[feedback-plan-execute-split]]). 6 tasks (T1 deps → T2 useTreeLayout/flextree [P] → T3 useNodeDrag [P] → T4 troca MapCanvas+MindNode → T5 seletores e2e → T6 cleanup). Escopo restrito a paridade funcional + remoção da logo; cosmético livre; queixas de UX do canvas ficam como decisão pós-conversão (ver Deferred Ideas).
 
 ---
 
 ## Recent Decisions (Last 60 days)
+
+### AD-015: Canvas migra de React Flow para visx (d3-hierarchy + SVG + d3-zoom) (2026-06-23)
+
+**Decision:** Substituir `@xyflow/react` pela stack visx — `d3-hierarchy` (layout), SVG + `d3-shape` (edges curvas), `d3-zoom` (pan/zoom). **Override consciente** do "stack fixado / não propor trocas" do CLAUDE.md, decidido pelo usuário após fase exploratória. É o primeiro upgrade pós-v1 (escopo `m7`). Os nós continuam sendo o componente HTML `MindNode` (M5/M6) posicionado **por cima** do SVG (abordagem híbrida) — não viram desenho SVG. Backend 100% intacto (adjacency list, `sortOrder`, endpoints). `elkjs` + web worker de layout saem (d3-hierarchy é síncrono, O(n)).
+**Reason:** A atribuição/logo do React Flow só sai com licença Pro paga — dealbreaker ético para o usuário (que já havia removido `hideAttribution` em Q-005 justamente por isso). A migração também destrava controle total sobre curvas de edge e direção de layout (outras queixas do usuário), mas **essas melhorias são decisões adiadas** (ver Deferred Ideas) — esta migração é estritamente paridade.
+**Trade-off:** Perde-se o que o React Flow dava de graça (pan/zoom, drag, background, fitView) — reimplementado com d3-zoom/SVG. Custo de reescrever a camada de canvas (`MapCanvas`, `MindNode`). Os 40 usos do seletor `.react-flow__node` nos e2e precisam migrar para uma nova classe/data-testid.
+**Impact:** `MapCanvas.tsx` e `MindNode.tsx` reescritos; `layout.worker.ts` removido; `useLayoutedTree`/`treeLayout`/`nodeSize` adaptados ou substituídos por d3-hierarchy. Deps: remove `@xyflow/react` + `elkjs`, adiciona visx/d3. Substitui parcialmente **AD-009** (worker elkjs) e ataca o concern de performance do `simpleTreeLayout` síncrono. Feature em `.specs/features/m7-canvas-visx/`.
+**Addendum (design, 2026-06-23):** pesquisa verificada (fontes primárias) ajustou 2 premissas: (1) `@visx/zoom` v4 **não embrulha mais d3-zoom** — usa `@use-gesture/react`; o pan/zoom vem do `<Zoom>` do visx (o `toString()` dá uma `matrix()` CSS aplicável ao SVG das edges **e** ao `<div>` dos nós HTML). (2) Alturas de nó variáveis (40/58px) exigem **`d3-flextree`** (o `<Tree>`/`d3.tree()` só fazem `nodeSize` uniforme). Drag-to-reparent via **pointer events manuais** + `zoom.applyInverseToPoint` (não `@visx/drag`). Direção do layout: **vertical** (menor esforço). Ver `design.md`.
 
 ### AD-014: Playwright para smoke de UI em milestones com interação nova (2026-05-18)
 
@@ -129,6 +137,13 @@
 **Findings registrados em CONCERNS.md:** (1) `smoke.spec.ts:9` falha por race entre foco do MindNode e sync `rfNodes`/`useNodesState`; (2) cleanup do `useEffect` de foco não cancela `setTimeout`; (3) inline edit ignora `textColor` customizado (cosmético); (4) `persistence.spec.ts` tem teste de move não commitado (remanescente M4).
 **Takeaway:** M5 é o primeiro milestone a passar review AD-013 sem findings bloqueantes. A disciplina de atomic commits e gates funcionou. O bug de foco pré-existente valida a decisão de documentar fragile areas — o padrão `rfNodes`/`useNodesState` continua sendo a raiz de problemas.
 
+### L-003: Review independente M6 — aprovado; e2e pega o que a leitura não pega (2026-06-23)
+
+**Context:** Review AD-013 do M6. Gates reexecutados no review: typecheck ✅, lint ✅, unit ✅ (api 42, web 36). e2e: **as 6 specs de M6 (`task-properties.spec.ts`) passam todas**; cobertura 22/22 requisitos (M6-01 a M6-22). Backend (PATCH estendido + Zod), helpers (`getInitials`/`hasTaskProps`), componentes (StatusSelector, NodeTaskIndicators, dialog) e integração de layout (`nodeHeight` no worker + fallback) conferem com o design. Optimistic + rollback + toast reusados sem mudança.
+**Finding principal:** rodar o `test:e2e` (que eu inicialmente pulei, confiando na contagem da `tasks.md` — erro de processo apontado pelo usuário) revelou 1 falha **determinística** em `persistence.spec.ts:136` ("mover nó"). **Provado não ser regressão de M6:** revertendo `MindNode.tsx` + `layout.worker.ts` + `treeLayout.ts` para pré-M6 (`e7095ed`) a falha persiste idêntica. Causa: seletor frágil `.first()` + DB de e2e compartilhado/acumulativo. Registrado em `CONCERNS.md` (Known Bugs) + fechado o item de validação aberto em "Test Infrastructure".
+**Findings menores (não bloqueantes):** contraste do estado ativo dos botões de status (white sobre verde/cinza — label visível cumpre M6-22, é polimento); input de responsável dessincroniza em rollback (padrão herdado do título M5).
+**Takeaway:** reforça L-001 e a própria AD-013 — "review independente" exige **rodar os gates**, não reler o relatório do executor. A leitura aprovaria a M6; só o e2e expôs o teste frágil. Segundo milestone consecutivo a passar review sem findings bloqueantes novos.
+
 ---
 
 ## Quick Tasks Completed
@@ -149,6 +164,14 @@
 
 Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós-v1" do ROADMAP.
 
+**Pós-conversão visx — decisões de UX do canvas adiadas conscientemente (2026-06-23, ver AD-015):** a migração para visx é só paridade; estas três melhorias (que motivaram a abertura da discussão da troca de lib) ficam para depois da conversão:
+
+- [ ] **Posicionamento dos nós:** manter auto-layout (AD-002) vs. arrastar-e-fixar com persistência (colunas `x/y` no Node, revisar AD-002) vs. híbrido por sessão (não persistido). Decidir após a conversão.
+- [ ] **Direção do layout:** hoje horizontal (esq→dir); avaliar vertical (cima→baixo), radial ou alternável na UI. A migração mantém **horizontal por paridade**.
+- [ ] **Reorder entre irmãos via drag** — já listado abaixo (AD-011); revisitar **junto** com os dois pontos acima, já que o novo sistema de drag do visx é o enabler natural.
+
+- [ ] **Gate de qualidade v1 — pendente, adiado para depois dos upgrades** (`ROADMAP.md:49-52`): (a) RNF-01 — mapa sintético de 500 nós responsivo em pan/zoom/drag (nunca validado; risco apontado pelo concern de performance `simpleTreeLayout` síncrono no main thread); (b) smoke manual cobrindo US-01..US-05 de ponta a ponta. **Rodar antes de declarar v1 concluído.**
+- [ ] Decisão pendente sobre US-05 / expand-collapse: AD-004 deixou a restauração entre sessões fora — único critério de user story de v1 deliberadamente não atendido. Confirmar se entra nos upgrades ou fica pós-v1.
 - [ ] UI exata dos indicadores de tarefa no canvas — refinar iterativamente durante uso (§7 do spec)
 - [ ] Reorder entre irmãos do mesmo pai via drag (AD-011) — só drag-to-reparent em M3
 - [ ] Atalhos de teclado no canvas (Tab=add filho, Delete=excluir, etc.) — M3 só tem Enter/Escape no rename

@@ -6,6 +6,15 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Known Bugs
 
+**`persistence.spec.ts:136` — teste e2e "mover nó para outro pai" falha consistentemente (descoberto no review AD-013 de M6):**
+
+- Files: `packages/web/e2e/persistence.spec.ts:136-176`
+- Symptom: O teste espera ≥2 filhos da raiz (`expect(children.length).toBeGreaterThanOrEqual(2)`) após clicar 2x em "Adicionar filho", mas encontra 1 → falha determinística (não flaky: reproduzido isolado, 2x).
+- **Não é regressão de M6:** provado revertendo `MindNode.tsx` + `layout.worker.ts` + `treeLayout.ts` para a versão pré-M6 (`e7095ed`) e rodando o mesmo teste — falha idêntica. As 6 specs de `task-properties.spec.ts` (M6) passam todas.
+- Causa raiz: seletor frágil `.react-flow__node').first().getByTitle('Adicionar filho')` assume que o primeiro nó no DOM é sempre a raiz. Depois do 1º filho criado + re-layout, `.first()` deixa de apontar para a raiz, então o 2º clique adiciona filho ao nó errado e a raiz fica com 1 filho. Agravado pelo DB de e2e compartilhado/acumulativo (ver "Test Infrastructure" abaixo) — o teste nem deleta os nós que cria.
+- Fix: trocar o `.first()` por criação via API com título único + localização por título + cleanup no `afterEach` — exatamente o padrão robusto que `task-properties.spec.ts` (M6) já adota. Candidato a quick task.
+- Test coverage: o próprio teste (frágil); a correção do DB isolado (infra) destrava a robustez.
+
 ~~**Root ("Central") não é renomeável via UI (relato do usuário):**~~ — resolvido em Q-003: clique no texto do nó dispara edição via `onStartEdit`, sem depender de `onNodeDoubleClick`.
 
 ~~**Lint quebra Success Criteria de M3:**~~ — resolvido em Q-001.
@@ -57,7 +66,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Workaround adotado em M6: cada spec de `task-properties.spec.ts` cria seu próprio nó com título único via `POST /api/nodes`, localiza por título e remove num `afterEach` via `DELETE`. Mantém o mapa estável, mas é boilerplate por teste.
 - Severity: Medium — não quebra os testes (verdes), mas é frágil e suja dados reais de dev. Contradiz a intenção de "banco de testes isolado" de Q-002/Q-003 (validar se o isolamento existe só p/ Vitest API e não p/ Playwright).
 - Improvement path: apontar o `webServer` do Playwright para um DATABASE_URL de teste dedicado com reset por run (truncate/migrate), espelhando o setup dos testes de API. Candidato a quick task pós-M6.
-- **Para o review AD-013 de M6:** validar este ponto e confirmar que nenhum dado de dev ficou inconsistente.
+- **Validado no review AD-013 de M6:** confirmado — o DB compartilhado/acumulativo já está quebrando um teste preexistente (`persistence.spec.ts:136`, ver "Known Bugs"). As specs de M6 não foram afetadas (usam o workaround de título único + cleanup). Reforça a prioridade do DB de teste isolado.
 
 ## Tech Debt
 
