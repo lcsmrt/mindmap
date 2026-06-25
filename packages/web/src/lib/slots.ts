@@ -1,6 +1,6 @@
 import type { MoveNodeBody } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { type PositionedNode, GAP_X } from './useTreeLayout.js';
+import { type PositionedNode, GAP_X, GAP_Y } from './useTreeLayout.js';
 import { NODE_WIDTH, NODE_HEIGHT_BASE } from './nodeSize.js';
 
 /**
@@ -61,8 +61,10 @@ export function computeSlots(
     const colX = children[0]!.x;
     for (let j = 0; j <= m; j++) {
       let anchorY: number;
-      if (j === 0) anchorY = children[0]!.y; // topo do primeiro filho
-      else if (j === m) anchorY = children[m - 1]!.y + children[m - 1]!.height; // base do último
+      // Slots de ponta ficam afastados GAP_Y/2 da borda do card (mesmo respiro dos
+      // slots do meio, que caem no centro do vão) — senão a barra encosta no card.
+      if (j === 0) anchorY = children[0]!.y - GAP_Y / 2; // acima do primeiro filho
+      else if (j === m) anchorY = children[m - 1]!.y + children[m - 1]!.height + GAP_Y / 2; // abaixo do último
       else anchorY = (children[j - 1]!.y + children[j - 1]!.height + children[j]!.y) / 2; // gap
       slots.push({ parentId, index: j, side, x: colX, y: anchorY - PLACEHOLDER_H / 2, height: PLACEHOLDER_H });
     }

@@ -20,6 +20,10 @@ import { useNodeDrag } from './useNodeDrag.js';
 const SCALE_MIN = 0.1;
 const SCALE_MAX = 3;
 
+// Espessura (px de mundo) da barra de inserção do card-fantasma. Fina o bastante para
+// caber no vão entre irmãos (GAP_Y = 24) sem invadir os cards.
+const GHOST_BAR_HEIGHT = 6;
+
 type ZoomApi = ProvidedZoom<HTMLDivElement> & ZoomState;
 
 function clamp(value: number, min: number, max: number): number {
@@ -120,17 +124,20 @@ function CanvasLayers({
         className="absolute left-0 top-0"
         style={{ transform, transformOrigin: '0 0' }}
       >
-        {/* Card-fantasma: placeholder do slot-alvo durante o arraste (estilo MindMeister). */}
+        {/* Card-fantasma: barra de inserção no slot-alvo durante o arraste (estilo
+            MindMeister). Centrada no anchor do slot (centro vertical) e na camada acima
+            dos cards (zIndex), para não ser cortada por eles. */}
         {targetSlot && (
           <div
-            className="absolute rounded-md border-2 border-dashed border-primary/70 bg-primary/10"
+            className="absolute rounded-full bg-primary shadow-sm"
             data-testid="ghost-slot"
             style={{
               left: targetSlot.x,
-              top: targetSlot.y,
+              top: targetSlot.y + targetSlot.height / 2 - GHOST_BAR_HEIGHT / 2,
               width: NODE_WIDTH,
-              height: targetSlot.height,
+              height: GHOST_BAR_HEIGHT,
               pointerEvents: 'none',
+              zIndex: 20,
             }}
           />
         )}
