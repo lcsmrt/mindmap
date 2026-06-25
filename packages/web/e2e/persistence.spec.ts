@@ -12,7 +12,10 @@ test.describe('persistência e restauração (M4)', () => {
 
     const initialCount = await page.locator('[data-testid="mind-node"]').count();
 
-    const addBtn = page.locator('[data-testid="mind-node"]').first().getByTitle('Adicionar filho');
+    // T10: a toolbar só aparece no hover do nó (opacity-0 + pointer-events-none).
+    const firstNode = page.locator('[data-testid="mind-node"]').first();
+    await firstNode.hover();
+    const addBtn = firstNode.getByTitle('Adicionar filho');
     await addBtn.click();
 
     await expect(page.locator('[data-testid="mind-node"]')).toHaveCount(initialCount + 1, {
@@ -136,9 +139,13 @@ test.describe('persistência e restauração (M4)', () => {
   test('mover nó para outro pai persiste após reload', async ({ page }) => {
     await openFirstMap(page);
 
-    const addBtn = page.locator('[data-testid="mind-node"]').first().getByTitle('Adicionar filho');
+    // T10: hover no nó-raiz antes de cada clique para revelar a toolbar.
+    const rootNode = page.locator('[data-testid="mind-node"]').first();
+    const addBtn = rootNode.getByTitle('Adicionar filho');
+    await rootNode.hover();
     await addBtn.click();
     await page.waitForTimeout(500);
+    await rootNode.hover();
     await addBtn.click();
     await page.waitForTimeout(1_000);
 

@@ -40,11 +40,24 @@ async function createUniqueNode(page: Page, label: string): Promise<Locator> {
 }
 
 async function openEditDialog(page: Page, node: Locator) {
+  // T10: a toolbar do nó é revelada apenas no hover (opacity-0 + pointer-events-none).
+  await node.hover();
   await node.getByTitle('Editar nó').click();
   await expect(page.getByText('Editar nó')).toBeVisible({ timeout: 3_000 });
 }
 
 const IN_PROGRESS_RGB = 'rgb(59, 130, 246)';
+
+// T11 (reskin): o rodapé de indicadores não usa mais aria-label no status.
+// O status agora é um <span> com o rótulo em texto ("Em andamento") e um
+// <span> filho com o ponto colorido (backgroundColor = cor do status). A
+// criticidade passou a usar aria-label="Prioridade crítica".
+function statusBadge(indicators: Locator, label: string): Locator {
+  return indicators.locator('span').filter({ hasText: label }).first();
+}
+function statusDot(indicators: Locator, label: string): Locator {
+  return statusBadge(indicators, label).locator('span').first();
+}
 
 let counter = 0;
 function uniqueLabel(prefix: string): string {
@@ -79,9 +92,11 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
     const indicators = node.getByTestId('node-task-indicators');
     await expect(indicators).toBeVisible({ timeout: 3_000 });
 
-    const dot = indicators.locator('[aria-label="Em andamento"]');
-    await expect(dot).toBeVisible();
-    await expect(dot).toHaveCSS('background-color', IN_PROGRESS_RGB);
+    await expect(statusBadge(indicators, 'Em andamento')).toBeVisible();
+    await expect(statusDot(indicators, 'Em andamento')).toHaveCSS(
+      'background-color',
+      IN_PROGRESS_RGB,
+    );
   });
 
   test('digitar responsável exibe iniciais no rodapé', async ({ page }) => {
@@ -111,7 +126,7 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
 
     const indicators = node.getByTestId('node-task-indicators');
     await expect(indicators).toBeVisible({ timeout: 3_000 });
-    await expect(indicators.locator('[aria-label="Crítico"]')).toBeVisible();
+    await expect(indicators.locator('[aria-label="Prioridade crítica"]')).toBeVisible();
   });
 
   test('nó sem propriedades não tem rodapé de indicadores', async ({ page }) => {
@@ -138,7 +153,7 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
 
     const indicators = node.getByTestId('node-task-indicators');
     await expect(indicators).toBeVisible({ timeout: 3_000 });
-    await expect(indicators.locator('[aria-label="Em andamento"]')).toBeVisible();
+    await expect(statusBadge(indicators, 'Em andamento')).toBeVisible();
     await expect(indicators.getByText('AN', { exact: true })).toBeVisible();
 
     // Limpa status clicando no botão ativo; limpa responsável esvaziando o input.
@@ -178,8 +193,8 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
       .filter({ has: page.locator('.truncate', { hasText: label }) });
     const reloadedIndicators = reloadedNode.getByTestId('node-task-indicators');
     await expect(reloadedIndicators).toBeVisible({ timeout: 3_000 });
-    await expect(reloadedIndicators.locator('[aria-label="Em andamento"]')).toBeVisible();
+    await expect(statusBadge(reloadedIndicators, 'Em andamento')).toBeVisible();
     await expect(reloadedIndicators.getByText('LM', { exact: true })).toBeVisible();
-    await expect(reloadedIndicators.locator('[aria-label="Crítico"]')).toBeVisible();
+    await expect(reloadedIndicators.locator('[aria-label="Prioridade crítica"]')).toBeVisible();
   });
 });
