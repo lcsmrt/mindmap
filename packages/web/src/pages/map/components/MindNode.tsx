@@ -3,10 +3,73 @@ import { ChevronRight, ChevronDown, Plus, X, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { NodeTaskIndicators } from './NodeTaskIndicators.js';
+import { autoTextColor, isDarkBg } from './contrast.js';
 import type { MindNodeData } from './types.js';
 
 interface MindNodeProps {
   data: MindNodeData;
+}
+
+/**
+ * Default card background when the node has no custom color (dark study tone).
+ */
+const DEFAULT_BG = '#1c1c22';
+
+interface CardSkin {
+  background: string;
+  /** Text color applied to the card (and inherited footer via `text-current`). */
+  text: string;
+  /** Subtle border adapted to the background, or `undefined` for none. */
+  border: string;
+  boxShadow: string;
+  /** Toolbar pill background, tuned for light vs. dark cards. */
+  toolbarBg: string;
+  /** Idle/hover colors for the add + edit toolbar buttons. */
+  toolBtn: string;
+  toolBtnHoverBg: string;
+  toolBtnHoverText: string;
+  /** Idle/hover colors for the delete toolbar button. */
+  delBtn: string;
+  delBtnHoverBg: string;
+  delBtnHoverText: string;
+}
+
+/**
+ * Derive the card presentation from the node colors, mirroring the M10 study
+ * export ("Estudo de Nos.dc.html"): borders/divisors and the hover toolbar
+ * adapt to whether the background reads as dark or light.
+ */
+function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
+  const background = bgColor ?? DEFAULT_BG;
+  const text = textColor ?? autoTextColor(background);
+  const dark = isDarkBg(background);
+  return dark
+    ? {
+        background,
+        text,
+        border: '#34343e',
+        boxShadow: '0 4px 18px rgba(0,0,0,.35)',
+        toolbarBg: 'rgba(20,20,24,.7)',
+        toolBtn: '#9a9aa3',
+        toolBtnHoverBg: '#2e2e36',
+        toolBtnHoverText: '#ffffff',
+        delBtn: '#9a9aa3',
+        delBtnHoverBg: '#3a2626',
+        delBtnHoverText: '#ef7b7b',
+      }
+    : {
+        background,
+        text,
+        border: 'rgba(0,0,0,.08)',
+        boxShadow: '0 3px 14px rgba(0,0,0,.25)',
+        toolbarBg: 'rgba(0,0,0,.1)',
+        toolBtn: 'rgba(0,0,0,.5)',
+        toolBtnHoverBg: 'rgba(0,0,0,.1)',
+        toolBtnHoverText: '#000000',
+        delBtn: 'rgba(0,0,0,.5)',
+        delBtnHoverBg: 'rgba(198,40,40,.18)',
+        delBtnHoverText: '#a01919',
+      };
 }
 
 function MindNodeBase({ data }: MindNodeProps) {
@@ -68,15 +131,19 @@ function MindNodeBase({ data }: MindNodeProps) {
     }
   }
 
+  const skin = cardSkin(node.bgColor, node.textColor);
+
   return (
     <div
-      className="relative flex w-full flex-col rounded-md border border-border bg-card px-3 py-2 text-foreground shadow-sm hover:border-primary/60"
+      className="group relative flex w-full flex-col rounded-[11px] px-[13px] py-[11px]"
       style={{
-        backgroundColor: node.bgColor ?? undefined,
-        color: node.textColor ?? undefined,
+        backgroundColor: skin.background,
+        color: skin.text,
+        border: `1px solid ${skin.border}`,
+        boxShadow: skin.boxShadow,
       }}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-[7px] pr-4">
         {hasChildren && (
           <Button
             variant="ghost"
@@ -84,7 +151,7 @@ function MindNodeBase({ data }: MindNodeProps) {
               e.stopPropagation();
               onToggleCollapse();
             }}
-            className="shrink-0 text-muted-foreground hover:text-foreground text-xs w-4 h-auto p-0"
+            className="shrink-0 h-auto w-4 p-0 text-current opacity-60 hover:bg-transparent hover:opacity-100"
             title={isCollapsed ? 'Expandir' : 'Colapsar'}
           >
             {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -101,11 +168,11 @@ function MindNodeBase({ data }: MindNodeProps) {
               onBlur={commit}
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="w-full bg-transparent border-none shadow-none text-sm text-foreground h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="w-full bg-transparent border-none shadow-none text-sm font-semibold tracking-[-0.01em] text-current h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           ) : (
             <span
-              className="text-sm truncate block cursor-text"
+              className="block truncate cursor-text text-sm font-semibold tracking-[-0.01em]"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
@@ -116,49 +183,64 @@ function MindNodeBase({ data }: MindNodeProps) {
             </span>
           )}
         </div>
+      </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+      {/* Toolbar revelada no hover (CSS apenas). Os botões mantêm
+          `stopPropagation` no clique, então o drag do card permanece intacto.
+          `pointer-events-none` enquanto oculta deixa o pointerdown chegar ao
+          wrapper de arraste em MapCanvas. */}
+      <div
+        className="absolute top-2 right-2 flex gap-px rounded-[7px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+        style={{
+          backgroundColor: skin.toolbarBg,
+          ['--tool-fg' as string]: skin.toolBtn,
+          ['--tool-bg-h' as string]: skin.toolBtnHoverBg,
+          ['--tool-fg-h' as string]: skin.toolBtnHoverText,
+          ['--del-fg' as string]: skin.delBtn,
+          ['--del-bg-h' as string]: skin.delBtnHoverBg,
+          ['--del-fg-h' as string]: skin.delBtnHoverText,
+        }}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddChild();
+          }}
+          className="h-[23px] w-[23px] rounded-[5px] text-[color:var(--tool-fg)] hover:bg-[var(--tool-bg-h)] hover:text-[color:var(--tool-fg-h)]"
+          title="Adicionar filho"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenEditDialog();
+          }}
+          className="h-[23px] w-[23px] rounded-[5px] text-[color:var(--tool-fg)] hover:bg-[var(--tool-bg-h)] hover:text-[color:var(--tool-fg-h)]"
+          title="Editar nó"
+        >
+          <Palette className="w-3 h-3" />
+        </Button>
+
+        {!isRoot && (
           <Button
             variant="ghost"
             size="icon"
             onClick={(e) => {
               e.stopPropagation();
-              onAddChild();
+              onDelete();
             }}
-            className="text-muted-foreground hover:text-foreground text-sm w-5 h-5"
-            title="Adicionar filho"
+            className="h-[23px] w-[23px] rounded-[5px] text-[color:var(--del-fg)] hover:bg-[var(--del-bg-h)] hover:text-[color:var(--del-fg-h)]"
+            title="Excluir"
           >
-            <Plus className="w-3 h-3" />
+            <X className="w-3 h-3" />
           </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenEditDialog();
-            }}
-            className="text-muted-foreground hover:text-foreground text-sm w-5 h-5"
-            title="Editar nó"
-          >
-            <Palette className="w-3 h-3" />
-          </Button>
-
-          {!isRoot && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="text-muted-foreground/40 hover:text-destructive text-xs w-5 h-5"
-              title="Excluir"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
       <NodeTaskIndicators node={node} />
