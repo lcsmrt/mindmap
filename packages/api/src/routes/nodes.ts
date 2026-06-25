@@ -1,8 +1,10 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import type { Side } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { NotFoundError, ApiError } from '../errors.js';
 import { toNodeDto } from '../mappers/nodes.js';
+import { subtreeSizes, chooseSideForNewChild } from '../services/sides.js';
 
 const IdParam = z.object({ id: z.string() });
 
@@ -31,8 +33,21 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
         });
         const nextOrder = (agg._max.sortOrder ?? -1) + 1;
 
+        // Filho de 1º nível (pai = raiz) ganha lado default pela heurística de
+        // balance (lado mais leve, empate → RIGHT); profundos ficam sem lado.
+        let side: Side | null = null;
+        if (parent.parentId === null) {
+          const mapNodes = await tx.node.findMany({
+            where: { mapId },
+            select: { id: true, parentId: true, side: true },
+          });
+          const sizes = subtreeSizes(mapNodes);
+          const rootChildren = mapNodes.filter((n) => n.parentId === parent.id);
+          side = chooseSideForNewChild(rootChildren, sizes);
+        }
+
         return tx.node.create({
-          data: { mapId, parentId, title, sortOrder: nextOrder },
+          data: { mapId, parentId, title, sortOrder: nextOrder, side },
         });
       });
 

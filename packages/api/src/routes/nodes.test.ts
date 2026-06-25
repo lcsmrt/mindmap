@@ -103,6 +103,57 @@ describe('Nodes API', () => {
     });
   });
 
+  describe('POST /nodes — lado (side)', () => {
+    async function addChild(mapId: string, parentId: string, title: string) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId, title },
+      });
+      return res.json<{ id: string; side: 'LEFT' | 'RIGHT' | null }>();
+    }
+
+    it('primeiro filho de 1º nível cai à direita (empate → RIGHT)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const first = await addChild(mapId, root.id, 'A');
+      expect(first.side).toBe('RIGHT');
+    });
+
+    it('filhos de 1º nível alternam pelo lado mais leve', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await addChild(mapId, root.id, 'A'); // right=0,left=0 → RIGHT
+      const b = await addChild(mapId, root.id, 'B'); // right=1,left=0 → LEFT
+      const c = await addChild(mapId, root.id, 'C'); // right=1,left=1 → RIGHT
+      expect([a.side, b.side, c.side]).toEqual(['RIGHT', 'LEFT', 'RIGHT']);
+    });
+
+    it('respeita o peso de subárvore ao escolher o lado mais leve', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await addChild(mapId, root.id, 'A'); // RIGHT
+      // Engorda a subárvore de A (direita): 2 netos.
+      await addChild(mapId, a.id, 'A1');
+      await addChild(mapId, a.id, 'A2');
+      // right=3, left=0 → novo filho de 1º nível cai à esquerda.
+      const b = await addChild(mapId, root.id, 'B');
+      expect(b.side).toBe('LEFT');
+    });
+
+    it('filho de nó profundo não tem lado (side null)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await addChild(mapId, root.id, 'A');
+      const deep = await addChild(mapId, a.id, 'A1');
+      expect(deep.side).toBeNull();
+    });
+  });
+
   describe('PATCH /nodes/:id', () => {
     it('renomeia nó — 200 com título atualizado', async () => {
       const { id: mapId } = await createMap(app);
