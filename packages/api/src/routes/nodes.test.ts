@@ -595,5 +595,89 @@ describe('Nodes API', () => {
       expect(res.statusCode).toBe(400);
       expect(res.json<{ error: string }>().error).toBe('Cannot move root');
     });
+
+    it('mover para a raiz grava o lado informado', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await app
+        .inject({ method: 'POST', url: '/nodes', payload: { mapId, parentId: root.id, title: 'A' } })
+        .then((r) => r.json<{ id: string; side: string }>());
+      expect(a.side).toBe('RIGHT');
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${a.id}/move`,
+        payload: { parentId: root.id, index: 0, side: 'LEFT' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ side: string }>().side).toBe('LEFT');
+    });
+
+    it('mover para a raiz sem side assume RIGHT (salvaguarda)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await app
+        .inject({ method: 'POST', url: '/nodes', payload: { mapId, parentId: root.id, title: 'A' } })
+        .then((r) => r.json<{ id: string }>());
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${a.id}/move`,
+        payload: { parentId: root.id, index: 0 },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ side: string }>().side).toBe('RIGHT');
+    });
+
+    it('mover para pai profundo limpa o lado (null)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await app
+        .inject({ method: 'POST', url: '/nodes', payload: { mapId, parentId: root.id, title: 'A' } })
+        .then((r) => r.json<{ id: string }>());
+      const b = await app
+        .inject({ method: 'POST', url: '/nodes', payload: { mapId, parentId: root.id, title: 'B' } })
+        .then((r) => r.json<{ id: string; side: string }>());
+      expect(b.side).toBe('LEFT');
+
+      // B (1º nível, com lado) vira filho de A (profundo) → perde o lado.
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${b.id}/move`,
+        payload: { parentId: a.id, index: 0 },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ side: string | null }>().side).toBeNull();
+    });
+
+    it('reorder sob o mesmo pai renumera sortOrder e preserva o lado', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const a = await app
+        .inject({ method: 'POST', url: '/nodes', payload: { mapId, parentId: root.id, title: 'A' } })
+        .then((r) => r.json<{ id: string; side: string }>()); // RIGHT
+      const b = await app
+        .inject({ method: 'POST', url: '/nodes', payload: { mapId, parentId: root.id, title: 'B' } })
+        .then((r) => r.json<{ id: string }>()); // LEFT
+
+      // Move A para depois de B sob a raiz, mantendo o lado RIGHT.
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${a.id}/move`,
+        payload: { parentId: root.id, index: 1, side: a.side },
+      });
+      expect(res.statusCode).toBe(200);
+      const moved = res.json<{ sortOrder: number; side: string }>();
+      expect(moved.sortOrder).toBe(1);
+      expect(moved.side).toBe('RIGHT');
+
+      // b foi renumerado para 0.
+      const bAfter = await prisma.node.findUniqueOrThrow({ where: { id: b.id } });
+      expect(bAfter.sortOrder).toBe(0);
+    });
   });
 });

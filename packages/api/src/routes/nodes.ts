@@ -109,11 +109,12 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       body: z.object({
         parentId: z.string(),
         index: z.number().int(),
+        side: z.enum(['LEFT', 'RIGHT']).optional(),
       }),
     },
     handler: async (req) => {
       const { id } = req.params;
-      const { parentId: newParentId, index } = req.body;
+      const { parentId: newParentId, index, side } = req.body;
 
       const updated = await prisma.$transaction(async (tx) => {
         const node = await tx.node.findUnique({ where: { id } });
@@ -153,6 +154,10 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
           );
         }
 
+        // Lado: gravado só quando o destino é a raiz (filho de 1º nível); ao virar
+        // profundo, é limpo (null). Default RIGHT se ausente (salvaguarda).
+        const newSide: Side | null = newParent.parentId === null ? (side ?? 'RIGHT') : null;
+
         const newSiblings = await tx.node.findMany({
           where: { parentId: newParentId, NOT: { id } },
           orderBy: { sortOrder: 'asc' },
@@ -167,7 +172,10 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
           ordered.map((n, i) =>
             tx.node.update({
               where: { id: n.id },
-              data: { sortOrder: i, ...(n.id === id ? { parentId: newParentId } : {}) },
+              data: {
+                sortOrder: i,
+                ...(n.id === id ? { parentId: newParentId, side: newSide } : {}),
+              },
             })
           )
         );
