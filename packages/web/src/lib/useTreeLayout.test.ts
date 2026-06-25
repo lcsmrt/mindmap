@@ -16,6 +16,7 @@ function node(id: string, overrides: Partial<NodeDto> = {}): NodeDto {
     status: null,
     assignee: null,
     isCritical: false,
+    side: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...overrides,

@@ -13,6 +13,7 @@ function makeNode(overrides: Partial<NodeDto> & { id: string }): NodeDto {
     status: null,
     assignee: null,
     isCritical: false,
+    side: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...overrides,

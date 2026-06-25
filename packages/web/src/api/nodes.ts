@@ -86,6 +86,7 @@ export const useCreateNode = (options?: { onSuccess?: (data: NodeDto) => void })
           status: null,
           assignee: null,
           isCritical: false,
+          side: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

@@ -13,6 +13,7 @@ export function toNodeDto(node: Node): NodeDto {
     status: node.status as NodeDto['status'],
     assignee: node.assignee,
     isCritical: node.isCritical,
+    side: node.side,
     createdAt: node.createdAt.toISOString(),
     updatedAt: node.updatedAt.toISOString(),
   };

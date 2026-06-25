@@ -9,6 +9,7 @@ export interface NodeDto {
   status: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED' | null;
   assignee: string | null;
   isCritical: boolean;
+  side: 'LEFT' | 'RIGHT' | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,4 +36,5 @@ export interface UpdateNodeBody {
 export interface MoveNodeBody {
   parentId: string;
   index: number;
+  side?: 'LEFT' | 'RIGHT';
 }
