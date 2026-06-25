@@ -14,6 +14,11 @@ enum NodeStatus {
   BLOCKED
 }
 
+enum Side {
+  LEFT
+  RIGHT
+}
+
 model Map {
   id        String   @id @default(cuid())
   title     String
@@ -35,6 +40,7 @@ model Node {
   status     NodeStatus?
   assignee   String?
   isCritical Boolean     @default(false) @map("is_critical")
+  side       Side?       @map("side")
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
 
