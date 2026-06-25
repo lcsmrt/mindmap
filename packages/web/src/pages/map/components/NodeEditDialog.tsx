@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input.js';
 import { ColorSwatchGrid } from './ColorSwatchGrid.js';
 import { StatusSelector } from './StatusSelector.js';
 import { BG_PALETTE, TEXT_PALETTE } from './color-palette.js';
+import { statusMeta, getInitials } from './task-meta.js';
+import { autoTextColor, contrastRatio, contrastVerdict, isDarkBg } from './contrast.js';
+import type { ContrastLevel } from './contrast.js';
 import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
 
 interface NodeEditDialogProps {
@@ -38,12 +41,40 @@ interface NodeEditFormProps {
   onUpdateNode: (fields: UpdateNodeBody) => void;
 }
 
+/** Effective text color for rendering: `null` ("auto") derives from the bg. */
+function effectiveTextColor(bgColor: string | null, textColor: string | null): string {
+  if (textColor !== null) return textColor;
+  return autoTextColor(bgColor ?? '#ffffff');
+}
+
+const CONTRAST_TONE: Record<ContrastLevel, string> = {
+  good: 'text-emerald-400',
+  ok: 'text-amber-400',
+  bad: 'text-rose-400',
+};
+
+const CONTRAST_ICON: Record<ContrastLevel, string> = {
+  good: '✓',
+  ok: '!',
+  bad: '⚠',
+};
+
 function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
+  // Local mirror of every editable field so the live preview, the contrast
+  // meter and the avatar reflect edits instantly. Colors/status/criticality
+  // persist immediately (optimistic); title/assignee persist on blur/Enter,
+  // preserving the existing UX. Persistence itself is unchanged — every commit
+  // still goes through `onUpdateNode`.
   const [title, setTitle] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [assignee, setAssignee] = useState(node.assignee ?? '');
   const assigneeRef = useRef<HTMLInputElement>(null);
+
+  const [bgColor, setBgColor] = useState(node.bgColor);
+  const [textColor, setTextColor] = useState(node.textColor);
+  const [status, setStatus] = useState(node.status);
+  const [isCritical, setIsCritical] = useState(node.isCritical);
 
   const handleTitleSubmit = useCallback(() => {
     const trimmed = title.trim();
@@ -74,8 +105,105 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
     }
   }
 
+  function selectBgColor(color: string | null) {
+    setBgColor(color);
+    onUpdateNode({ bgColor: color });
+  }
+
+  function selectTextColor(color: string | null) {
+    setTextColor(color);
+    onUpdateNode({ textColor: color });
+  }
+
+  function selectStatus(next: NodeDto['status']) {
+    setStatus(next);
+    onUpdateNode({ status: next });
+  }
+
+  function toggleCritical() {
+    const next = !isCritical;
+    setIsCritical(next);
+    onUpdateNode({ isCritical: next });
+  }
+
+  const effectiveText = effectiveTextColor(bgColor, textColor);
+  const previewBg = bgColor ?? '#1c1c22';
+  const dark = isDarkBg(previewBg);
+  const ratio = contrastRatio(previewBg, effectiveText);
+  const verdict = contrastVerdict(ratio);
+
+  const statusInfo = status != null ? statusMeta(status) : null;
+  const trimmedAssignee = assignee.trim();
+  const initials = trimmedAssignee.length > 0 ? getInitials(trimmedAssignee) : '';
+  const criticalColor = dark ? '#ef7b7b' : '#b01818';
+  const dividerColor = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.1)';
+
   return (
     <div className="space-y-4">
+      {/* Pré-visualização ao vivo */}
+      <div className="space-y-2">
+        <div
+          className="rounded-[10px] border px-3.5 py-3"
+          style={{
+            backgroundColor: previewBg,
+            borderColor: dark ? '#34343e' : 'rgba(0,0,0,.08)',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            {isCritical && (
+              <span
+                className="shrink-0 text-[12px] leading-none"
+                style={{ color: criticalColor }}
+                title="Prioridade crítica"
+              >
+                ▲
+              </span>
+            )}
+            <span
+              className="truncate text-sm font-semibold tracking-tight"
+              style={{ color: effectiveText }}
+            >
+              {title || 'Sem título'}
+            </span>
+          </div>
+          {(statusInfo || initials) && (
+            <div
+              className="mt-2.5 flex items-center gap-2.5 border-t pt-2.5"
+              style={{ borderColor: dividerColor }}
+            >
+              {statusInfo && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold leading-none"
+                  style={{ color: effectiveText }}
+                >
+                  <span
+                    className="h-[7px] w-[7px] shrink-0 rounded-full"
+                    style={{ backgroundColor: statusInfo.color }}
+                  />
+                  {statusInfo.label}
+                </span>
+              )}
+              {initials && (
+                <span className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10px] font-bold leading-none text-[#cdcdf0]">
+                  {initials}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Medidor de contraste (WCAG) */}
+        <div className="flex items-center gap-1.5 text-[11.5px] font-semibold">
+          <span className={CONTRAST_TONE[verdict.level]}>
+            {CONTRAST_ICON[verdict.level]}
+          </span>
+          <span className={CONTRAST_TONE[verdict.level]}>{verdict.label}</span>
+          <span className="font-normal text-muted-foreground">
+            · contraste texto/fundo {ratio.toFixed(1)}:1
+          </span>
+        </div>
+      </div>
+
       <div className="space-y-1.5">
         <label htmlFor="node-title" className="text-xs font-medium text-muted-foreground">
           Título
@@ -94,35 +222,66 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       <ColorSwatchGrid
         label="Cor de fundo"
         colors={BG_PALETTE}
-        value={node.bgColor}
-        onSelect={(color) => onUpdateNode({ bgColor: color })}
-      />
-
-      <ColorSwatchGrid
-        label="Cor de texto"
-        colors={TEXT_PALETTE}
-        value={node.textColor}
-        onSelect={(color) => onUpdateNode({ textColor: color })}
+        value={bgColor}
+        onSelect={selectBgColor}
       />
 
       <div className="space-y-1.5">
+        <span className="text-xs font-medium text-muted-foreground">
+          Cor de texto{' '}
+          <span className="font-normal lowercase text-muted-foreground/70">
+            — prévia sobre o fundo atual
+          </span>
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {TEXT_PALETTE.map((swatch) => {
+            const selected = textColor === swatch.hex;
+            const aaColor = effectiveTextColor(bgColor, swatch.hex);
+            return (
+              <button
+                key={swatch.hex ?? 'auto'}
+                type="button"
+                aria-label={swatch.name}
+                aria-pressed={selected}
+                onClick={() => selectTextColor(swatch.hex)}
+                className={`flex h-7 w-[34px] items-center justify-center rounded-md border border-border text-[13px] font-bold transition-shadow ${
+                  selected ? 'ring-2 ring-primary ring-offset-2' : ''
+                }`}
+                style={{ backgroundColor: previewBg, color: aaColor }}
+                title={swatch.name}
+              >
+                Aa
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
         <span className="text-xs font-medium text-muted-foreground">Status</span>
-        <StatusSelector value={node.status} onSelect={(s) => onUpdateNode({ status: s })} />
+        <StatusSelector value={status} onSelect={selectStatus} />
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="node-assignee" className="text-xs font-medium text-muted-foreground">
           Responsável
         </label>
-        <Input
-          ref={assigneeRef}
-          id="node-assignee"
-          data-testid="assignee-input"
-          value={assignee}
-          onChange={(e) => setAssignee(e.target.value)}
-          onKeyDown={handleAssigneeKeyDown}
-          onBlur={handleAssigneeSubmit}
-        />
+        <div className="flex items-center gap-2.5 rounded-lg border border-input px-2.5 py-1 focus-within:border-ring">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10.5px] font-bold leading-none text-[#cdcdf0]">
+            {initials || '—'}
+          </span>
+          <Input
+            ref={assigneeRef}
+            id="node-assignee"
+            data-testid="assignee-input"
+            value={assignee}
+            placeholder="Atribuir a alguém"
+            onChange={(e) => setAssignee(e.target.value)}
+            onKeyDown={handleAssigneeKeyDown}
+            onBlur={handleAssigneeSubmit}
+            className="h-auto flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">
@@ -131,10 +290,10 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
           <button
             type="button"
             data-testid="critical-toggle"
-            aria-pressed={node.isCritical}
-            onClick={() => onUpdateNode({ isCritical: !node.isCritical })}
+            aria-pressed={isCritical}
+            onClick={toggleCritical}
             className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
-              node.isCritical
+              isCritical
                 ? 'border-transparent bg-destructive text-white'
                 : 'border-border bg-background text-foreground hover:bg-muted'
             }`}
