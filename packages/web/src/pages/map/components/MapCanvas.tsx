@@ -12,6 +12,7 @@ import type { TreeNode } from '@/lib/tree.js';
 import { useTreeLayout } from '@/lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '@/lib/useTreeLayout.js';
 import { slotToMoveBody, type Slot } from '@/lib/slots.js';
+import { NODE_WIDTH } from '@/lib/nodeSize.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
@@ -67,7 +68,7 @@ function CanvasLayers({
     [zoom],
   );
 
-  const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset } =
+  const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset, targetSlot } =
     useNodeDrag({ positioned, tree, clientToWorld, onPlace, onInvalidDrop, isRoot });
 
   // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem.
@@ -119,6 +120,20 @@ function CanvasLayers({
         className="absolute left-0 top-0"
         style={{ transform, transformOrigin: '0 0' }}
       >
+        {/* Card-fantasma: placeholder do slot-alvo durante o arraste (estilo MindMeister). */}
+        {targetSlot && (
+          <div
+            className="absolute rounded-md border-2 border-dashed border-primary/70 bg-primary/10"
+            data-testid="ghost-slot"
+            style={{
+              left: targetSlot.x,
+              top: targetSlot.y,
+              width: NODE_WIDTH,
+              height: targetSlot.height,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
         {positioned.map((p) => {
           const data = nodeDataById.get(p.id);
           if (!data) return null;

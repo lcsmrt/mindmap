@@ -200,19 +200,43 @@ export const useMoveNode = () => {
     onMutate: async ({ id, mapId, body }) => {
       await queryClient.cancelQueries({ queryKey: ['nodes', mapId] });
       const snapshot = queryClient.getQueryData<NodeListResponse>(['nodes', mapId]);
-      if (snapshot) {
-        const siblings = snapshot.nodes.filter(
-          (n) => n.parentId === body.parentId && n.id !== id,
+      const dragged = snapshot?.nodes.find((n) => n.id === id);
+      if (snapshot && dragged) {
+        // Espelha a renumeração global do backend: reinsere o nó no destino na posição
+        // `index` (clampada) e renumera origem/destino; grava o `side` (RIGHT default se
+        // o destino é a raiz e não veio side; null se o destino é profundo). Sem isso o
+        // card "pula" para o fim antes do refetch.
+        const oldParentId = dragged.parentId;
+        const newParent = snapshot.nodes.find((n) => n.id === body.parentId) ?? null;
+        const destIsRoot = newParent ? newParent.parentId === null : false;
+        const newSide = destIsRoot ? (body.side ?? 'RIGHT') : null;
+
+        const newSiblings = snapshot.nodes
+          .filter((n) => n.parentId === body.parentId && n.id !== id)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+        const clamped = Math.max(0, Math.min(body.index, newSiblings.length));
+        const destOrder = new Map<string, number>();
+        [...newSiblings.slice(0, clamped), dragged, ...newSiblings.slice(clamped)].forEach(
+          (n, i) => destOrder.set(n.id, i),
         );
-        const newSortOrder = siblings.length > 0
-          ? Math.max(...siblings.map((n) => n.sortOrder)) + 1
-          : 0;
+
+        const originOrder = new Map<string, number>();
+        if (oldParentId !== body.parentId) {
+          snapshot.nodes
+            .filter((n) => n.parentId === oldParentId && n.id !== id)
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .forEach((n, i) => originOrder.set(n.id, i));
+        }
+
         queryClient.setQueryData<NodeListResponse>(['nodes', mapId], {
-          nodes: snapshot.nodes.map((n) =>
-            n.id === id
-              ? { ...n, parentId: body.parentId, sortOrder: newSortOrder }
-              : n,
-          ),
+          nodes: snapshot.nodes.map((n) => {
+            if (n.id === id) {
+              return { ...n, parentId: body.parentId, sortOrder: destOrder.get(id)!, side: newSide };
+            }
+            if (destOrder.has(n.id)) return { ...n, sortOrder: destOrder.get(n.id)! };
+            if (originOrder.has(n.id)) return { ...n, sortOrder: originOrder.get(n.id)! };
+            return n;
+          }),
         });
       }
       return { snapshot };

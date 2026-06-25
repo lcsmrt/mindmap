@@ -1,6 +1,6 @@
 import type { MoveNodeBody } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { type PositionedNode, GAP_X, GAP_Y } from './useTreeLayout.js';
+import { type PositionedNode, GAP_X } from './useTreeLayout.js';
 import { NODE_WIDTH, NODE_HEIGHT_BASE } from './nodeSize.js';
 
 /**
