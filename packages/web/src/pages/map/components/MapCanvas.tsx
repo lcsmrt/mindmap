@@ -8,8 +8,10 @@ import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
 import { NodeEditDialog } from './NodeEditDialog.js';
 import { buildTree, visibleNodes } from '@/lib/tree.js';
+import type { TreeNode } from '@/lib/tree.js';
 import { useTreeLayout } from '@/lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '@/lib/useTreeLayout.js';
+import { slotToMoveBody, type Slot } from '@/lib/slots.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
@@ -30,9 +32,10 @@ interface CanvasLayersProps {
   positioned: PositionedNode[];
   links: LayoutLink[];
   bounds: LayoutBounds;
+  tree: TreeNode | null;
   nodeDataById: Map<string, MindNodeData>;
   isRoot: (id: string) => boolean;
-  onReparent: (childId: string, parentId: string) => void;
+  onPlace: (draggedId: string, slot: Slot) => void;
   onInvalidDrop: () => void;
 }
 
@@ -43,9 +46,10 @@ function CanvasLayers({
   positioned,
   links,
   bounds,
+  tree,
   nodeDataById,
   isRoot,
-  onReparent,
+  onPlace,
   onInvalidDrop,
 }: CanvasLayersProps) {
   // O <Zoom> do visx entrega `zoom` (com containerRef) no render-prop e exige ler
@@ -64,7 +68,7 @@ function CanvasLayers({
   );
 
   const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset } =
-    useNodeDrag({ positioned, clientToWorld, onReparent, onInvalidDrop, isRoot });
+    useNodeDrag({ positioned, tree, clientToWorld, onPlace, onInvalidDrop, isRoot });
 
   // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem.
   const fittedRef = useRef(false);
@@ -264,6 +268,9 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges);
 
+  // Árvore visível (subárvores colapsadas já removidas) — fonte dos slots de drag.
+  const visTree = useMemo(() => buildTree(visNodes), [visNodes]);
+
   const nodeById = useMemo(() => {
     const map = new Map<string, NodeDto>();
     for (const n of data?.nodes ?? []) map.set(n.id, n);
@@ -311,11 +318,16 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [nodeById],
   );
 
-  const handleReparent = useCallback(
-    (childId: string, parentId: string) => {
-      moveNode({ id: childId, mapId, body: { parentId, index: Number.MAX_SAFE_INTEGER } });
+  const handlePlace = useCallback(
+    (draggedId: string, slot: Slot) => {
+      const rootChildren = (visTree?.children ?? []).map((c) => ({
+        id: c.node.id,
+        side: c.node.side,
+      }));
+      const body = slotToMoveBody(slot, rootChildren, draggedId);
+      moveNode({ id: draggedId, mapId, body });
     },
-    [moveNode, mapId],
+    [moveNode, mapId, visTree],
   );
 
   const handleInvalidDrop = useCallback(() => {
@@ -376,9 +388,10 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               positioned={positioned}
               links={links}
               bounds={bounds}
+              tree={visTree}
               nodeDataById={nodeDataById}
               isRoot={isRoot}
-              onReparent={handleReparent}
+              onPlace={handlePlace}
               onInvalidDrop={handleInvalidDrop}
             />
           )}
