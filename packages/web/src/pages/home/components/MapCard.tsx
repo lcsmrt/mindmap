@@ -58,6 +58,7 @@ export const MapCard = ({ map, onOpen, onRename, onDelete, className }: MapCardP
 
   return (
     <div
+      data-testid="map-card"
       role="button"
       tabIndex={0}
       onClick={onOpen}

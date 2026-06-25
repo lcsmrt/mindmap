@@ -8,7 +8,7 @@ test('app carrega a home com lista de mapas', async ({ page }) => {
 
 test('clique no texto do nó abre edição inline com foco', async ({ page }) => {
   await page.goto('/');
-  await page.locator('ul button').first().click();
+  await page.locator('[data-testid="map-card"]').first().click();
 
   const node = page.locator('[data-testid="mind-node"]').first();
   await expect(node).toBeVisible({ timeout: 10_000 });

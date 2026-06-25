@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 async function openFirstMap(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.locator('ul button').first().click();
+  await page.locator('[data-testid="map-card"]').first().click();
   await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 }
 
