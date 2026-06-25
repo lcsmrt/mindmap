@@ -31,9 +31,10 @@ export interface LayoutResult {
 }
 
 // Espaço extra entre nós: GAP_Y separa irmãos (eixo vertical/breadth),
-// GAP_X separa níveis (eixo horizontal/depth).
-const GAP_X = 24;
-const GAP_Y = 24;
+// GAP_X separa níveis (eixo horizontal/depth). Exportados para o cálculo de slots
+// (lib/slots.ts) usar a mesma geometria do layout.
+export const GAP_X = 24;
+export const GAP_Y = 24;
 
 const EMPTY_LAYOUT: LayoutResult = {
   positioned: [],
