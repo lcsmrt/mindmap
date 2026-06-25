@@ -55,3 +55,36 @@ export function chooseSideForNewChild(
   }
   return weightLeft < weightRight ? 'LEFT' : 'RIGHT';
 }
+
+/**
+ * Reparte todos os filhos de 1º nível entre os dois lados balanceando o peso de
+ * subárvore — réplica exata do `splitChildren` do frontend (M8): ordena por peso
+ * desc (desempate por `sortOrder`, depois índice) e atribui cada filho ao lado
+ * atualmente mais leve; empate → `RIGHT`. Usado pelo backfill de mapas legados.
+ */
+export function computeBalancedSides(
+  rootChildren: Array<{ id: string; sortOrder: number }>,
+  sizes: Map<string, number>,
+): Map<string, Side> {
+  const weighted = rootChildren.map((child, idx) => ({
+    id: child.id,
+    weight: sizes.get(child.id) ?? 1,
+    sortOrder: child.sortOrder,
+    idx,
+  }));
+  weighted.sort((a, b) => b.weight - a.weight || a.sortOrder - b.sortOrder || a.idx - b.idx);
+
+  const result = new Map<string, Side>();
+  let weightRight = 0;
+  let weightLeft = 0;
+  for (const w of weighted) {
+    if (weightRight <= weightLeft) {
+      result.set(w.id, 'RIGHT');
+      weightRight += w.weight;
+    } else {
+      result.set(w.id, 'LEFT');
+      weightLeft += w.weight;
+    }
+  }
+  return result;
+}
