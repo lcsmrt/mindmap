@@ -1,7 +1,10 @@
 export interface MapSummary {
   id: string;
   title: string;
+  createdAt: string;
   updatedAt: string;
+  nodeCount: number;
+  criticalCount: number;
 }
 
 export interface MapDetail {
