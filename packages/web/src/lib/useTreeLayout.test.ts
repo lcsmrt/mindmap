@@ -98,59 +98,87 @@ describe('computeTreeLayout', () => {
     expect(centerX(root)).toBe(0);
   });
 
-  it('reparte os filhos de 1º nível entre os dois lados (algum x<0 e algum x>0)', () => {
+  it('reparte os filhos de 1º nível pelo side persistido (algum x<0 e algum x>0)', () => {
     const tree: TreeNode = {
       node: node('root'),
       children: [
-        leaf('a'),
-        leaf('b', { sortOrder: 1 }),
-        leaf('c', { sortOrder: 2 }),
-        leaf('d', { sortOrder: 3 }),
+        leaf('a', { side: 'RIGHT' }),
+        leaf('b', { sortOrder: 1, side: 'RIGHT' }),
+        leaf('c', { sortOrder: 2, side: 'LEFT' }),
+        leaf('d', { sortOrder: 3, side: 'LEFT' }),
       ],
     };
     const { positioned } = computeTreeLayout(tree);
-    const children = positioned.filter((p) => p.id !== 'root');
-    expect(children.some((p) => centerX(p) > 0)).toBe(true);
-    expect(children.some((p) => centerX(p) < 0)).toBe(true);
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    expect(centerX(byId('a'))).toBeGreaterThan(0);
+    expect(centerX(byId('b'))).toBeGreaterThan(0);
+    expect(centerX(byId('c'))).toBeLessThan(0);
+    expect(centerX(byId('d'))).toBeLessThan(0);
   });
 
-  it('filho único vai para o lado direito (default determinístico)', () => {
+  it('filho de 1º nível com side nulo cai à direita (fallback defensivo)', () => {
     const tree: TreeNode = { node: node('root'), children: [leaf('only')] };
     const { positioned } = computeTreeLayout(tree);
     const only = positioned.find((p) => p.id === 'only')!;
     expect(centerX(only)).toBeGreaterThan(0);
   });
 
-  it('split balanceado por peso: ramo pesado sozinho de um lado, leves do outro', () => {
-    // heavy: subárvore de peso 5 (1 + 4 folhas); 3 folhas leves de peso 1.
+  it('o split segue o side, não o peso: ramo pesado fica do lado que o side manda', () => {
+    // heavy é o ramo mais pesado (subárvore 5) mas tem side LEFT; as folhas leves RIGHT.
+    // Sob split por peso o heavy iria sozinho à direita — aqui prova-se que segue o side.
     const heavy: TreeNode = {
-      node: node('heavy'),
+      node: node('heavy', { side: 'LEFT' }),
       children: [leaf('h1'), leaf('h2', { sortOrder: 1 }), leaf('h3', { sortOrder: 2 }), leaf('h4', { sortOrder: 3 })],
     };
     const tree: TreeNode = {
       node: node('root'),
       children: [
         heavy,
-        leaf('x', { sortOrder: 1 }),
-        leaf('y', { sortOrder: 2 }),
-        leaf('z', { sortOrder: 3 }),
+        leaf('x', { sortOrder: 1, side: 'RIGHT' }),
+        leaf('y', { sortOrder: 2, side: 'RIGHT' }),
+        leaf('z', { sortOrder: 3, side: 'RIGHT' }),
       ],
     };
     const { positioned } = computeTreeLayout(tree);
     const byId = (id: string) => positioned.find((p) => p.id === id)!;
-    const heavySide = Math.sign(centerX(byId('heavy')));
-    // o ramo pesado está sozinho de um lado; os três leves no lado oposto
-    expect(Math.sign(centerX(byId('x')))).toBe(-heavySide);
-    expect(Math.sign(centerX(byId('y')))).toBe(-heavySide);
-    expect(Math.sign(centerX(byId('z')))).toBe(-heavySide);
+    expect(centerX(byId('heavy'))).toBeLessThan(0); // LEFT, apesar de pesado
+    expect(centerX(byId('x'))).toBeGreaterThan(0);
+    expect(centerX(byId('y'))).toBeGreaterThan(0);
+    expect(centerX(byId('z'))).toBeGreaterThan(0);
+  });
+
+  it('todos os filhos com o mesmo side ⇒ todos do mesmo lado (sem forçar equilíbrio)', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [
+        leaf('a', { side: 'RIGHT' }),
+        leaf('b', { sortOrder: 1, side: 'RIGHT' }),
+        leaf('c', { sortOrder: 2, side: 'RIGHT' }),
+      ],
+    };
+    const { positioned } = computeTreeLayout(tree);
+    const children = positioned.filter((p) => p.id !== 'root');
+    expect(children.every((p) => centerX(p) > 0)).toBe(true);
+  });
+
+  it('nó profundo herda o lado do ramo de 1º nível (sem side próprio)', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [{ node: node('branch', { side: 'LEFT' }), children: [leaf('deep')] }],
+    };
+    const { positioned } = computeTreeLayout(tree);
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    // branch está à esquerda; deep (side null) vive no mesmo grupo → também à esquerda.
+    expect(centerX(byId('branch'))).toBeLessThan(0);
+    expect(centerX(byId('deep'))).toBeLessThan(centerX(byId('branch')));
   });
 
   it('subárvore do lado direito cresce +x; lado esquerdo espelhado −x', () => {
     const tree: TreeNode = {
       node: node('root'),
       children: [
-        { node: node('r'), children: [leaf('r1')] },
-        { node: node('l', { sortOrder: 1 }), children: [leaf('l1')] },
+        { node: node('r', { side: 'RIGHT' }), children: [leaf('r1')] },
+        { node: node('l', { sortOrder: 1, side: 'LEFT' }), children: [leaf('l1')] },
       ],
     };
     const { positioned } = computeTreeLayout(tree);
@@ -164,28 +192,29 @@ describe('computeTreeLayout', () => {
   });
 
   it('alturas variáveis não se sobrepõem entre irmãos do mesmo lado', () => {
-    // dois filhos no mesmo lado (direita) com alturas diferentes
+    // Três filhos forçados ao MESMO lado (direita) com alturas distintas (com/sem
+    // props de tarefa). Exercita de fato o empilhamento vertical de alturas variáveis
+    // — o caso que o teste antigo não cobria (split mandava 1 por lado).
     const tree: TreeNode = {
       node: node('root'),
-      children: [leaf('a', { status: 'DONE' }), leaf('b', { sortOrder: 1 })],
+      children: [
+        leaf('a', { side: 'RIGHT', status: 'DONE' }),
+        leaf('b', { sortOrder: 1, side: 'RIGHT' }),
+        leaf('c', { sortOrder: 2, side: 'RIGHT', status: 'BLOCKED' }),
+      ],
     };
-    // força ambos para a direita não é trivial via API pública; em vez disso,
-    // valida a ausência de sobreposição vertical entre quaisquer irmãos do mesmo lado.
     const { positioned } = computeTreeLayout(tree);
-    const sameSide = positioned
-      .filter((p) => p.id !== 'root')
-      .reduce<Record<string, typeof positioned>>((acc, p) => {
-        const side = centerX(p) > 0 ? 'right' : 'left';
-        (acc[side] ??= []).push(p);
-        return acc;
-      }, {});
-    for (const group of Object.values(sameSide)) {
-      const sorted = [...group].sort((p, q) => p.y - q.y);
-      for (let i = 1; i < sorted.length; i++) {
-        const curr = sorted[i]!;
-        const prev = sorted[i - 1]!;
-        expect(curr.y).toBeGreaterThanOrEqual(prev.y + prev.height);
-      }
+    const rightGroup = positioned.filter((p) => p.id !== 'root');
+    expect(rightGroup).toHaveLength(3);
+    expect(rightGroup.every((p) => centerX(p) > 0)).toBe(true);
+
+    const sorted = [...rightGroup].sort((p, q) => p.y - q.y);
+    // alturas realmente variam (40 vs 58) — senão o caso seria vacuoso de novo.
+    expect(new Set(sorted.map((p) => p.height)).size).toBeGreaterThan(1);
+    for (let i = 1; i < sorted.length; i++) {
+      const curr = sorted[i]!;
+      const prev = sorted[i - 1]!;
+      expect(curr.y).toBeGreaterThanOrEqual(prev.y + prev.height);
     }
   });
 
@@ -203,7 +232,7 @@ describe('computeTreeLayout', () => {
   it('bounds cobrem a extensão dos nós posicionados (x negativo e positivo)', () => {
     const tree: TreeNode = {
       node: node('root'),
-      children: [leaf('a'), leaf('b', { sortOrder: 1 })],
+      children: [leaf('a', { side: 'RIGHT' }), leaf('b', { sortOrder: 1, side: 'LEFT' })],
     };
     const { positioned, bounds } = computeTreeLayout(tree);
     const minX = Math.min(...positioned.map((p) => p.x));

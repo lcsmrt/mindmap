@@ -41,50 +41,25 @@ const EMPTY_LAYOUT: LayoutResult = {
   bounds: { width: 0, height: 0, minX: 0, minY: 0 },
 };
 
-/** Quantidade de nós (visíveis) na subárvore — peso usado pelo split balanceado. */
-function subtreeSize(t: TreeNode): number {
-  let total = 1;
-  for (const child of t.children) total += subtreeSize(child);
-  return total;
-}
-
 /**
- * Reparte os filhos de 1º nível entre os dois lados balanceando o peso de subárvore.
- * Guloso e determinístico: ordena por peso desc (desempate por `sortOrder`, depois
- * índice) e atribui cada filho ao lado atualmente mais leve. Empate de peso entre os
- * lados → direita, logo um filho único também vai para a direita.
+ * Reparte os filhos de 1º nível entre os dois lados pelo `side` persistido (M9): cada
+ * filho direto da raiz tem um lado fixado (`LEFT`/`RIGHT`); o split não recalcula peso.
+ * Cada grupo mantém a ordem de entrada (já em `sortOrder`, vinda de `buildVisibleTree`).
+ * Fallback defensivo: `side` nulo num filho de 1º nível conta como `RIGHT` — nunca
+ * quebra o render se o backfill não rodou (não persiste nada).
  */
 function splitChildren(children: TreeNode[]): { right: TreeNode[]; left: TreeNode[] } {
-  const weighted = children.map((child, idx) => ({
-    child,
-    weight: subtreeSize(child),
-    sortOrder: child.node.sortOrder,
-    idx,
-  }));
-  weighted.sort((a, b) => b.weight - a.weight || a.sortOrder - b.sortOrder || a.idx - b.idx);
-
-  const right: TreeNode[] = [];
-  const left: TreeNode[] = [];
-  let weightRight = 0;
-  let weightLeft = 0;
-  for (const w of weighted) {
-    if (weightRight <= weightLeft) {
-      right.push(w.child);
-      weightRight += w.weight;
-    } else {
-      left.push(w.child);
-      weightLeft += w.weight;
-    }
-  }
+  const right = children.filter((c) => c.node.side !== 'LEFT');
+  const left = children.filter((c) => c.node.side === 'LEFT');
   return { right, left };
 }
 
 /**
  * Layout síncrono de altura variável via d3-flextree. Função pura (sem React/DOM),
  * unit-testável. Direção **bidirecional horizontal** (estilo MindMeister): a raiz fica
- * centrada na origem; os filhos de 1º nível são repartidos entre dois lados
- * balanceados por peso de subárvore; cada lado é uma árvore horizontal que cresce
- * afastando-se da raiz (direita → +x; esquerda → −x, espelhada).
+ * centrada na origem; os filhos de 1º nível são repartidos entre dois lados pelo
+ * `side` persistido (M9); cada lado é uma árvore horizontal que cresce afastando-se
+ * da raiz (direita → +x; esquerda → −x, espelhada).
  *
  * Geometria do flextree na horizontal: `nodeSize = [breadth=altura, depth=largura]`,
  * então `n.x` é o centro vertical (breadth) do nó e `n.y` a borda do nó no eixo de
