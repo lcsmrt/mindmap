@@ -65,7 +65,11 @@ Milestones de v1 organizados por dependência técnica. Cada milestone agrupa um
 
 ---
 
-## Pós-v1 — em planejamento
+## Pós-v1 — executado (pendente review AD-013)
+
+### M10 — Redesign (web) (AD-019) ⏳ executado, pendente review (2026-06-25)
+
+- Porta o redesign do Claude Design (pasta `Mindmaps system interface/`: telas "Meus Mapas" e "Estudo de Nós" + dialog) para o produto. **Reskin** de duas telas + **uma** extensão de contrato: `GET /maps`/`MapSummary` ganham `nodeCount`/`criticalCount`/`createdAt` (única mudança de backend; sem schema/migration — AD-019; `nodeCount` inclui a raiz). Home: header neutro (**sem rebranding "Nodum"**), grid de cards com métricas/datas, criar via modal, menu ⋯ (Renomear/Excluir), e **(P2)** busca + ordenação. Canvas: nó rico (cor/status+label/avatar de responsável/▲ crítico) + toolbar no hover; dialog com preview ao vivo + **(P2)** medidor de contraste WCAG. Decisões do usuário: sem mini-preview nos cards; `assignee` segue string livre (AD-003). AD-002/AD-005 preservadas; M7/M8/M9 (layout/interação do canvas) **intactos**. Spec/design/tasks em `.specs/features/m10-redesign/` (27 req. M10-NN, 13 tasks). **Executado (commits `1476aba`…`18f17d0`); gates verdes (typecheck/lint, unit api 56/web 88, e2e 32/32, smoke visual); pendente review AD-013 (chat separado, [[feedback-plan-execute-split]]).**
 
 ### M9 — Drag-to-place unificado (AD-011/AD-017/AD-018) 📝 spec pronta (2026-06-24)
 
