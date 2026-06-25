@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** [`design.md`](./design.md) (Approved 2026-06-25)
-**Status:** Draft
+**Status:** Executed (T1–T11, 2026-06-25) — gates verdes (typecheck/lint ✅, unit api 53 + web 66 ✅, e2e 25/25 ✅); **review AD-013 pendente** (chat separado). Commits `7b0f170`…`65e647d`.
 
 ---
 

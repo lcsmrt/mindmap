@@ -149,29 +149,29 @@ M9 unifica o gesto de arraste num único modelo **"soltar num slot"**: todo drop
 
 | Requirement ID | Story | Priority | Status |
 | --- | --- | --- | --- |
-| M9-01 | Campo de lado no schema do Node (+ migration) | P1 | Pending |
-| M9-02 | Create atribui lado default por balance e persiste | P1 | Pending |
-| M9-03 | Layout lê lado armazenado (não recalcula split por peso) | P1 | Pending |
-| M9-04 | Todos de um lado é permitido (sem forçar equilíbrio) | P1 | Pending |
-| M9-05 | Nó profundo herda lado do ramo de 1º nível | P1 | Pending |
-| M9-06 | Só raiz → 1 nó centrado, sem lados/edges | P1 | Pending |
-| M9-07 | Drop no mesmo pai → reorder via `move({index})` | P1 | Pending |
-| M9-08 | Drop em outro pai → reparent na posição (`parentId`+`index`) | P1 | Pending |
-| M9-09 | Drop em slot de 1º nível → seta lado + parent + index | P1 | Pending |
-| M9-10 | Drop na posição/pai atuais → no-op | P1 | Pending |
-| M9-11 | Move para si/descendente impedido (frontend + 400 backend) | P1 | Pending |
-| M9-12 | Limiar de drag vs. clique preservado | P1 | Pending |
-| M9-13 | Raiz não arrastável | P1 | Pending |
-| M9-14 | Card-fantasma no slot-alvo durante o arraste | P1 | Pending |
-| M9-15 | Card-fantasma atualiza em tempo real ao mudar de slot | P1 | Pending |
-| M9-16 | Sem slot válido → sem fantasma + no-op/snap-back | P1 | Pending |
-| M9-17 | Consistência fantasma↔resultado ao soltar | P1 | Pending |
-| M9-18 | Paridade: edição/collapse/add/delete/dialog/indicadores | P1 | Pending |
-| M9-19 | `fitView` enquadra bounds bilaterais do lado persistido | P1 | Pending |
-| M9-20 | Gates: typecheck/lint/unit verdes; unit de layout+slot | P1 | Pending |
-| M9-21 | e2e: existentes verdes + novos (reorder/reparent/lado) | P1 | Pending |
-| M9-22 | Testes de API: default de lado no create; move com index/lado | P1 | Pending |
-| M9-23 | Balance default = lado mais leve, respeitando lados atuais | P2 | Pending |
+| M9-01 | Campo de lado no schema do Node (+ migration) | P1 | Done |
+| M9-02 | Create atribui lado default por balance e persiste | P1 | Done |
+| M9-03 | Layout lê lado armazenado (não recalcula split por peso) | P1 | Done |
+| M9-04 | Todos de um lado é permitido (sem forçar equilíbrio) | P1 | Done |
+| M9-05 | Nó profundo herda lado do ramo de 1º nível | P1 | Done |
+| M9-06 | Só raiz → 1 nó centrado, sem lados/edges | P1 | Done |
+| M9-07 | Drop no mesmo pai → reorder via `move({index})` | P1 | Done |
+| M9-08 | Drop em outro pai → reparent na posição (`parentId`+`index`) | P1 | Done |
+| M9-09 | Drop em slot de 1º nível → seta lado + parent + index | P1 | Done |
+| M9-10 | Drop na posição/pai atuais → no-op | P1 | Done |
+| M9-11 | Move para si/descendente impedido (frontend + 400 backend) | P1 | Done |
+| M9-12 | Limiar de drag vs. clique preservado | P1 | Done |
+| M9-13 | Raiz não arrastável | P1 | Done |
+| M9-14 | Card-fantasma no slot-alvo durante o arraste | P1 | Done |
+| M9-15 | Card-fantasma atualiza em tempo real ao mudar de slot | P1 | Done |
+| M9-16 | Sem slot válido → sem fantasma + no-op/snap-back | P1 | Done |
+| M9-17 | Consistência fantasma↔resultado ao soltar | P1 | Done |
+| M9-18 | Paridade: edição/collapse/add/delete/dialog/indicadores | P1 | Done |
+| M9-19 | `fitView` enquadra bounds bilaterais do lado persistido | P1 | Done |
+| M9-20 | Gates: typecheck/lint/unit verdes; unit de layout+slot | P1 | Done |
+| M9-21 | e2e: existentes verdes + novos (reorder/reparent/lado) | P1 | Done |
+| M9-22 | Testes de API: default de lado no create; move com index/lado | P1 | Done |
+| M9-23 | Balance default = lado mais leve, respeitando lados atuais | P2 | Done |
 
 **Coverage:** 23 requisitos — 22 P1, 1 P2.
 
