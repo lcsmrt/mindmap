@@ -6,7 +6,13 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/prisma/migrations/**', '**/e2e/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/prisma/migrations/**',
+      '**/e2e/**',
+      'Mindmaps system interface/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
