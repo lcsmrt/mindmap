@@ -13,9 +13,29 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
     handler: async () => {
       const maps = await prisma.map.findMany({
         orderBy: { updatedAt: 'desc' },
-        select: { id: true, title: true, updatedAt: true },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { nodes: true } },
+        },
       });
-      return { maps: maps.map(toMapSummary) };
+
+      const criticalGroups = await prisma.node.groupBy({
+        by: ['mapId'],
+        where: { isCritical: true },
+        _count: { _all: true },
+      });
+      const criticalByMap = new Map(
+        criticalGroups.map((group) => [group.mapId, group._count._all])
+      );
+
+      return {
+        maps: maps.map((map) =>
+          toMapSummary(map, criticalByMap.get(map.id) ?? 0)
+        ),
+      };
     },
   });
 

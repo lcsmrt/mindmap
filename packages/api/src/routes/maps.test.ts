@@ -46,6 +46,86 @@ describe('Maps API', () => {
       expect(body.maps[0]?.title).toBe('Segundo');
       expect(body.maps[1]?.title).toBe('Primeiro');
     });
+
+    it('mapa recém-criado tem nodeCount 1 (inclui raiz) e criticalCount 0', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/maps',
+        payload: { title: 'Solo' },
+      });
+
+      const res = await app.inject({ method: 'GET', url: '/maps' });
+      const body = res.json<{
+        maps: Array<{ nodeCount: number; criticalCount: number }>;
+      }>();
+
+      expect(res.statusCode).toBe(200);
+      expect(body.maps).toHaveLength(1);
+      expect(body.maps[0]?.nodeCount).toBe(1);
+      expect(body.maps[0]?.criticalCount).toBe(0);
+    });
+
+    it('agrega nodeCount e criticalCount corretamente', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/maps',
+        payload: { title: 'Com nós' },
+      });
+      const { id } = created.json<{ id: string }>();
+      const root = await prisma.node.findFirstOrThrow({
+        where: { mapId: id, parentId: null },
+      });
+
+      await prisma.node.createMany({
+        data: [
+          {
+            mapId: id,
+            parentId: root.id,
+            title: 'Crítico A',
+            sortOrder: 0,
+            isCritical: true,
+          },
+          {
+            mapId: id,
+            parentId: root.id,
+            title: 'Crítico B',
+            sortOrder: 1,
+            isCritical: true,
+          },
+          {
+            mapId: id,
+            parentId: root.id,
+            title: 'Normal',
+            sortOrder: 2,
+            isCritical: false,
+          },
+        ],
+      });
+
+      const res = await app.inject({ method: 'GET', url: '/maps' });
+      const body = res.json<{
+        maps: Array<{ id: string; nodeCount: number; criticalCount: number }>;
+      }>();
+
+      const item = body.maps.find((m) => m.id === id);
+      expect(item?.nodeCount).toBe(4);
+      expect(item?.criticalCount).toBe(2);
+    });
+
+    it('inclui createdAt em cada item', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/maps',
+        payload: { title: 'Com data' },
+      });
+
+      const res = await app.inject({ method: 'GET', url: '/maps' });
+      const body = res.json<{ maps: Array<{ createdAt: string }> }>();
+
+      expect(body.maps).toHaveLength(1);
+      expect(typeof body.maps[0]?.createdAt).toBe('string');
+      expect(Number.isNaN(Date.parse(body.maps[0]!.createdAt))).toBe(false);
+    });
   });
 
   describe('POST /maps', () => {
