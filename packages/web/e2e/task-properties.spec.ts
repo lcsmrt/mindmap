@@ -124,9 +124,12 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByText('Editar nó')).not.toBeVisible({ timeout: 3_000 });
 
-    const indicators = node.getByTestId('node-task-indicators');
-    await expect(indicators).toBeVisible({ timeout: 3_000 });
-    await expect(indicators.locator('[aria-label="Prioridade crítica"]')).toBeVisible();
+    // O ▲ fica na linha do título (espelha o export); um nó só-crítico não
+    // tem rodapé de meta (status/responsável).
+    await expect(node.locator('[aria-label="Prioridade crítica"]')).toBeVisible({
+      timeout: 3_000,
+    });
+    await expect(node.getByTestId('node-task-indicators')).toHaveCount(0);
   });
 
   test('nó sem propriedades não tem rodapé de indicadores', async ({ page }) => {
@@ -195,6 +198,7 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
     await expect(reloadedIndicators).toBeVisible({ timeout: 3_000 });
     await expect(statusBadge(reloadedIndicators, 'Em andamento')).toBeVisible();
     await expect(reloadedIndicators.getByText('LM', { exact: true })).toBeVisible();
-    await expect(reloadedIndicators.locator('[aria-label="Prioridade crítica"]')).toBeVisible();
+    // O ▲ crítico fica na linha do título do nó, não no rodapé de indicadores.
+    await expect(reloadedNode.locator('[aria-label="Prioridade crítica"]')).toBeVisible();
   });
 });

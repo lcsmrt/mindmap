@@ -22,6 +22,8 @@ interface CardSkin {
   /** Subtle border adapted to the background, or `undefined` for none. */
   border: string;
   boxShadow: string;
+  /** Critical "▲" marker color, adapted to the background (mirrors the export). */
+  critical: string;
   /** Toolbar pill background, tuned for light vs. dark cards. */
   toolbarBg: string;
   /** Idle/hover colors for the add + edit toolbar buttons. */
@@ -49,6 +51,7 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         text,
         border: '#34343e',
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
+        critical: '#ef7b7b',
         toolbarBg: 'rgba(20,20,24,.7)',
         toolBtn: '#9a9aa3',
         toolBtnHoverBg: '#2e2e36',
@@ -62,6 +65,7 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         text,
         border: 'rgba(0,0,0,.08)',
         boxShadow: '0 3px 14px rgba(0,0,0,.25)',
+        critical: '#b01818',
         toolbarBg: 'rgba(0,0,0,.1)',
         toolBtn: 'rgba(0,0,0,.5)',
         toolBtnHoverBg: 'rgba(0,0,0,.1)',
@@ -156,6 +160,17 @@ function MindNodeBase({ data }: MindNodeProps) {
           >
             {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </Button>
+        )}
+
+        {node.isCritical && (
+          <span
+            className="shrink-0 text-[12px] leading-none"
+            style={{ color: skin.critical }}
+            title="Prioridade crítica"
+            aria-label="Prioridade crítica"
+          >
+            ▲
+          </span>
         )}
 
         <div className="flex-1 min-w-0">

@@ -18,16 +18,6 @@ export function NodeTaskIndicators({ node }: NodeTaskIndicatorsProps) {
       data-testid="node-task-indicators"
       className="flex items-center gap-2.5 text-current"
     >
-      {node.isCritical && (
-        <span
-          className="shrink-0 text-[12px] leading-none text-[#b01818]"
-          title="Prioridade crítica"
-          aria-label="Prioridade crítica"
-        >
-          ▲
-        </span>
-      )}
-
       {status && (
         <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold leading-none">
           <span

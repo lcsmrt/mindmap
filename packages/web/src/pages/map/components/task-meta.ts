@@ -42,10 +42,15 @@ export function getInitials(assignee: string): string {
   return chars.slice(0, 2).join('').toUpperCase();
 }
 
+/**
+ * Whether the node renders the meta footer (status dot+label and/or assignee
+ * avatar) — which is what reserves the extra card height in `nodeSize`.
+ * Criticality is intentionally excluded: the "▲" marker lives in the title row
+ * (mirroring the study export), so it adds no footer and no extra height.
+ */
 export function hasTaskProps(node: NodeDto): boolean {
   return (
     node.status != null ||
-    (node.assignee != null && node.assignee.length > 0) ||
-    node.isCritical
+    (node.assignee != null && node.assignee.length > 0)
   );
 }

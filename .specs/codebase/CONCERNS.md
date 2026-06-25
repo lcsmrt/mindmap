@@ -15,6 +15,14 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Fix: trocar o `.first()` por criação via API com título único + localização por título + cleanup no `afterEach` — exatamente o padrão robusto que `task-properties.spec.ts` (M6) já adota. Candidato a quick task.
 - Test coverage: o próprio teste (frágil); a correção do DB isolado (infra) destrava a robustez.
 
+**Rename inline do card da home não fecha ao confirmar com sucesso (descoberto no review AD-013 de M10):**
+
+- Files: `packages/web/src/pages/home/components/RenameMapInput.tsx:18-29`, `packages/web/src/pages/home/HomePage.tsx:127-145`
+- Symptom: `RenameMapInput.handleBlur` faz `await onConfirm(trimmed)` mas, no caminho de sucesso, nada limpa `renamingId` — só cancelar/erro/inalterado chamam `onCancel`. Depois de renomear com sucesso (blur/Enter), o card permanece em modo de edição mostrando o `<Input>` em vez de voltar ao `MapCard`.
+- **Não é regressão de M10:** `RenameMapInput` não mudou no milestone e a `HomePage` antiga (pré-M10, `81d1028`) tinha a mesma fiação (`onConfirm` sem limpar `renamingId`). Bug latente pré-existente, só herdado pela home reescrita.
+- Test coverage: nenhum — o e2e novo da home (`home.spec.ts`) cobre criar/métricas/excluir, **não** rename.
+- Fix: após `await onConfirm(...)` bem-sucedido, fechar a edição (ex.: `RenameMapInput` chamar `onCancel`/um `onClose` no sucesso, ou a `HomePage` limpar `renamingId` no `onSuccess` do `useUpdateMap`). Candidato a quick task.
+
 ~~**Root ("Central") não é renomeável via UI (relato do usuário):**~~ — resolvido em Q-003: clique no texto do nó dispara edição via `onStartEdit`, sem depender de `onNodeDoubleClick`.
 
 ~~**Lint quebra Success Criteria de M3:**~~ — resolvido em Q-001.
@@ -66,6 +74,14 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Improvement path: Rodar o fallback só quando ainda não há resultado do worker para o input atual (gate por `workerPositioned == null`). Ou rodá-lo dentro do próprio worker como degradado em caso de erro.
 
 ## UX Inconsistencies
+
+**`NodeEditDialog` persiste cada campo no clique; a AC M10-21 ("cancelar/fechar descarta") não é literalmente cumprida (descoberto no review AD-013 de M10):**
+
+- Files: `packages/web/src/pages/map/components/NodeEditDialog.tsx:108-127`
+- Symptom: cor de fundo/texto, status e criticidade chamam `onUpdateNode` imediatamente no clique (optimistic); título/responsável persistem no blur/Enter. Não há botão Confirmar/Descartar — fechar o dialog **não** desfaz nada. A spec (M10-21 / AC P1-Dialog-4) diz "WHEN cancela/fecha THEN descartar sem persistir", mas a traceability marca M10-21 como "Verified".
+- **Por design, não é regressão:** o `design.md` decidiu "optimistic atual intacta" e o dialog pré-M10 (`81d1028`) já persistia cada campo no clique. O estado-espelho local adicionado em M10 serve só ao preview ao vivo, não a um modelo confirm/discard.
+- Severity: Low — discrepância de rastreabilidade (spec vs. implementação), sem impacto funcional; condiz com o "espírito do export" (escolha livre).
+- Fix: alinhar a spec à realidade (anotar que o dialog é optimistic, sem confirm/discard) **ou**, se confirm/discard for desejado, bufferizar as edições e só persistir no Confirmar. Decisão de produto.
 
 **Inline edit ignora `textColor` customizado:**
 

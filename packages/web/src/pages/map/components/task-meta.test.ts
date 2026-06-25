@@ -89,8 +89,8 @@ describe('hasTaskProps', () => {
     expect(hasTaskProps(makeNode({ id: 'n', assignee: 'Lucas' }))).toBe(true);
   });
 
-  it('true quando isCritical (campo isolado)', () => {
-    expect(hasTaskProps(makeNode({ id: 'n', isCritical: true }))).toBe(true);
+  it('false quando só isCritical (▲ vai para o título, não para o rodapé)', () => {
+    expect(hasTaskProps(makeNode({ id: 'n', isCritical: true }))).toBe(false);
   });
 
   it('false quando todos vazios/null/false', () => {
