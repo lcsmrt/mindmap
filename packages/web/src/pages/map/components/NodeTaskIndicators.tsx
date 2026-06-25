@@ -1,4 +1,3 @@
-import { Flag } from 'lucide-react';
 import type { NodeDto } from '@mindmap/shared';
 import { statusMeta, getInitials, hasTaskProps } from './task-meta.js';
 
@@ -17,24 +16,37 @@ export function NodeTaskIndicators({ node }: NodeTaskIndicatorsProps) {
   return (
     <div
       data-testid="node-task-indicators"
-      className="flex items-center gap-1.5 text-xs text-current/80"
+      className="flex items-center gap-2.5 text-current"
     >
-      {status && (
+      {node.isCritical && (
         <span
-          className="w-2 h-2 rounded-full shrink-0"
-          style={{ backgroundColor: status.color }}
-          title={status.label}
-          aria-label={status.label}
-        />
-      )}
-
-      {assignee && (
-        <span className="font-medium leading-none" title={assignee}>
-          {getInitials(assignee)}
+          className="shrink-0 text-[12px] leading-none text-[#b01818]"
+          title="Prioridade crítica"
+          aria-label="Prioridade crítica"
+        >
+          ▲
         </span>
       )}
 
-      {node.isCritical && <Flag className="w-3 h-3 shrink-0" aria-label="Crítico" />}
+      {status && (
+        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold leading-none">
+          <span
+            className="h-[7px] w-[7px] shrink-0 rounded-full"
+            style={{ backgroundColor: status.color }}
+          />
+          {status.label}
+        </span>
+      )}
+
+      {assignee && (
+        <span
+          className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10px] font-bold leading-none text-[#cdcdf0]"
+          title={assignee}
+          aria-label={assignee}
+        >
+          {getInitials(assignee)}
+        </span>
+      )}
     </div>
   );
 }
