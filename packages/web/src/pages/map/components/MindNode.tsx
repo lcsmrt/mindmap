@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from 'react';
-import { ChevronRight, ChevronDown, Plus, X, Palette } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, X, Palette, Triangle } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { NodeTaskIndicators } from './NodeTaskIndicators.js';
@@ -164,12 +164,12 @@ function MindNodeBase({ data }: MindNodeProps) {
 
         {node.isCritical && (
           <span
-            className="shrink-0 text-[12px] leading-none"
+            className="inline-flex shrink-0 leading-none"
             style={{ color: skin.critical }}
             title="Prioridade crítica"
             aria-label="Prioridade crítica"
           >
-            ▲
+            <Triangle className="h-3 w-3" fill="currentColor" />
           </span>
         )}
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Flag } from 'lucide-react';
+import { Flag, Triangle, Check, CircleAlert, TriangleAlert, type LucideIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -53,10 +53,10 @@ const CONTRAST_TONE: Record<ContrastLevel, string> = {
   bad: 'text-rose-400',
 };
 
-const CONTRAST_ICON: Record<ContrastLevel, string> = {
-  good: '✓',
-  ok: '!',
-  bad: '⚠',
+const CONTRAST_ICON: Record<ContrastLevel, LucideIcon> = {
+  good: Check,
+  ok: CircleAlert,
+  bad: TriangleAlert,
 };
 
 function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
@@ -132,6 +132,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   const ratio = contrastRatio(previewBg, effectiveText);
   const verdict = contrastVerdict(ratio);
 
+  const VerdictIcon = CONTRAST_ICON[verdict.level];
   const statusInfo = status != null ? statusMeta(status) : null;
   const trimmedAssignee = assignee.trim();
   const initials = trimmedAssignee.length > 0 ? getInitials(trimmedAssignee) : '';
@@ -152,11 +153,11 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
           <div className="flex items-center gap-2">
             {isCritical && (
               <span
-                className="shrink-0 text-[12px] leading-none"
+                className="inline-flex shrink-0 leading-none"
                 style={{ color: criticalColor }}
                 title="Prioridade crítica"
               >
-                ▲
+                <Triangle className="h-3 w-3" fill="currentColor" />
               </span>
             )}
             <span
@@ -194,9 +195,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
 
         {/* Medidor de contraste (WCAG) */}
         <div className="flex items-center gap-1.5 text-[11.5px] font-semibold">
-          <span className={CONTRAST_TONE[verdict.level]}>
-            {CONTRAST_ICON[verdict.level]}
-          </span>
+          <VerdictIcon className={`h-3.5 w-3.5 ${CONTRAST_TONE[verdict.level]}`} />
           <span className={CONTRAST_TONE[verdict.level]}>{verdict.label}</span>
           <span className="font-normal text-muted-foreground">
             · contraste texto/fundo {ratio.toFixed(1)}:1

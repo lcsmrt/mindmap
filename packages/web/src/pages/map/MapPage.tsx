@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useMap } from '@/api/maps.js';
 import { MapCanvas } from './components/MapCanvas.js';
 
@@ -17,9 +18,10 @@ export const MapPage = () => {
         </p>
         <Link
           to="/"
-          className="text-sm text-muted-foreground underline hover:text-foreground"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground underline hover:text-foreground"
         >
-          ← Voltar para mapas
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para mapas
         </Link>
       </div>
     );
@@ -28,8 +30,12 @@ export const MapPage = () => {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-4 border-b px-6 py-3">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Mapas
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Mapas
         </Link>
         <h1 className="text-lg font-semibold text-foreground">{map?.title}</h1>
       </header>
