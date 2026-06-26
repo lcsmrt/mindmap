@@ -152,7 +152,7 @@ function MindNodeBase({ data }: MindNodeProps) {
         boxShadow: skin.boxShadow,
       }}
     >
-      <div className="flex items-center gap-1.75 pr-4">
+      <div className="flex items-start gap-1.75 pr-4">
         {hasChildren && (
           <Button
             variant="ghost"
@@ -196,7 +196,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             />
           ) : (
             <span
-              className="block truncate cursor-text text-sm font-semibold tracking-[-0.01em]"
+              className="block break-words cursor-text text-sm font-semibold tracking-[-0.01em]"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
