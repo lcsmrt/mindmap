@@ -79,7 +79,20 @@ Milestones de v1 organizados por dependência técnica. Cada milestone agrupa um
 
 ## Pós-v1 — refinamento de UX (planejado, 2026-06-25)
 
-Lote de refinamento levantado em uso real (fase de polish). Organizado por complexidade e dependência; **não** será speccado/executado tudo de uma vez (cada item em chat separado, [[feedback-plan-execute-split]]). Sequência proposta: **M11** (quick wins) → **M12** (resize, spec própria) → **M13** (geometria do drag, depende de M12) → **M14** (hierarquia, design). Breadcrumbs técnicos (arquivos/linhas) em `STATE.md` → Deferred Ideas.
+Lote de refinamento levantado em uso real (fase de polish). Organizado por complexidade e dependência; **não** será speccado/executado tudo de uma vez (cada item em chat separado, [[feedback-plan-execute-split]]). Sequência proposta: **M11** (quick wins) → **M12** (texto sempre visível + altura dinâmica, spec própria) → **M13** (geometria do drag, depende de M12) → **M14** (hierarquia, design). O **resize horizontal foi fatiado de M12 para M15** (decisão 2026-06-25, AD-020) — full-stack, depende de M12. Breadcrumbs técnicos (arquivos/linhas) em `STATE.md` → Deferred Ideas.
+
+**Grafo de dependências do lote** (numeração ≠ ordem obrigatória; cada item em chat separado):
+
+```
+M11 (independente, já executado)
+M12 ─┬─→ M13   (geometria vertical do drop; M15 toca a mesma slots.ts no eixo da largura, sem ser dependência)
+     ├─→ M14   (skin/altura por M12; "central maior em largura" também depende de M15)
+     └─→ M15   (resize horizontal, full-stack)  ──→ M14 (parte "central maior em largura")
+```
+
+- **M12** não depende de nada novo (base do lote). **M13**, **M14** e **M15** dependem de **M12**.
+- **M14** também depende de **M15** apenas para o sub-item "central maior **em largura**" (o resto do M14 — skin por profundidade, cor de edge — só precisa de M12).
+- **M13** depende **só de M12**; M15 compartilha arquivo (`slots.ts`/ghost) no eixo da largura, mas é ortogonal ao fix vertical do M13 → coordenar, não bloquear.
 
 ### M11 — Polish de ícones, divisória e overflow 🛠️ executado (gates verdes; pendente review AD-013, 2026-06-25)
 
@@ -89,27 +102,34 @@ Três ajustes independentes e de baixo risco, agrupados. **Executado** sem spec 
 - **Divisória título/footer no card:** replicar no `MindNode` a linha (`border-t` condicional) que já existe no `NodeEditDialog`, exibida só quando há status e/ou responsável (`hasTaskProps`).
 - **Overflow do dialog com texto longo:** título/responsável muito longos estouram o `NodeEditDialog`. Fix de CSS (`min-w-0`/`overflow`/`break-words` nos containers do preview e da linha de responsável).
 
-### M12 — Card responsivo + resize horizontal 🔴 alta (spec própria)
+### M12 — Card responsivo: texto sempre visível + altura dinâmica 🔴 alta (spec própria) 🛠️ executado (gates verdes; pendente review AD-013, 2026-06-25)
 
-O item arquitetural — **merece spec própria** (Specify → Design → Tasks → Execute completo).
+Metade arquitetural do "Card responsivo + resize" original — **fatiada** (decisão do usuário, 2026-06-25, AD-020): M12 entrega só **texto sempre 100% visível + altura derivada de medição real**; o **resize horizontal** virou **M15**.
 
-- **Default:** texto sempre 100% visível — remover `truncate`, deixar quebrar linha; altura do card cresce/encolhe para caber.
-- **Resize horizontal:** usuário arrasta a largura; texto reflui; altura é derivada da largura.
-- **Implicação central:** a altura deixa de ser fórmula (40/58) e passa a depender de medição real → pipeline **medir→layout** (renderiza, mede no DOM, realimenta o `d3-flextree`, reposiciona). `NODE_WIDTH` deixa de ser constante → vira largura por nó em `useTreeLayout.ts`, `lib/slots.ts`, barra-fantasma e render do nó.
-- **Decisões a fechar na spec:** largura é a dimensão controlada e altura derivada (já confirmado em conversa); persistir largura por nó (provável campo novo no schema/backend) vs. local; handle de resize na UI.
-- **Atenção:** revisa parcialmente AD-002 se a largura for persistida (mais 1 dado estrutural por nó, mantendo o espírito de "sem x/y livre").
+- **Texto sempre visível:** remove `truncate`, deixa quebrar linha (incl. palavra única longa via `break-words`); altura do card cresce/encolhe para caber.
+- **Altura por medição real:** a altura deixa de ser fórmula (40/79 de `nodeSize.ts`) e passa a vir de medição no DOM → pipeline **medir→layout** (`ResizeObserver` compartilhado → estado `heights` → `useTreeLayout` realimenta o `d3-flextree`, que já trata altura por nó). `nodeHeight`→`estimateNodeHeight` vira estimativa de 1º paint. **Invariante de convergência:** largura fixa ⇒ reposicionar não muda a altura medida ⇒ observer não re-dispara ⇒ ≤1 relayout, sem loop.
+- **Só frontend.** Sem schema, sem migration, **sem coluna `width`**, sem x/y. AD-002 intacta. `slots.ts` (geometria do drop) fica para M13.
+- Spec/design/tasks em `.specs/features/m12-card-responsive/` (19 req. M12-NN, 5 tasks; T1/T2 paralelos). **Executado** em 6 commits atômicos (`c5797b7` refactor de polish do `MindNode` separado do milestone + T1–T5 `3e7eaf4`…`6958fbc`). Gates verdes: typecheck/lint, unit **web 88→96** + api 56, **e2e 32→33/33**, smoke visual conferido (cards multi-linha + palavra gigante sem truncar/vazar, sem sobreposição, `fitView` enquadra). Só frontend, AD-002 intacta. **Pendente review AD-013** (chat separado).
 
 ### M13 — Geometria da barra de inserção (drag) 🟡 média
 
-Corrige a assimetria da linha de drop entre dois cards (tende a subir / cola no card de baixo). Causa: `lib/slots.ts` usa média das bordas com `PLACEHOLDER_H` fixo (40) enquanto cards reais variam (40/58). **Depende de M12** — com alturas dinâmicas a geometria muda de novo; fazer junto/depois para não calibrar duas vezes. (Se incomodar antes, cabe um fix barato standalone, ciente de que será revisitado.)
+Corrige a assimetria da linha de drop entre dois cards (tende a subir / cola no card de baixo). Causa: `lib/slots.ts` usa média das bordas com `PLACEHOLDER_H` fixo (40) enquanto cards reais variam (40/58). **Depende de M12** (eixo vertical/altura) — com alturas dinâmicas a geometria vertical muda de novo; fazer junto/depois para não calibrar duas vezes. **Não depende de M15**, mas o M15/resize revisita a mesma `lib/slots.ts`/ghost no eixo da **largura** (ortogonal ao fix vertical do M13) — quem vier depois assenta sem conflito. (Se incomodar antes, cabe um fix barato standalone, ciente de que será revisitado.)
 
 ### M14 — Hierarquia visual (estilo MindMeister) 🟡 média (muito design)
 
 Dar hierarquia aos nós por profundidade. Sub-itens de esforço distinto:
 
-- **Central maior / 1º nível destacado / resto mais simples:** skin por profundidade (estender `cardSkin(depth)`); o "central maior" fica fácil **se M12** já entregou sizing por nó.
+- **Central maior / 1º nível destacado / resto mais simples:** skin por profundidade (estender `cardSkin(depth)`). M12 entrega **altura** por nó (texto longo → card mais alto); um "central maior" de fato **maior em largura** depende do **M15** (largura por nó). Sem M15, o destaque do central fica por estilo/altura/fonte.
 - **Cor da edge herdada do nó de 1º nível:** hoje toda edge é `stroke-border` fixo e `LayoutLink` não carrega cor; propagar a cor do nó para sua aresta.
 - Majoritariamente **design** — vale exploração visual antes de virar tarefa.
+
+### M15 — Resize horizontal do card 🔴 alta (depende de M12)
+
+Segunda metade do "Card responsivo + resize" original, **fatiada de M12** (decisão do usuário, 2026-06-25, AD-020). Largura controlada pelo usuário por arraste; texto reflui; altura derivada (M12 já entrega o pipeline de medição).
+
+- **Resize horizontal por nó:** alça na borda direita do card, **revelada no hover** (consistente com a toolbar M10). `NODE_WIDTH` deixa de ser constante → vira largura por nó em `useTreeLayout.ts`, `lib/slots.ts`, barra-fantasma e render.
+- **Largura persistida:** coluna nova `width Int?` no `Node` (full-stack). Revisa AD-002 parcialmente (mais 1 dado estrutural por nó, mantendo "sem x/y livre" — largura não é posição em pixel; mesmo precedente do M9/`side`).
+- **Depende de M12** (pipeline medir→layout + largura-por-nó já no layout). Decisões de UI/persistência **já fixadas** (conversa 2026-06-25); spec própria quando for a vez.
 
 ---
 
