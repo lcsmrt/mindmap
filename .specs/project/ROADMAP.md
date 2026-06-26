@@ -111,7 +111,7 @@ Metade arquitetural do "Card responsivo + resize" original — **fatiada** (deci
 - **Só frontend.** Sem schema, sem migration, **sem coluna `width`**, sem x/y. AD-002 intacta. `slots.ts` (geometria do drop) fica para M13.
 - Spec/design/tasks em `.specs/features/m12-card-responsive/` (19 req. M12-NN, 5 tasks; T1/T2 paralelos). **Executado** em 6 commits atômicos (`c5797b7` refactor de polish do `MindNode` separado do milestone + T1–T5 `3e7eaf4`…`6958fbc`). Gates verdes: typecheck/lint, unit **web 88→96** + api 56, **e2e 32→33/33**, smoke visual conferido (cards multi-linha + palavra gigante sem truncar/vazar, sem sobreposição, `fitView` enquadra). Só frontend, AD-002 intacta. **Pendente review AD-013** (chat separado).
 
-### M13 — Geometria da barra de inserção (drag) 🟡 média 🔁 confirmado em uso pós-M12 (2026-06-25)
+### M13 — Geometria da barra de inserção (drag) 🟡 média 🔁 confirmado em uso pós-M12 (2026-06-25) 📋 planejado (spec/design/tasks em `.specs/features/m13-drop-bar-geometry/`, 2026-06-26)
 
 Corrige a assimetria da linha de drop entre dois cards (tende a subir / cola no card de baixo). Causa: `lib/slots.ts` usa média das bordas com `PLACEHOLDER_H` fixo (40) enquanto cards reais variam (40/58). **Depende de M12** (eixo vertical/altura) — com alturas dinâmicas a geometria vertical muda de novo; fazer junto/depois para não calibrar duas vezes.
 
