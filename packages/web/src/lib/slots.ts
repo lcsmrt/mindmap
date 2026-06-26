@@ -1,29 +1,28 @@
 import type { MoveNodeBody } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
 import { type PositionedNode, GAP_X, GAP_Y } from './useTreeLayout.js';
-import { NODE_WIDTH, NODE_HEIGHT_BASE } from './nodeSize.js';
+import { NODE_WIDTH } from './nodeSize.js';
 
 /**
  * Slot de drop: uma posição `(parentId, index)` onde o nó arrastado pode cair, com o
- * `side` quando o pai é a raiz. `x`/`y`/`height` descrevem o retângulo (top-left, em
- * coordenadas de mundo) onde o card-fantasma aparece. `index` é a posição visual
- * **local** dentro do grupo (entre os filhos do pai, ou do lado, já sem o arrastado);
- * a conversão para o índice global da raiz mora em `slotToMoveBody`.
+ * `side` quando o pai é a raiz. `colX`/`anchorY` descrevem onde a barra-fantasma
+ * aparece; `bandTop`/`bandBottom` definem a faixa vertical `[bandTop, bandBottom)` que
+ * seleciona este slot — as fronteiras caem no centro dos cards vizinhos. `index` é a
+ * posição visual **local** dentro do grupo (entre os filhos do pai, ou do lado, já sem
+ * o arrastado); a conversão para o índice global da raiz mora em `slotToMoveBody`.
  */
 export interface Slot {
   parentId: string;
   index: number;
   side: 'LEFT' | 'RIGHT' | null;
-  x: number;
-  y: number;
-  height: number;
+  colX: number;       // X (top-left) da coluna onde a barra desenha
+  anchorY: number;    // centro vertical do vão — onde a barra-fantasma é desenhada
+  bandTop: number;    // início da faixa de seleção (inclusive); pode ser -Infinity
+  bandBottom: number; // fim da faixa (exclusive); pode ser +Infinity
 }
 
-// Altura do placeholder do card-fantasma (tamanho de um card base).
-const PLACEHOLDER_H = NODE_HEIGHT_BASE;
-
-// Distância máxima (em px de mundo) do cursor a um slot para considerá-lo alvo. Além
-// disso, não há slot válido → snap-back. ~1,5 card cobre um card e a folga ao redor.
+// Distância máxima horizontal (em px de mundo) do cursor ao centro da coluna para que
+// o slot seja considerado alvo. Além disso → snap-back. ~1,5 card cobre a folga.
 const SLOT_MAX_DISTANCE = NODE_WIDTH * 1.5;
 
 type Group = 'LEFT' | 'RIGHT' | null;
@@ -42,6 +41,10 @@ export function computeSlots(
   const posById = new Map(positioned.map((p) => [p.id, p] as const));
   const slots: Slot[] = [];
 
+  function center(c: PositionedNode): number {
+    return c.y + c.height / 2;
+  }
+
   function pushGroup(
     parentPos: PositionedNode,
     parentId: string,
@@ -52,21 +55,23 @@ export function computeSlots(
     const m = children.length;
     if (m === 0) {
       // Lado/pai vazio: 1 slot na coluna onde o primeiro filho cairia, alinhado ao
-      // centro vertical do pai.
+      // centro vertical do pai. Band cobre toda a coluna.
       const colX = parentPos.x + dir * (NODE_WIDTH + GAP_X);
-      const centerY = parentPos.y + parentPos.height / 2;
-      slots.push({ parentId, index: 0, side, x: colX, y: centerY - PLACEHOLDER_H / 2, height: PLACEHOLDER_H });
+      const anchorY = parentPos.y + parentPos.height / 2;
+      slots.push({ parentId, index: 0, side, colX, anchorY, bandTop: -Infinity, bandBottom: Infinity });
       return;
     }
     const colX = children[0]!.x;
     for (let j = 0; j <= m; j++) {
+      // anchorY: ponta = borda do card ± GAP_Y/2; meio = centro do vão.
       let anchorY: number;
-      // Slots de ponta ficam afastados GAP_Y/2 da borda do card (mesmo respiro dos
-      // slots do meio, que caem no centro do vão) — senão a barra encosta no card.
-      if (j === 0) anchorY = children[0]!.y - GAP_Y / 2; // acima do primeiro filho
-      else if (j === m) anchorY = children[m - 1]!.y + children[m - 1]!.height + GAP_Y / 2; // abaixo do último
-      else anchorY = (children[j - 1]!.y + children[j - 1]!.height + children[j]!.y) / 2; // gap
-      slots.push({ parentId, index: j, side, x: colX, y: anchorY - PLACEHOLDER_H / 2, height: PLACEHOLDER_H });
+      if (j === 0) anchorY = children[0]!.y - GAP_Y / 2;
+      else if (j === m) anchorY = children[m - 1]!.y + children[m - 1]!.height + GAP_Y / 2;
+      else anchorY = (children[j - 1]!.y + children[j - 1]!.height + children[j]!.y) / 2;
+      // bands: fronteiras no centro dos cards vizinhos.
+      const bandTop = j === 0 ? -Infinity : center(children[j - 1]!);
+      const bandBottom = j === m ? Infinity : center(children[j]!);
+      slots.push({ parentId, index: j, side, colX, anchorY, bandTop, bandBottom });
     }
   }
 
@@ -96,10 +101,12 @@ export function computeSlots(
 }
 
 /**
- * Slot mais próximo do ponto (centro do slot), de forma determinística (empate → o
- * primeiro na ordem de enumeração). Exclui slots cujo pai está na subárvore do nó
- * arrastado (e o próprio) — nunca oferece soltar dentro de si mesmo. Retorna `null`
- * se nenhum slot está dentro de `SLOT_MAX_DISTANCE` (drop fora de alvo → snap-back).
+ * Slot selecionado por band vertical + proximidade horizontal, de forma determinística
+ * (empate → primeiro na ordem de enumeração). Cada slot carrega a faixa `[bandTop,
+ * bandBottom)` que o seleciona; score = dx (dist. horizontal ao centro da coluna) +
+ * dy (0 se dentro do band, senão dist. à borda). Exclui slots cujo pai está na
+ * subárvore do arrastado. Retorna `null` se o melhor `dx` excede `SLOT_MAX_DISTANCE`
+ * (afastamento horizontal → snap-back).
  */
 export function nearestSlot(
   point: { x: number; y: number },
@@ -107,18 +114,22 @@ export function nearestSlot(
   opts: { excludeSubtree: Set<string> },
 ): Slot | null {
   let best: Slot | null = null;
-  let bestDist = Infinity;
+  let bestScore = Infinity;
+  let bestDx = Infinity;
   for (const slot of slots) {
     if (opts.excludeSubtree.has(slot.parentId)) continue;
-    const cx = slot.x + NODE_WIDTH / 2;
-    const cy = slot.y + slot.height / 2;
-    const dist = Math.hypot(point.x - cx, point.y - cy);
-    if (dist < bestDist) {
-      bestDist = dist;
+    const colCenter = slot.colX + NODE_WIDTH / 2;
+    const dx = Math.abs(point.x - colCenter);
+    const inBand = point.y >= slot.bandTop && point.y < slot.bandBottom;
+    const dy = inBand ? 0 : point.y < slot.bandTop ? slot.bandTop - point.y : point.y - slot.bandBottom;
+    const score = dx + dy;
+    if (score < bestScore) {
+      bestScore = score;
       best = slot;
+      bestDx = dx;
     }
   }
-  return best !== null && bestDist <= SLOT_MAX_DISTANCE ? best : null;
+  return best !== null && bestDx <= SLOT_MAX_DISTANCE ? best : null;
 }
 
 /**
