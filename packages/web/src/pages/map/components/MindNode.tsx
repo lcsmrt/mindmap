@@ -1,10 +1,10 @@
-import { memo, useCallback, useState } from 'react';
-import { ChevronRight, ChevronDown, Plus, X, Palette, Triangle } from 'lucide-react';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
+import { ChevronDown, ChevronRight, Pencil, Plus, Triangle, X } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { autoTextColor, isDarkBg } from './contrast.js';
 import { NodeTaskIndicators } from './NodeTaskIndicators.js';
 import { hasTaskProps } from './task-meta.js';
-import { autoTextColor, isDarkBg } from './contrast.js';
 import type { MindNodeData } from './types.js';
 
 interface MindNodeProps {
@@ -144,7 +144,7 @@ function MindNodeBase({ data }: MindNodeProps) {
 
   return (
     <div
-      className="group relative flex w-full flex-col rounded-[11px] px-[13px] py-[11px]"
+      className="group relative flex w-full flex-col rounded-[11px] px-3.25 py-2.75"
       style={{
         backgroundColor: skin.background,
         color: skin.text,
@@ -152,7 +152,7 @@ function MindNodeBase({ data }: MindNodeProps) {
         boxShadow: skin.boxShadow,
       }}
     >
-      <div className="flex items-center gap-[7px] pr-4">
+      <div className="flex items-center gap-1.75 pr-4">
         {hasChildren && (
           <Button
             variant="ghost"
@@ -163,7 +163,11 @@ function MindNodeBase({ data }: MindNodeProps) {
             className="shrink-0 h-auto w-4 p-0 text-current opacity-60 hover:bg-transparent hover:opacity-100"
             title={isCollapsed ? 'Expandir' : 'Colapsar'}
           >
-            {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {isCollapsed ? (
+              <ChevronRight className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
           </Button>
         )}
 
@@ -228,7 +232,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onAddChild();
           }}
-          className="h-[23px] w-[23px] rounded-[5px] text-[color:var(--tool-fg)] hover:bg-[var(--tool-bg-h)] hover:text-[color:var(--tool-fg-h)]"
+          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Adicionar filho"
         >
           <Plus className="w-3 h-3" />
@@ -241,10 +245,10 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onOpenEditDialog();
           }}
-          className="h-[23px] w-[23px] rounded-[5px] text-[color:var(--tool-fg)] hover:bg-[var(--tool-bg-h)] hover:text-[color:var(--tool-fg-h)]"
+          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Editar nó"
         >
-          <Palette className="w-3 h-3" />
+          <Pencil className="w-3 h-3" />
         </Button>
 
         {!isRoot && (
@@ -255,7 +259,7 @@ function MindNodeBase({ data }: MindNodeProps) {
               e.stopPropagation();
               onDelete();
             }}
-            className="h-[23px] w-[23px] rounded-[5px] text-[color:var(--del-fg)] hover:bg-[var(--del-bg-h)] hover:text-[color:var(--del-fg-h)]"
+            className="h-5.75 w-5.75 rounded-[5px] text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
             title="Excluir"
           >
             <X className="w-3 h-3" />
@@ -264,10 +268,7 @@ function MindNodeBase({ data }: MindNodeProps) {
       </div>
 
       {hasTaskProps(node) && (
-        <div
-          className="mt-2.5 border-t pt-2.5"
-          style={{ borderColor: skin.divider }}
-        >
+        <div className="mt-2.5 border-t pt-2.5" style={{ borderColor: skin.divider }}>
           <NodeTaskIndicators node={node} />
         </div>
       )}
