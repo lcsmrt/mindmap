@@ -77,6 +77,42 @@ Milestones de v1 organizados por dependência técnica. Cada milestone agrupa um
 
 ---
 
+## Pós-v1 — refinamento de UX (planejado, 2026-06-25)
+
+Lote de refinamento levantado em uso real (fase de polish). Organizado por complexidade e dependência; **não** será speccado/executado tudo de uma vez (cada item em chat separado, [[feedback-plan-execute-split]]). Sequência proposta: **M11** (quick wins) → **M12** (resize, spec própria) → **M13** (geometria do drag, depende de M12) → **M14** (hierarquia, design). Breadcrumbs técnicos (arquivos/linhas) em `STATE.md` → Deferred Ideas.
+
+### M11 — Polish de ícones, divisória e overflow 🛠️ executado (gates verdes; pendente review AD-013, 2026-06-25)
+
+Três ajustes independentes e de baixo risco, agrupados. **Executado** sem spec (quick wins): 3 commits atômicos (`fc102b6` ícones, `c37ffd4` divisória, `4d1eefe` overflow). Gates verdes: typecheck/lint, unit web 88, e2e 32/32, smoke visual conferido (ícones lucide + divisória + sem overlap). **Pendente review AD-013** (chat separado).
+
+- **Ícones de texto → lucide:** trocar caracteres usados como ícone por componentes `lucide-react` (padrão já no projeto). Ocorrências: `▲` crítico (`MindNode.tsx`, `NodeEditDialog.tsx`), `✓/!/⚠` do medidor de contraste (`NodeEditDialog.tsx`), `←` voltar (`MapPage.tsx`). O `—` placeholder de responsável fica (é travessão de UI). Caso algum cenário não tenha ícone lucide equivalente → trazer para discussão.
+- **Divisória título/footer no card:** replicar no `MindNode` a linha (`border-t` condicional) que já existe no `NodeEditDialog`, exibida só quando há status e/ou responsável (`hasTaskProps`).
+- **Overflow do dialog com texto longo:** título/responsável muito longos estouram o `NodeEditDialog`. Fix de CSS (`min-w-0`/`overflow`/`break-words` nos containers do preview e da linha de responsável).
+
+### M12 — Card responsivo + resize horizontal 🔴 alta (spec própria)
+
+O item arquitetural — **merece spec própria** (Specify → Design → Tasks → Execute completo).
+
+- **Default:** texto sempre 100% visível — remover `truncate`, deixar quebrar linha; altura do card cresce/encolhe para caber.
+- **Resize horizontal:** usuário arrasta a largura; texto reflui; altura é derivada da largura.
+- **Implicação central:** a altura deixa de ser fórmula (40/58) e passa a depender de medição real → pipeline **medir→layout** (renderiza, mede no DOM, realimenta o `d3-flextree`, reposiciona). `NODE_WIDTH` deixa de ser constante → vira largura por nó em `useTreeLayout.ts`, `lib/slots.ts`, barra-fantasma e render do nó.
+- **Decisões a fechar na spec:** largura é a dimensão controlada e altura derivada (já confirmado em conversa); persistir largura por nó (provável campo novo no schema/backend) vs. local; handle de resize na UI.
+- **Atenção:** revisa parcialmente AD-002 se a largura for persistida (mais 1 dado estrutural por nó, mantendo o espírito de "sem x/y livre").
+
+### M13 — Geometria da barra de inserção (drag) 🟡 média
+
+Corrige a assimetria da linha de drop entre dois cards (tende a subir / cola no card de baixo). Causa: `lib/slots.ts` usa média das bordas com `PLACEHOLDER_H` fixo (40) enquanto cards reais variam (40/58). **Depende de M12** — com alturas dinâmicas a geometria muda de novo; fazer junto/depois para não calibrar duas vezes. (Se incomodar antes, cabe um fix barato standalone, ciente de que será revisitado.)
+
+### M14 — Hierarquia visual (estilo MindMeister) 🟡 média (muito design)
+
+Dar hierarquia aos nós por profundidade. Sub-itens de esforço distinto:
+
+- **Central maior / 1º nível destacado / resto mais simples:** skin por profundidade (estender `cardSkin(depth)`); o "central maior" fica fácil **se M12** já entregou sizing por nó.
+- **Cor da edge herdada do nó de 1º nível:** hoje toda edge é `stroke-border` fixo e `LayoutLink` não carrega cor; propagar a cor do nó para sua aresta.
+- Majoritariamente **design** — vale exploração visual antes de virar tarefa.
+
+---
+
 ## Pós-v1 (deferred)
 
 Itens que **não** entram em v1 mas podem virar features futuras. Veja `STATE.md` para registro de ideias adiadas que surjam durante a implementação.
