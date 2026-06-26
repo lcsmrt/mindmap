@@ -150,7 +150,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
             borderColor: dark ? '#34343e' : 'rgba(0,0,0,.08)',
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {isCritical && (
               <span
                 className="inline-flex shrink-0 leading-none"
@@ -161,7 +161,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
               </span>
             )}
             <span
-              className="truncate text-sm font-semibold tracking-tight"
+              className="min-w-0 truncate text-sm font-semibold tracking-tight"
               style={{ color: effectiveText }}
             >
               {title || 'Sem título'}
@@ -265,7 +265,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
         <label htmlFor="node-assignee" className="text-xs font-medium text-muted-foreground">
           Responsável
         </label>
-        <div className="flex items-center gap-2.5 rounded-lg border border-input px-2.5 py-1 focus-within:border-ring">
+        <div className="flex min-w-0 items-center gap-2.5 rounded-lg border border-input px-2.5 py-1 focus-within:border-ring">
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10.5px] font-bold leading-none text-[#cdcdf0]">
             {initials || '—'}
           </span>
@@ -278,7 +278,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
             onChange={(e) => setAssignee(e.target.value)}
             onKeyDown={handleAssigneeKeyDown}
             onBlur={handleAssigneeSubmit}
-            className="h-auto flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
+            className="h-auto min-w-0 flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
           />
         </div>
       </div>
