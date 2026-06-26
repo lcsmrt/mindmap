@@ -16,6 +16,7 @@ import { NODE_WIDTH } from '@/lib/nodeSize.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
+import { useMeasuredHeights } from './useMeasuredHeights.js';
 
 const SCALE_MIN = 0.1;
 const SCALE_MAX = 3;
@@ -42,6 +43,8 @@ interface CanvasLayersProps {
   isRoot: (id: string) => boolean;
   onPlace: (draggedId: string, slot: Slot) => void;
   onInvalidDrop: () => void;
+  registerNode: (id: string) => (el: HTMLElement | null) => void;
+  allMeasured: boolean;
 }
 
 function CanvasLayers({
@@ -56,6 +59,8 @@ function CanvasLayers({
   isRoot,
   onPlace,
   onInvalidDrop,
+  registerNode,
+  allMeasured,
 }: CanvasLayersProps) {
   // O <Zoom> do visx entrega `zoom` (com containerRef) no render-prop e exige ler
   // toString()/transformMatrix/applyInverseToPoint e fixar containerRef durante o render —
@@ -75,11 +80,14 @@ function CanvasLayers({
   const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset, targetSlot } =
     useNodeDrag({ positioned, tree, clientToWorld, onPlace, onInvalidDrop, isRoot });
 
-  // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem.
+  // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem
+  // **e todos os nós visíveis já foram medidos** — assim enquadramos os bounds reais
+  // (altura medida), não a estimativa de 1º paint (M12-08/M12-13).
   const fittedRef = useRef(false);
   useEffect(() => {
     if (fittedRef.current) return;
     if (!width || !height || bounds.width === 0 || bounds.height === 0) return;
+    if (!allMeasured) return;
     const scale = clamp(
       Math.min(width / bounds.width, height / bounds.height) * 0.9,
       SCALE_MIN,
@@ -89,7 +97,7 @@ function CanvasLayers({
     const translateY = (height - bounds.height * scale) / 2 - bounds.minY * scale;
     zoom.setTransformMatrix({ scaleX: scale, scaleY: scale, translateX, translateY, skewX: 0, skewY: 0 });
     fittedRef.current = true;
-  }, [width, height, bounds, zoom]);
+  }, [width, height, bounds, zoom, allMeasured]);
 
   const scale = zoom.transformMatrix.scaleX || 1;
   const transform = zoom.toString();
@@ -148,6 +156,7 @@ function CanvasLayers({
           return (
             <div
               key={p.id}
+              ref={registerNode(p.id)}
               className="absolute"
               data-testid="mind-node"
               data-node-id={p.id}
@@ -288,7 +297,12 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     return map;
   }, [data]);
 
-  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges);
+  // Medição real das alturas dos cards (M12): o ResizeObserver compartilhado preenche
+  // `heights`, que realimenta o layout. Largura fixa ⇒ reposicionar não muda a altura
+  // medida ⇒ sem loop medir↔layout (ver Invariante de convergência no design).
+  const { heights, registerNode } = useMeasuredHeights();
+  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights);
+  const allMeasured = positioned.length > 0 && positioned.every((p) => heights.has(p.id));
 
   // Árvore visível (subárvores colapsadas já removidas) — fonte dos slots de drag.
   const visTree = useMemo(() => buildTree(visNodes), [visNodes]);
@@ -415,6 +429,8 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               isRoot={isRoot}
               onPlace={handlePlace}
               onInvalidDrop={handleInvalidDrop}
+              registerNode={registerNode}
+              allMeasured={allMeasured}
             />
           )}
         </Zoom>
