@@ -55,10 +55,15 @@ export function computeSlots(
     const m = children.length;
     if (m === 0) {
       // Lado/pai vazio: 1 slot na coluna onde o primeiro filho cairia, alinhado ao
-      // centro vertical do pai. Band cobre toda a coluna.
+      // centro vertical do pai. Para a raiz (side != null), band cobre toda a coluna —
+      // cada lado tem coluna X distinta, sem colisão. Para pais não-raiz (side === null),
+      // limita ao range Y do pai para evitar que múltiplos cards folha na mesma coluna
+      // compitam com band idêntica (o primeiro sempre venceria o empate).
       const colX = parentPos.x + dir * (NODE_WIDTH + GAP_X);
       const anchorY = parentPos.y + parentPos.height / 2;
-      slots.push({ parentId, index: 0, side, colX, anchorY, bandTop: -Infinity, bandBottom: Infinity });
+      const bandTop = side === null ? parentPos.y : -Infinity;
+      const bandBottom = side === null ? parentPos.y + parentPos.height : Infinity;
+      slots.push({ parentId, index: 0, side, colX, anchorY, bandTop, bandBottom });
       return;
     }
     const colX = children[0]!.x;
