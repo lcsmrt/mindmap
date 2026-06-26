@@ -140,8 +140,8 @@ function CanvasLayers({
             className="absolute rounded-full bg-primary shadow-sm"
             data-testid="ghost-slot"
             style={{
-              left: targetSlot.x,
-              top: targetSlot.y + targetSlot.height / 2 - GHOST_BAR_HEIGHT / 2,
+              left: targetSlot.colX,
+              top: targetSlot.anchorY - GHOST_BAR_HEIGHT / 2,
               width: NODE_WIDTH,
               height: GHOST_BAR_HEIGHT,
               pointerEvents: 'none',
