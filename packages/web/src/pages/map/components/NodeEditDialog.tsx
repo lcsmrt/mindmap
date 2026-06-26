@@ -140,7 +140,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   const dividerColor = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.1)';
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       {/* Pré-visualização ao vivo */}
       <div className="space-y-2">
         <div
