@@ -2,7 +2,19 @@ import { useMemo } from 'react';
 import { flextree } from 'd3-flextree';
 import type { NodeDto } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { NODE_WIDTH, nodeHeight } from './nodeSize.js';
+import { NODE_WIDTH, estimateNodeHeight } from './nodeSize.js';
+
+/**
+ * Altura de um nó para o layout: a altura **medida** (quando já reportada pelo
+ * `ResizeObserver`) vence; na ausência dela, cai na estimativa de 1º paint. Função
+ * pura — o ponto de injeção do `computeTreeLayout` (`nodeSizeFn`) consome isto.
+ */
+export function nodeSizeFromHeights(
+  heights: ReadonlyMap<string, number> | undefined,
+  node: NodeDto,
+): number {
+  return heights?.get(node.id) ?? estimateNodeHeight(node);
+}
 
 export interface PositionedNode {
   id: string;
@@ -71,7 +83,7 @@ function splitChildren(children: TreeNode[]): { right: TreeNode[]; left: TreeNod
  */
 export function computeTreeLayout(
   tree: TreeNode,
-  nodeSizeFn: (node: NodeDto) => number = nodeHeight,
+  nodeSizeFn: (node: NodeDto) => number = estimateNodeHeight,
 ): LayoutResult {
   const positioned: PositionedNode[] = [];
   const links: LayoutLink[] = [];
@@ -187,10 +199,11 @@ function buildVisibleTree(
 export function useTreeLayout(
   nodes: NodeDto[],
   edges: Array<{ parentId: string; childId: string }>,
+  heights?: ReadonlyMap<string, number>,
 ): LayoutResult {
   return useMemo(() => {
     const tree = buildVisibleTree(nodes, edges);
     if (!tree) return EMPTY_LAYOUT;
-    return computeTreeLayout(tree);
-  }, [nodes, edges]);
+    return computeTreeLayout(tree, (node) => nodeSizeFromHeights(heights, node));
+  }, [nodes, edges, heights]);
 }

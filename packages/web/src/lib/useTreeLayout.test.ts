@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTreeLayout } from './useTreeLayout.js';
+import { computeTreeLayout, nodeSizeFromHeights } from './useTreeLayout.js';
 import type { TreeNode } from './tree.js';
 import { NODE_WIDTH, NODE_HEIGHT_BASE, NODE_HEIGHT_WITH_FOOTER } from './nodeSize.js';
 import type { NodeDto } from '@mindmap/shared';
@@ -229,6 +229,35 @@ describe('computeTreeLayout', () => {
     expect(firstLevel.length).toBe(2);
   });
 
+  it('alturas medidas injetadas alimentam o layout (sem sobreposição com valores reais)', () => {
+    // Injeta alturas medidas arbitrárias (não as constantes 40/79) via nodeSizeFn —
+    // prova que o layout posiciona pela altura medida, não pela fórmula.
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [
+        leaf('a', { side: 'RIGHT' }),
+        leaf('b', { sortOrder: 1, side: 'RIGHT' }),
+        leaf('c', { sortOrder: 2, side: 'RIGHT' }),
+      ],
+    };
+    const heights = new Map<string, number>([
+      ['root', 50],
+      ['a', 120],
+      ['b', 33],
+      ['c', 88],
+    ]);
+    const { positioned } = computeTreeLayout(tree, (n) => nodeSizeFromHeights(heights, n));
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    expect(byId('a').height).toBe(120);
+    expect(byId('b').height).toBe(33);
+    expect(byId('c').height).toBe(88);
+
+    const group = positioned.filter((p) => p.id !== 'root').sort((p, q) => p.y - q.y);
+    for (let i = 1; i < group.length; i++) {
+      expect(group[i]!.y).toBeGreaterThanOrEqual(group[i - 1]!.y + group[i - 1]!.height);
+    }
+  });
+
   it('bounds cobrem a extensão dos nós posicionados (x negativo e positivo)', () => {
     const tree: TreeNode = {
       node: node('root'),
@@ -247,5 +276,28 @@ describe('computeTreeLayout', () => {
     expect(minX).toBeLessThan(0);
     expect(maxX).toBeGreaterThan(0);
     expect(NODE_WIDTH).toBe(180);
+  });
+});
+
+describe('nodeSizeFromHeights', () => {
+  it('altura medida vence a estimativa', () => {
+    const n = node('x', { status: 'DONE' }); // estimativa seria NODE_HEIGHT_WITH_FOOTER
+    const heights = new Map<string, number>([['x', 137]]);
+    expect(nodeSizeFromHeights(heights, n)).toBe(137);
+  });
+
+  it('sem altura medida, cai na estimativa de 1º paint', () => {
+    const plain = node('p');
+    const task = node('t', { assignee: 'Ana' });
+    const heights = new Map<string, number>([['other', 99]]);
+    expect(nodeSizeFromHeights(heights, plain)).toBe(NODE_HEIGHT_BASE);
+    expect(nodeSizeFromHeights(heights, task)).toBe(NODE_HEIGHT_WITH_FOOTER);
+  });
+
+  it('heights indefinido ⇒ estimativa (primeiro paint, antes de medir)', () => {
+    expect(nodeSizeFromHeights(undefined, node('p'))).toBe(NODE_HEIGHT_BASE);
+    expect(nodeSizeFromHeights(undefined, node('t', { status: 'PENDING' }))).toBe(
+      NODE_HEIGHT_WITH_FOOTER,
+    );
   });
 });
