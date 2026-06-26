@@ -29,9 +29,9 @@ export const ConfirmDialog = ({
 }: ConfirmDialogProps) => (
   <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
     <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{message}</DialogDescription>
+      <DialogHeader className="min-w-0">
+        <DialogTitle className="break-words">{title}</DialogTitle>
+        <DialogDescription className="break-words">{message}</DialogDescription>
       </DialogHeader>
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
