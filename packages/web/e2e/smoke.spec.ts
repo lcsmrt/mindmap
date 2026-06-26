@@ -13,7 +13,7 @@ test('clique no texto do nó abre edição inline com foco', async ({ page }) =>
   const node = page.locator('[data-testid="mind-node"]').first();
   await expect(node).toBeVisible({ timeout: 10_000 });
 
-  const titleSpan = node.locator('.truncate');
+  const titleSpan = node.locator('[data-testid="node-title"]');
   const originalTitle = await titleSpan.textContent();
 
   await titleSpan.click();

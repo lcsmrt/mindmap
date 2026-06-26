@@ -196,6 +196,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             />
           ) : (
             <span
+              data-testid="node-title"
               className="block break-words cursor-text text-sm font-semibold tracking-[-0.01em]"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {

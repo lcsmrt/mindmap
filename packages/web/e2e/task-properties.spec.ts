@@ -34,7 +34,7 @@ async function createUniqueNode(page: Page, label: string): Promise<Locator> {
 
   const node = page
     .locator('[data-testid="mind-node"]')
-    .filter({ has: page.locator('.truncate', { hasText: label }) });
+    .filter({ has: page.locator('[data-testid="node-title"]', { hasText: label }) });
   await expect(node).toBeVisible({ timeout: 5_000 });
   return node;
 }
@@ -193,7 +193,7 @@ test.describe('propriedades de tarefa no canvas (M6)', () => {
 
     const reloadedNode = page
       .locator('[data-testid="mind-node"]')
-      .filter({ has: page.locator('.truncate', { hasText: label }) });
+      .filter({ has: page.locator('[data-testid="node-title"]', { hasText: label }) });
     const reloadedIndicators = reloadedNode.getByTestId('node-task-indicators');
     await expect(reloadedIndicators).toBeVisible({ timeout: 3_000 });
     await expect(statusBadge(reloadedIndicators, 'Em andamento')).toBeVisible();

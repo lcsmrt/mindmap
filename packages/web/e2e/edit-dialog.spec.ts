@@ -21,7 +21,7 @@ test.describe('dialog de edição e cores (M5)', () => {
     await openFirstMap(page);
 
     const node = page.locator('[data-testid="mind-node"]').first();
-    const titleSpan = node.locator('.truncate');
+    const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
     await openEditDialog(page);
@@ -35,7 +35,7 @@ test.describe('dialog de edição e cores (M5)', () => {
     await openFirstMap(page);
 
     const node = page.locator('[data-testid="mind-node"]').first();
-    const titleSpan = node.locator('.truncate');
+    const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
     await openEditDialog(page);
@@ -51,7 +51,7 @@ test.describe('dialog de edição e cores (M5)', () => {
     await expect(node.getByText(newTitle)).toBeVisible({ timeout: 3_000 });
 
     // restaura
-    const span = node.locator('.truncate');
+    const span = node.locator('[data-testid="node-title"]');
     await span.click();
     const restoreInput = node.locator('input');
     await restoreInput.fill(originalTitle!);
@@ -155,7 +155,7 @@ test.describe('dialog de edição e cores (M5)', () => {
     await openFirstMap(page);
 
     const node = page.locator('[data-testid="mind-node"]').first();
-    const titleSpan = node.locator('.truncate');
+    const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
     await openEditDialog(page);

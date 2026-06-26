@@ -35,7 +35,7 @@ test.describe('persistência e restauração (M4)', () => {
     await openFirstMap(page);
 
     const node = page.locator('[data-testid="mind-node"]').first();
-    const titleSpan = node.locator('.truncate');
+    const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
     await titleSpan.click();
@@ -55,7 +55,7 @@ test.describe('persistência e restauração (M4)', () => {
     await expect(page.locator('[data-testid="mind-node"]').first().getByText(newTitle)).toBeVisible();
 
     // restaura título original
-    const span = page.locator('[data-testid="mind-node"]').first().locator('.truncate');
+    const span = page.locator('[data-testid="mind-node"]').first().locator('[data-testid="node-title"]');
     await span.click();
     const restoreInput = page.locator('[data-testid="mind-node"]').first().locator('input');
     await restoreInput.fill(originalTitle!);
@@ -66,7 +66,7 @@ test.describe('persistência e restauração (M4)', () => {
     await openFirstMap(page);
 
     const node = page.locator('[data-testid="mind-node"]').first();
-    const titleSpan = node.locator('.truncate');
+    const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
     await page.route('**/api/nodes/*', (route) => {
@@ -108,7 +108,7 @@ test.describe('persistência e restauração (M4)', () => {
     });
 
     const node = page.locator('[data-testid="mind-node"]').first();
-    const titleSpan = node.locator('.truncate');
+    const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
     const retryTitle = `Retry-${Date.now()}`;
@@ -129,7 +129,7 @@ test.describe('persistência e restauração (M4)', () => {
     ).toBeVisible();
 
     // restaura
-    const span = page.locator('[data-testid="mind-node"]').first().locator('.truncate');
+    const span = page.locator('[data-testid="mind-node"]').first().locator('[data-testid="node-title"]');
     await span.click();
     const restoreInput = page.locator('[data-testid="mind-node"]').first().locator('input');
     await restoreInput.fill(originalTitle!);
