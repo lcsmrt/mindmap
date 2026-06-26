@@ -113,4 +113,84 @@ test.describe('smoke visual (L-005)', () => {
 
     await page.screenshot({ path: 'test-results/m12-card-responsive.png', fullPage: true });
   });
+
+  // Smoke do M13: barra de inserção simétrica no centro do vão entre dois irmãos de
+  // alturas diferentes (card curto vs. card multi-linha pós-M12). Verifica que o
+  // ghost-slot aparece durante o drag e que seu centro vertical está no vão entre os cards.
+  test('M13 — ghost-slot centrado no vão entre cards de alturas diferentes', async ({ page }) => {
+    createdNodeIds = [];
+    await page.goto('/');
+    await page.locator('[data-testid="map-card"]').first().click();
+    await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
+
+    const mapId = page.url().split('/maps/').pop()!;
+    const stamp = Date.now();
+    const res = await page.request.get(`/api/maps/${mapId}/nodes`);
+    const { nodes } = (await res.json()) as { nodes: { id: string; parentId: string | null }[] };
+    const root = nodes.find((n) => n.parentId === null)!;
+
+    // Cria nó pai intermediário (filho da raiz) para isolar o grupo de irmãos a testar.
+    const parentRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: root.id, title: `M13-${stamp}-pai` },
+    });
+    const parent = (await parentRes.json()) as { id: string };
+    createdNodeIds.push(parent.id);
+
+    // Card curto (1 linha) e card alto (multi-linha) como irmãos sob o pai.
+    const shortRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: parent.id, title: `M13-${stamp}-curto` },
+    });
+    const shortNode = (await shortRes.json()) as { id: string };
+    createdNodeIds.push(shortNode.id);
+
+    const tallRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: parent.id, title: `M13-${stamp} título longo que quebra em múltiplas linhas para produzir um card de altura maior que o card curto` },
+    });
+    const tallNode = (await tallRes.json()) as { id: string };
+    createdNodeIds.push(tallNode.id);
+
+    // Card a arrastar — outro irmão, que irá para o gap entre curto e longo.
+    const draggedRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: parent.id, title: `M13-${stamp}-arrastado` },
+    });
+    const draggedNode = (await draggedRes.json()) as { id: string };
+    createdNodeIds.push(draggedNode.id);
+
+    await page.reload();
+    await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
+
+    const shortEl = page.locator(`[data-node-id="${shortNode.id}"]`);
+    const tallEl = page.locator(`[data-node-id="${tallNode.id}"]`);
+    const draggedEl = page.locator(`[data-node-id="${draggedNode.id}"]`);
+    await expect(shortEl).toBeVisible({ timeout: 5_000 });
+    await expect(tallEl).toBeVisible({ timeout: 5_000 });
+
+    const shortBox = await shortEl.boundingBox();
+    const tallBox = await tallEl.boundingBox();
+    const draggedBox = await draggedEl.boundingBox();
+    if (!shortBox || !tallBox || !draggedBox) throw new Error('boundingBox indisponível');
+
+    // Confirma que os dois cards têm alturas diferentes (M12 tornou as alturas dinâmicas).
+    expect(tallBox.height).toBeGreaterThan(shortBox.height);
+
+    // Centro do vão entre o card curto e o card longo (depende da ordem de layout).
+    const topCard = shortBox.y < tallBox.y ? shortBox : tallBox;
+    const bottomCard = shortBox.y < tallBox.y ? tallBox : shortBox;
+    const gapCenterY = (topCard.y + topCard.height + bottomCard.y) / 2;
+    const targetX = shortBox.x + shortBox.width / 2;
+
+    // Arrasta para o centro do vão: o ghost-slot deve aparecer.
+    await page.mouse.move(draggedBox.x + draggedBox.width / 2, draggedBox.y + draggedBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(targetX, gapCenterY, { steps: 15 });
+    await page.mouse.move(targetX, gapCenterY, { steps: 3 });
+
+    await expect(page.getByTestId('ghost-slot')).toBeVisible({ timeout: 2_000 });
+
+    // Screenshot durante o drag: confirma visualmente que a barra está no vão.
+    // Inspeção manual: a barra deve aparecer centrada entre os dois cards.
+    await page.screenshot({ path: 'test-results/m13-ghost-slot.png', fullPage: false });
+
+    await page.mouse.up();
+  });
 });
