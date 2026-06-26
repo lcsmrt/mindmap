@@ -66,7 +66,7 @@ describe('computeTreeLayout', () => {
     expect(first).toEqual(second);
   });
 
-  it('nó com props de tarefa usa altura 58; sem props usa 40', () => {
+  it('nó com props de tarefa usa NODE_HEIGHT_WITH_FOOTER; sem props NODE_HEIGHT_BASE', () => {
     const tree: TreeNode = {
       node: node('root'),
       children: [leaf('task', { status: 'DONE' }), leaf('plain', { sortOrder: 1 })],
@@ -209,7 +209,7 @@ describe('computeTreeLayout', () => {
     expect(rightGroup.every((p) => centerX(p) > 0)).toBe(true);
 
     const sorted = [...rightGroup].sort((p, q) => p.y - q.y);
-    // alturas realmente variam (40 vs 58) — senão o caso seria vacuoso de novo.
+    // alturas realmente variam (base vs com rodapé) — senão o caso seria vacuoso de novo.
     expect(new Set(sorted.map((p) => p.height)).size).toBeGreaterThan(1);
     for (let i = 1; i < sorted.length; i++) {
       const curr = sorted[i]!;

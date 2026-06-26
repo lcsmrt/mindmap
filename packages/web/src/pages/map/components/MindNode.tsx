@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, Plus, X, Palette, Triangle } from 'lucide-re
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { NodeTaskIndicators } from './NodeTaskIndicators.js';
+import { hasTaskProps } from './task-meta.js';
 import { autoTextColor, isDarkBg } from './contrast.js';
 import type { MindNodeData } from './types.js';
 
@@ -22,8 +23,10 @@ interface CardSkin {
   /** Subtle border adapted to the background, or `undefined` for none. */
   border: string;
   boxShadow: string;
-  /** Critical "▲" marker color, adapted to the background (mirrors the export). */
+  /** Critical marker color, adapted to the background (mirrors the export). */
   critical: string;
+  /** Divider between title and task footer, adapted to the background. */
+  divider: string;
   /** Toolbar pill background, tuned for light vs. dark cards. */
   toolbarBg: string;
   /** Idle/hover colors for the add + edit toolbar buttons. */
@@ -52,6 +55,7 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         border: '#34343e',
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
         critical: '#ef7b7b',
+        divider: 'rgba(255,255,255,.14)',
         toolbarBg: 'rgba(20,20,24,.7)',
         toolBtn: '#9a9aa3',
         toolBtnHoverBg: '#2e2e36',
@@ -66,6 +70,7 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         border: 'rgba(0,0,0,.08)',
         boxShadow: '0 3px 14px rgba(0,0,0,.25)',
         critical: '#b01818',
+        divider: 'rgba(0,0,0,.1)',
         toolbarBg: 'rgba(0,0,0,.1)',
         toolBtn: 'rgba(0,0,0,.5)',
         toolBtnHoverBg: 'rgba(0,0,0,.1)',
@@ -258,7 +263,14 @@ function MindNodeBase({ data }: MindNodeProps) {
         )}
       </div>
 
-      <NodeTaskIndicators node={node} />
+      {hasTaskProps(node) && (
+        <div
+          className="mt-2.5 border-t pt-2.5"
+          style={{ borderColor: skin.divider }}
+        >
+          <NodeTaskIndicators node={node} />
+        </div>
+      )}
     </div>
   );
 }
