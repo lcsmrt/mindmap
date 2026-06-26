@@ -42,6 +42,11 @@ function sampleTree(): TreeNode {
   };
 }
 
+// Helper: slot com geometria neutra (para testes que só verificam parentId/index/side).
+function mkSlot(overrides: Pick<Slot, 'parentId' | 'index' | 'side'> & Partial<Slot>): Slot {
+  return { colX: 0, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity, ...overrides };
+}
+
 describe('computeSlots', () => {
   it('gera slots dos dois lados da raiz (entre/around os filhos de cada lado)', () => {
     const tree = sampleTree();
@@ -65,6 +70,15 @@ describe('computeSlots', () => {
     expect(rootLeft[0]!.index).toBe(0);
   });
 
+  it('lado vazio tem band cobrindo a coluna inteira (-∞, +∞)', () => {
+    const tree = sampleTree();
+    const { positioned } = computeTreeLayout(tree);
+    const slots = computeSlots(tree, positioned, { draggedId: 'B' });
+    const emptyLeft = slots.find((s) => s.parentId === 'root' && s.side === 'LEFT')!;
+    expect(emptyLeft.bandTop).toBe(-Infinity);
+    expect(emptyLeft.bandBottom).toBe(Infinity);
+  });
+
   it('pai profundo com filho gera slots side=null; folha gera 1 slot "primeiro filho"', () => {
     const tree = sampleTree();
     const { positioned } = computeTreeLayout(tree);
@@ -77,39 +91,103 @@ describe('computeSlots', () => {
     expect(underA).toHaveLength(1);
     expect(underA[0]!.side).toBeNull();
   });
+
+  it('bands do primeiro e último slot são abertas (-∞/+∞); slots do meio são fechados', () => {
+    const tree = sampleTree();
+    const { positioned } = computeTreeLayout(tree);
+    // direita tem [A, C] → 3 slots (j=0,1,2)
+    const slots = computeSlots(tree, positioned, { draggedId: 'B' });
+    const right = slots
+      .filter((s) => s.parentId === 'root' && s.side === 'RIGHT')
+      .sort((a, b) => a.index - b.index);
+    expect(right[0]!.bandTop).toBe(-Infinity);   // j=0: banda aberta no topo
+    expect(right[2]!.bandBottom).toBe(Infinity); // j=m: banda aberta no fundo
+    // fronteira entre slot 0 e 1 = centro de A; entre slot 1 e 2 = centro de C
+    expect(isFinite(right[0]!.bandBottom)).toBe(true);
+    expect(isFinite(right[1]!.bandTop)).toBe(true);
+    expect(isFinite(right[1]!.bandBottom)).toBe(true);
+    expect(isFinite(right[2]!.bandTop)).toBe(true);
+    // contiguidade: bandBottom[j] === bandTop[j+1]
+    expect(right[0]!.bandBottom).toBe(right[1]!.bandTop);
+    expect(right[1]!.bandBottom).toBe(right[2]!.bandTop);
+  });
 });
 
 describe('nearestSlot', () => {
+  // colX=0, colCenter=90 (NODE_WIDTH/2)
+  // Dois slots na coluna 'p': p/0 cobre y<60, p/1 cobre y≥60
+  // Coluna separada 'sub' em colX=180 (colCenter=270)
   const slots: Slot[] = [
-    { parentId: 'p', index: 0, side: null, x: 0, y: 0, height: 40 },
-    { parentId: 'p', index: 1, side: null, x: 0, y: 100, height: 40 },
-    { parentId: 'sub', index: 0, side: null, x: 500, y: 0, height: 40 },
+    { parentId: 'p', index: 0, side: null, colX: 0,   anchorY:  20, bandTop: -Infinity, bandBottom: 60       },
+    { parentId: 'p', index: 1, side: null, colX: 0,   anchorY: 120, bandTop: 60,        bandBottom: Infinity },
+    { parentId: 'sub', index: 0, side: null, colX: 180, anchorY: 20, bandTop: -Infinity, bandBottom: Infinity },
   ];
 
-  it('escolhe o slot mais próximo do ponto', () => {
-    // centro do slot 0 ≈ (90, 20); ponto perto dele
+  it('escolhe o slot cujo band contém o ponto (slot 0, y<60)', () => {
     const near = nearestSlot({ x: 90, y: 25 }, slots, { excludeSubtree: new Set() });
     expect(near?.index).toBe(0);
+    expect(near?.parentId).toBe('p');
   });
 
   it('exclui slots cujo pai está na subárvore do arrastado', () => {
-    const near = nearestSlot({ x: 590, y: 20 }, slots, { excludeSubtree: new Set(['sub']) });
-    // 'sub' está excluído → cai no próximo mais próximo (não retorna 'sub')
+    // ponto perto da coluna 'sub' (colCenter=270); excluindo 'sub' cai na coluna 'p'
+    const near = nearestSlot({ x: 270, y: 20 }, slots, { excludeSubtree: new Set(['sub']) });
     expect(near?.parentId).not.toBe('sub');
   });
 
-  it('retorna null quando nada está dentro da distância máxima', () => {
+  it('retorna null quando nada está dentro da distância máxima horizontal', () => {
     const near = nearestSlot({ x: 99999, y: 99999 }, slots, { excludeSubtree: new Set() });
     expect(near).toBeNull();
   });
 
   it('é determinístico em empate (primeiro na ordem vence)', () => {
     const tie: Slot[] = [
-      { parentId: 'a', index: 0, side: null, x: 0, y: 0, height: 40 },
-      { parentId: 'b', index: 0, side: null, x: 0, y: 0, height: 40 },
+      { parentId: 'a', index: 0, side: null, colX: 0, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity },
+      { parentId: 'b', index: 0, side: null, colX: 0, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity },
     ];
     const near = nearestSlot({ x: 90, y: 20 }, tie, { excludeSubtree: new Set() });
     expect(near?.parentId).toBe('a');
+  });
+
+  it('troca de slot ao cruzar o centro do card (fronteira em y=60)', () => {
+    // y=59 → no band de p/0 [−∞, 60)
+    expect(nearestSlot({ x: 90, y: 59 }, slots, { excludeSubtree: new Set() })?.index).toBe(0);
+    // y=61 → no band de p/1 [60, ∞); a troca ocorre ao cruzar a fronteira
+    expect(nearestSlot({ x: 90, y: 61 }, slots, { excludeSubtree: new Set() })?.index).toBe(1);
+  });
+
+  it('anti-flip: múltiplos pontos dentro do mesmo band → sempre o mesmo slot', () => {
+    // band de p/0 = [-∞, 60); todos os pontos abaixo de y=60 → slot 0
+    const ys = [0, 10, 30, 50, 59];
+    const results = ys.map((y) =>
+      nearestSlot({ x: 90, y }, slots, { excludeSubtree: new Set() }),
+    );
+    expect(results.every((s) => s?.index === 0)).toBe(true);
+  });
+
+  it('alturas variáveis: band proporcional ao centro do card, sem assimetria', () => {
+    // card pequeno (h=40) em y=0..40 → centro=20
+    // card grande (h=79) em y=50..129 → centro=89.5
+    // slot 0: bandTop=-∞, bandBottom=20 (centro do card pequeno)
+    // slot 1: bandTop=20, bandBottom=89.5 (entre os dois centros)
+    // slot 2: bandTop=89.5, bandBottom=∞
+    const mixed: Slot[] = [
+      { parentId: 'p', index: 0, side: null, colX: 0, anchorY:  -5, bandTop: -Infinity, bandBottom: 20   },
+      { parentId: 'p', index: 1, side: null, colX: 0, anchorY:  45, bandTop: 20,        bandBottom: 89.5 },
+      { parentId: 'p', index: 2, side: null, colX: 0, anchorY: 135, bandTop: 89.5,      bandBottom: Infinity },
+    ];
+    // acima do centro do card pequeno → slot 0
+    expect(nearestSlot({ x: 90, y: 10 }, mixed, { excludeSubtree: new Set() })?.index).toBe(0);
+    // no vão entre os dois cards → slot 1
+    expect(nearestSlot({ x: 90, y: 50 }, mixed, { excludeSubtree: new Set() })?.index).toBe(1);
+    // abaixo do centro do card grande → slot 2
+    expect(nearestSlot({ x: 90, y: 100 }, mixed, { excludeSubtree: new Set() })?.index).toBe(2);
+  });
+
+  it('snap-back: dx > SLOT_MAX_DISTANCE (NODE_WIDTH * 1.5 = 270) → null', () => {
+    // colCenter = 0 + 90 = 90; x=362 → dx=272 > 270 (apenas slots p/0 e p/1 na coluna)
+    const near = nearestSlot({ x: 362, y: 20 }, slots.slice(0, 2), { excludeSubtree: new Set() });
+    expect(near).toBeNull();
   });
 });
 
@@ -123,27 +201,27 @@ describe('slotToMoveBody', () => {
   ];
 
   it('pai não-raiz: índice local direto, sem side', () => {
-    const slot: Slot = { parentId: 'P', index: 2, side: null, x: 0, y: 0, height: 40 };
-    expect(slotToMoveBody(slot, rootChildren, 'X')).toEqual({ parentId: 'P', index: 2 });
+    const s = mkSlot({ parentId: 'P', index: 2, side: null });
+    expect(slotToMoveBody(s, rootChildren, 'X')).toEqual({ parentId: 'P', index: 2 });
   });
 
   it('raiz lado RIGHT, j<m → índice global do j-ésimo do lado', () => {
     // dragged A → newSiblings [B,C,D]; RIGHT = [C] (m=1)
-    const slot: Slot = { parentId: 'root', index: 0, side: 'RIGHT', x: 0, y: 0, height: 40 };
-    expect(slotToMoveBody(slot, rootChildren, 'A')).toEqual({ parentId: 'root', index: 1, side: 'RIGHT' });
+    const s = mkSlot({ parentId: 'root', index: 0, side: 'RIGHT' });
+    expect(slotToMoveBody(s, rootChildren, 'A')).toEqual({ parentId: 'root', index: 1, side: 'RIGHT' });
   });
 
   it('raiz lado RIGHT, j==m → após o último do lado', () => {
-    const slot: Slot = { parentId: 'root', index: 1, side: 'RIGHT', x: 0, y: 0, height: 40 };
+    const s = mkSlot({ parentId: 'root', index: 1, side: 'RIGHT' });
     // após C (índice 1 em [B,C,D]) → 2
-    expect(slotToMoveBody(slot, rootChildren, 'A')).toEqual({ parentId: 'root', index: 2, side: 'RIGHT' });
+    expect(slotToMoveBody(s, rootChildren, 'A')).toEqual({ parentId: 'root', index: 2, side: 'RIGHT' });
   });
 
   it('raiz lado LEFT com vários, mapeia cada posição', () => {
     // dragged A → newSiblings [B,C,D]; LEFT = [B,D]
-    const left0: Slot = { parentId: 'root', index: 0, side: 'LEFT', x: 0, y: 0, height: 40 };
-    const left1: Slot = { parentId: 'root', index: 1, side: 'LEFT', x: 0, y: 0, height: 40 };
-    const left2: Slot = { parentId: 'root', index: 2, side: 'LEFT', x: 0, y: 0, height: 40 };
+    const left0 = mkSlot({ parentId: 'root', index: 0, side: 'LEFT' });
+    const left1 = mkSlot({ parentId: 'root', index: 1, side: 'LEFT' });
+    const left2 = mkSlot({ parentId: 'root', index: 2, side: 'LEFT' });
     expect(slotToMoveBody(left0, rootChildren, 'A').index).toBe(0); // antes de B → 0
     expect(slotToMoveBody(left1, rootChildren, 'A').index).toBe(2); // antes de D → 2
     expect(slotToMoveBody(left2, rootChildren, 'A').index).toBe(3); // após D → 3
@@ -151,7 +229,7 @@ describe('slotToMoveBody', () => {
 
   it('lado vazio (m==0) → índice no fim; o side faz a colocação visual', () => {
     const only = [{ id: 'A', side: 'RIGHT' as const }];
-    const emptyLeft: Slot = { parentId: 'root', index: 0, side: 'LEFT', x: 0, y: 0, height: 40 };
+    const emptyLeft = mkSlot({ parentId: 'root', index: 0, side: 'LEFT' });
     // dragged A → newSiblings []; LEFT vazio → index 0 (length)
     expect(slotToMoveBody(emptyLeft, only, 'A')).toEqual({ parentId: 'root', index: 0, side: 'LEFT' });
   });
@@ -166,21 +244,21 @@ describe('isOriginSlot (no-op)', () => {
 
   it('slot na posição atual do nó (mesmo pai/lado/posição local) é origem', () => {
     // C é o 2º filho RIGHT (posição local 1 entre [A,C]) → slot RIGHT index 1 = origem
-    const slot: Slot = { parentId: 'root', index: 1, side: 'RIGHT', x: 0, y: 0, height: 40 };
+    const s = mkSlot({ parentId: 'root', index: 1, side: 'RIGHT' });
     const dragged = { id: 'C', parentId: 'root', side: 'RIGHT' as const };
-    expect(isOriginSlot(slot, dragged, rootChildren)).toBe(true);
+    expect(isOriginSlot(s, dragged, rootChildren)).toBe(true);
   });
 
   it('slot em outro lado/posição não é origem', () => {
-    const other: Slot = { parentId: 'root', index: 0, side: 'LEFT', x: 0, y: 0, height: 40 };
+    const other = mkSlot({ parentId: 'root', index: 0, side: 'LEFT' });
     const dragged = { id: 'C', parentId: 'root', side: 'RIGHT' as const };
     expect(isOriginSlot(other, dragged, rootChildren)).toBe(false);
   });
 
   it('pai não-raiz: origem é a posição entre os irmãos', () => {
     const siblings = [{ id: 'X', side: null }, { id: 'Y', side: null }];
-    const slot: Slot = { parentId: 'P', index: 1, side: null, x: 0, y: 0, height: 40 };
+    const s = mkSlot({ parentId: 'P', index: 1, side: null });
     const dragged = { id: 'Y', parentId: 'P', side: null };
-    expect(isOriginSlot(slot, dragged, siblings)).toBe(true);
+    expect(isOriginSlot(s, dragged, siblings)).toBe(true);
   });
 });
