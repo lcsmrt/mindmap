@@ -65,6 +65,7 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
         status: z.enum(['PENDING', 'IN_PROGRESS', 'DONE', 'BLOCKED']).nullable().optional(),
         assignee: z.string().trim().min(1).nullable().optional(),
         isCritical: z.boolean().optional(),
+        width: z.number().int().positive().max(1000).optional(),
       }).refine(
         (d) => Object.values(d).some((v) => v !== undefined),
         { message: 'At least one field must be provided' },
@@ -74,7 +75,7 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       const existing = await prisma.node.findUnique({ where: { id: req.params.id } });
       if (!existing) throw new NotFoundError('Node not found');
 
-      const { title, bgColor, textColor, status, assignee, isCritical } = req.body;
+      const { title, bgColor, textColor, status, assignee, isCritical, width } = req.body;
       const data: Record<string, unknown> = {};
       if (title !== undefined) data.title = title;
       if (bgColor !== undefined) data.bgColor = bgColor;
@@ -82,6 +83,7 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       if (status !== undefined) data.status = status;
       if (assignee !== undefined) data.assignee = assignee;
       if (isCritical !== undefined) data.isCritical = isCritical;
+      if (width !== undefined) data.width = width;
 
       const updated = await prisma.node.update({
         where: { id: req.params.id },

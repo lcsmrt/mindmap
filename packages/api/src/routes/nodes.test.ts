@@ -456,6 +456,108 @@ describe('Nodes API', () => {
       expect(body.bgColor).toBe('#fecaca');
       expect(body.textColor).toBe('#dc2626');
     });
+
+    it('PATCH com width: 240 retorna 200 e persiste via read-back', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Redimensionável' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { width: 240 },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ width: number | null }>().width).toBe(240);
+
+      const nodesRes = await app.inject({ method: 'GET', url: `/maps/${mapId}/nodes` });
+      const nodes = nodesRes.json<{ nodes: { id: string; width: number | null }[] }>().nodes;
+      const found = nodes.find((n) => n.id === id);
+      expect(found?.width).toBe(240);
+    });
+
+    it('PATCH com width: 1000 (no limite) retorna 200', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { width: 1000 },
+      });
+      expect(patch.statusCode).toBe(200);
+      expect(patch.json<{ width: number | null }>().width).toBe(1000);
+    });
+
+    it('PATCH com width: 0 retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { width: 0 },
+      });
+      expect(patch.statusCode).toBe(400);
+    });
+
+    it('PATCH com width: -10 retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { width: -10 },
+      });
+      expect(patch.statusCode).toBe(400);
+    });
+
+    it('PATCH com width: 1500 (acima do max) retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { width: 1500 },
+      });
+      expect(patch.statusCode).toBe(400);
+    });
   });
 
   describe('DELETE /nodes/:id', () => {
