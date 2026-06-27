@@ -17,8 +17,10 @@ export interface Slot {
   side: 'LEFT' | 'RIGHT' | null;
   colX: number;       // X (top-left) da coluna onde a barra desenha
   anchorY: number;    // centro vertical do vão — onde a barra-fantasma é desenhada
-  bandTop: number;    // início da faixa de seleção (inclusive); pode ser -Infinity
-  bandBottom: number; // fim da faixa (exclusive); pode ser +Infinity
+  bandTop: number;
+  bandBottom: number;
+  groupTop: number;    // span vertical do grupo; desempata grupos co-coluna (ver AD-021)
+  groupBottom: number;
 }
 
 // Distância máxima horizontal (em px de mundo) do cursor ao centro da coluna para que
@@ -63,10 +65,15 @@ export function computeSlots(
       const anchorY = parentPos.y + parentPos.height / 2;
       const bandTop = side === null ? parentPos.y : -Infinity;
       const bandBottom = side === null ? parentPos.y + parentPos.height : Infinity;
-      slots.push({ parentId, index: 0, side, colX, anchorY, bandTop, bandBottom });
+      slots.push({
+        parentId, index: 0, side, colX, anchorY, bandTop, bandBottom,
+        groupTop: bandTop, groupBottom: bandBottom,
+      });
       return;
     }
     const colX = children[0]!.x;
+    const groupTop = center(children[0]!);
+    const groupBottom = center(children[m - 1]!);
     for (let j = 0; j <= m; j++) {
       // anchorY: ponta = borda do card ± GAP_Y/2; meio = centro do vão.
       let anchorY: number;
@@ -76,7 +83,7 @@ export function computeSlots(
       // bands: fronteiras no centro dos cards vizinhos.
       const bandTop = j === 0 ? -Infinity : center(children[j - 1]!);
       const bandBottom = j === m ? Infinity : center(children[j]!);
-      slots.push({ parentId, index: j, side, colX, anchorY, bandTop, bandBottom });
+      slots.push({ parentId, index: j, side, colX, anchorY, bandTop, bandBottom, groupTop, groupBottom });
     }
   }
 
@@ -105,13 +112,12 @@ export function computeSlots(
   return slots;
 }
 
+const SAME_COLUMN_EPS = 0.5;
+
 /**
- * Slot selecionado por band vertical + proximidade horizontal, de forma determinística
- * (empate → primeiro na ordem de enumeração). Cada slot carrega a faixa `[bandTop,
- * bandBottom)` que o seleciona; score = dx (dist. horizontal ao centro da coluna) +
- * dy (0 se dentro do band, senão dist. à borda). Exclui slots cujo pai está na
- * subárvore do arrastado. Retorna `null` se o melhor `dx` excede `SLOT_MAX_DISTANCE`
- * (afastamento horizontal → snap-back).
+ * Seleção lexicográfica do slot: coluna (`dx`) → grupo co-coluna (`groupDy`) → banda do Y.
+ * Determinística no empate (primeiro enumerado); `null` se o melhor `dx` excede
+ * `SLOT_MAX_DISTANCE` (snap-back). Ver AD-021.
  */
 export function nearestSlot(
   point: { x: number; y: number },
@@ -119,19 +125,31 @@ export function nearestSlot(
   opts: { excludeSubtree: Set<string> },
 ): Slot | null {
   let best: Slot | null = null;
-  let bestScore = Infinity;
   let bestDx = Infinity;
+  let bestGroupDy = Infinity;
+  let bestInBand = false;
   for (const slot of slots) {
     if (opts.excludeSubtree.has(slot.parentId)) continue;
     const colCenter = slot.colX + NODE_WIDTH / 2;
     const dx = Math.abs(point.x - colCenter);
     const inBand = point.y >= slot.bandTop && point.y < slot.bandBottom;
-    const dy = inBand ? 0 : point.y < slot.bandTop ? slot.bandTop - point.y : point.y - slot.bandBottom;
-    const score = dx + dy;
-    if (score < bestScore) {
-      bestScore = score;
+    const groupDy =
+      point.y < slot.groupTop ? slot.groupTop - point.y
+      : point.y > slot.groupBottom ? point.y - slot.groupBottom
+      : 0;
+
+    let better: boolean;
+    if (best === null) better = true;
+    else if (Math.abs(dx - bestDx) > SAME_COLUMN_EPS) better = dx < bestDx;
+    else if (groupDy !== bestGroupDy) better = groupDy < bestGroupDy;
+    else if (inBand !== bestInBand) better = inBand;
+    else better = false;
+
+    if (better) {
       best = slot;
       bestDx = dx;
+      bestGroupDy = groupDy;
+      bestInBand = inBand;
     }
   }
   return best !== null && bestDx <= SLOT_MAX_DISTANCE ? best : null;
