@@ -41,6 +41,7 @@ model Node {
   assignee   String?
   isCritical Boolean     @default(false) @map("is_critical")
   side       Side?       @map("side")
+  width      Int?        @map("width")
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
 

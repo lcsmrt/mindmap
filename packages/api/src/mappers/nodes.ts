@@ -14,6 +14,7 @@ export function toNodeDto(node: Node): NodeDto {
     assignee: node.assignee,
     isCritical: node.isCritical,
     side: node.side,
+    width: node.width,
     createdAt: node.createdAt.toISOString(),
     updatedAt: node.updatedAt.toISOString(),
   };
