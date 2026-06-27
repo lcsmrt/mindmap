@@ -16,6 +16,7 @@ export interface Slot {
   index: number;
   side: 'LEFT' | 'RIGHT' | null;
   colX: number;       // X (top-left) da coluna onde a barra desenha
+  colWidth: number;   // largura da coluna (do pai ou dos filhos), usada no eixo X do ghost
   anchorY: number;    // centro vertical do vão — onde a barra-fantasma é desenhada
   bandTop: number;
   bandBottom: number;
@@ -61,17 +62,19 @@ export function computeSlots(
       // cada lado tem coluna X distinta, sem colisão. Para pais não-raiz (side === null),
       // limita ao range Y do pai para evitar que múltiplos cards folha na mesma coluna
       // compitam com band idêntica (o primeiro sempre venceria o empate).
-      const colX = parentPos.x + dir * (NODE_WIDTH + GAP_X);
+      const colX = parentPos.x + dir * (parentPos.width + GAP_X);
+      const colWidth = parentPos.width;
       const anchorY = parentPos.y + parentPos.height / 2;
       const bandTop = side === null ? parentPos.y : -Infinity;
       const bandBottom = side === null ? parentPos.y + parentPos.height : Infinity;
       slots.push({
-        parentId, index: 0, side, colX, anchorY, bandTop, bandBottom,
+        parentId, index: 0, side, colX, colWidth, anchorY, bandTop, bandBottom,
         groupTop: bandTop, groupBottom: bandBottom,
       });
       return;
     }
     const colX = children[0]!.x;
+    const colWidth = children[0]!.width;
     const groupTop = center(children[0]!);
     const groupBottom = center(children[m - 1]!);
     for (let j = 0; j <= m; j++) {
@@ -83,7 +86,7 @@ export function computeSlots(
       // bands: fronteiras no centro dos cards vizinhos.
       const bandTop = j === 0 ? -Infinity : center(children[j - 1]!);
       const bandBottom = j === m ? Infinity : center(children[j]!);
-      slots.push({ parentId, index: j, side, colX, anchorY, bandTop, bandBottom, groupTop, groupBottom });
+      slots.push({ parentId, index: j, side, colX, colWidth, anchorY, bandTop, bandBottom, groupTop, groupBottom });
     }
   }
 
@@ -130,7 +133,7 @@ export function nearestSlot(
   let bestInBand = false;
   for (const slot of slots) {
     if (opts.excludeSubtree.has(slot.parentId)) continue;
-    const colCenter = slot.colX + NODE_WIDTH / 2;
+    const colCenter = slot.colX + slot.colWidth / 2;
     const dx = Math.abs(point.x - colCenter);
     const inBand = point.y >= slot.bandTop && point.y < slot.bandBottom;
     const groupDy =

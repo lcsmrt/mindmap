@@ -46,7 +46,7 @@ function sampleTree(): TreeNode {
 // Helper: slot com geometria neutra (para testes que só verificam parentId/index/side).
 function mkSlot(overrides: Pick<Slot, 'parentId' | 'index' | 'side'> & Partial<Slot>): Slot {
   return {
-    colX: 0, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity,
+    colX: 0, colWidth: 180, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity,
     groupTop: -Infinity, groupBottom: Infinity, ...overrides,
   };
 }
@@ -122,9 +122,9 @@ describe('nearestSlot', () => {
   // Dois slots na coluna 'p': p/0 cobre y<60, p/1 cobre y≥60
   // Coluna separada 'sub' em colX=180 (colCenter=270)
   const slots: Slot[] = [
-    { parentId: 'p', index: 0, side: null, colX: 0,   anchorY:  20, bandTop: -Infinity, bandBottom: 60,       groupTop: 60,        groupBottom: 60       },
-    { parentId: 'p', index: 1, side: null, colX: 0,   anchorY: 120, bandTop: 60,        bandBottom: Infinity, groupTop: 60,        groupBottom: 60       },
-    { parentId: 'sub', index: 0, side: null, colX: 180, anchorY: 20, bandTop: -Infinity, bandBottom: Infinity, groupTop: -Infinity, groupBottom: Infinity },
+    { parentId: 'p', index: 0, side: null, colX: 0,   colWidth: 180, anchorY:  20, bandTop: -Infinity, bandBottom: 60,       groupTop: 60,        groupBottom: 60       },
+    { parentId: 'p', index: 1, side: null, colX: 0,   colWidth: 180, anchorY: 120, bandTop: 60,        bandBottom: Infinity, groupTop: 60,        groupBottom: 60       },
+    { parentId: 'sub', index: 0, side: null, colX: 180, colWidth: 180, anchorY: 20, bandTop: -Infinity, bandBottom: Infinity, groupTop: -Infinity, groupBottom: Infinity },
   ];
 
   it('escolhe o slot cujo band contém o ponto (slot 0, y<60)', () => {
@@ -146,8 +146,8 @@ describe('nearestSlot', () => {
 
   it('é determinístico em empate (primeiro na ordem vence)', () => {
     const tie: Slot[] = [
-      { parentId: 'a', index: 0, side: null, colX: 0, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity, groupTop: -Infinity, groupBottom: Infinity },
-      { parentId: 'b', index: 0, side: null, colX: 0, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity, groupTop: -Infinity, groupBottom: Infinity },
+      { parentId: 'a', index: 0, side: null, colX: 0, colWidth: 180, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity, groupTop: -Infinity, groupBottom: Infinity },
+      { parentId: 'b', index: 0, side: null, colX: 0, colWidth: 180, anchorY: 0, bandTop: -Infinity, bandBottom: Infinity, groupTop: -Infinity, groupBottom: Infinity },
     ];
     const near = nearestSlot({ x: 90, y: 20 }, tie, { excludeSubtree: new Set() });
     expect(near?.parentId).toBe('a');
@@ -176,9 +176,9 @@ describe('nearestSlot', () => {
     // slot 1: bandTop=20, bandBottom=89.5 (entre os dois centros)
     // slot 2: bandTop=89.5, bandBottom=∞
     const mixed: Slot[] = [
-      { parentId: 'p', index: 0, side: null, colX: 0, anchorY:  -5, bandTop: -Infinity, bandBottom: 20,       groupTop: 20, groupBottom: 89.5 },
-      { parentId: 'p', index: 1, side: null, colX: 0, anchorY:  45, bandTop: 20,        bandBottom: 89.5,     groupTop: 20, groupBottom: 89.5 },
-      { parentId: 'p', index: 2, side: null, colX: 0, anchorY: 135, bandTop: 89.5,      bandBottom: Infinity, groupTop: 20, groupBottom: 89.5 },
+      { parentId: 'p', index: 0, side: null, colX: 0, colWidth: 180, anchorY:  -5, bandTop: -Infinity, bandBottom: 20,       groupTop: 20, groupBottom: 89.5 },
+      { parentId: 'p', index: 1, side: null, colX: 0, colWidth: 180, anchorY:  45, bandTop: 20,        bandBottom: 89.5,     groupTop: 20, groupBottom: 89.5 },
+      { parentId: 'p', index: 2, side: null, colX: 0, colWidth: 180, anchorY: 135, bandTop: 89.5,      bandBottom: Infinity, groupTop: 20, groupBottom: 89.5 },
     ];
     // acima do centro do card pequeno → slot 0
     expect(nearestSlot({ x: 90, y: 10 }, mixed, { excludeSubtree: new Set() })?.index).toBe(0);
@@ -198,14 +198,14 @@ describe('nearestSlot', () => {
     // Dois pais (A em cima, B embaixo) de mesma profundidade/lado → coluna de netos no
     // mesmo colX. groupDy desempata por proximidade vertical.
     const A: Slot[] = [
-      { parentId: 'A', index: 0, side: null, colX: 0, anchorY:   0, bandTop: -Infinity, bandBottom:  20, groupTop:  20, groupBottom:  70 },
-      { parentId: 'A', index: 1, side: null, colX: 0, anchorY:  45, bandTop:  20,       bandBottom:  70, groupTop:  20, groupBottom:  70 },
-      { parentId: 'A', index: 2, side: null, colX: 0, anchorY:  90, bandTop:  70,       bandBottom: Infinity, groupTop: 20, groupBottom: 70 },
+      { parentId: 'A', index: 0, side: null, colX: 0, colWidth: 180, anchorY:   0, bandTop: -Infinity, bandBottom:  20, groupTop:  20, groupBottom:  70 },
+      { parentId: 'A', index: 1, side: null, colX: 0, colWidth: 180, anchorY:  45, bandTop:  20,       bandBottom:  70, groupTop:  20, groupBottom:  70 },
+      { parentId: 'A', index: 2, side: null, colX: 0, colWidth: 180, anchorY:  90, bandTop:  70,       bandBottom: Infinity, groupTop: 20, groupBottom: 70 },
     ];
     const B: Slot[] = [
-      { parentId: 'B', index: 0, side: null, colX: 0, anchorY: 200, bandTop: -Infinity, bandBottom: 220, groupTop: 220, groupBottom: 270 },
-      { parentId: 'B', index: 1, side: null, colX: 0, anchorY: 245, bandTop: 220,       bandBottom: 270, groupTop: 220, groupBottom: 270 },
-      { parentId: 'B', index: 2, side: null, colX: 0, anchorY: 290, bandTop: 270,       bandBottom: Infinity, groupTop: 220, groupBottom: 270 },
+      { parentId: 'B', index: 0, side: null, colX: 0, colWidth: 180, anchorY: 200, bandTop: -Infinity, bandBottom: 220, groupTop: 220, groupBottom: 270 },
+      { parentId: 'B', index: 1, side: null, colX: 0, colWidth: 180, anchorY: 245, bandTop: 220,       bandBottom: 270, groupTop: 220, groupBottom: 270 },
+      { parentId: 'B', index: 2, side: null, colX: 0, colWidth: 180, anchorY: 290, bandTop: 270,       bandBottom: Infinity, groupTop: 220, groupBottom: 270 },
     ];
     const both = [...A, ...B]; // A enumerado primeiro (era quem roubava o drop)
     // cursor no vão entre os filhos de B (y=245) → deve mirar B, não A
@@ -313,5 +313,42 @@ describe('isOriginSlot (no-op)', () => {
     const s = mkSlot({ parentId: 'P', index: 1, side: null });
     const dragged = { id: 'Y', parentId: 'P', side: null };
     expect(isOriginSlot(s, dragged, siblings)).toBe(true);
+  });
+});
+
+describe('computeSlots — colX/colWidth por largura real do pai', () => {
+  it('pai com width=300: slot do 1º filho tem colX baseado na largura do pai', () => {
+    const wideParent = node('wide', { side: 'RIGHT', width: 300 });
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [{ node: wideParent, children: [] }],
+    };
+    const { positioned } = computeTreeLayout(tree, undefined, (n) => n.width ?? 180);
+    const slots = computeSlots(tree, positioned, { draggedId: 'X_NOT_PRESENT' });
+    const slot = slots.find((s) => s.parentId === 'wide');
+    expect(slot).toBeDefined();
+    // colX deve ser a borda direita do pai (parentPos.x + 300 + GAP_X)
+    const widePos = positioned.find((p) => p.id === 'wide')!;
+    expect(slot!.colX).toBeCloseTo(widePos.x + widePos.width + 24);
+    expect(slot!.colWidth).toBe(300);
+  });
+
+  it('grupo populado: colWidth = largura dos filhos existentes', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [
+        {
+          node: node('p', { side: 'RIGHT', width: 240 }),
+          children: [leaf('c1', { width: 200, parentId: 'p' }), leaf('c2', { sortOrder: 1, width: 200, parentId: 'p' })],
+        },
+      ],
+    };
+    const widthFn = (n: ReturnType<typeof node>) => n.width ?? 180;
+    const { positioned } = computeTreeLayout(tree, undefined, widthFn);
+    const slots = computeSlots(tree, positioned, { draggedId: 'X_NOT_PRESENT' });
+    const pSlots = slots.filter((s) => s.parentId === 'p');
+    expect(pSlots.length).toBeGreaterThan(0);
+    // colWidth = largura dos filhos (200)
+    expect(pSlots[0]!.colWidth).toBe(200);
   });
 });
