@@ -9,6 +9,7 @@ import type {
 import type { QueryOptions } from './types.js';
 import { ApiError, request } from './_request.js';
 import { useToast } from '@/components/ui/toast.js';
+import { uid } from '@/lib/uid.js';
 
 function shouldRetry(failureCount: number, error: Error): boolean {
   if (failureCount >= 3) return false;
@@ -76,7 +77,7 @@ export const useCreateNode = (options?: { onSuccess?: (data: NodeDto) => void })
           ? Math.max(...siblings.map((n) => n.sortOrder))
           : -1;
         const tempNode: NodeDto = {
-          id: `temp-${crypto.randomUUID()}`,
+          id: `temp-${uid()}`,
           mapId: body.mapId,
           parentId: body.parentId,
           title: body.title,

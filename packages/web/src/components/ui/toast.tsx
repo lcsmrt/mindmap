@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { uid } from '@/lib/uid.js';
 
 export interface Toast {
   id: string;
@@ -33,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback(
     (opts: Omit<Toast, 'id'>) => {
-      const id = crypto.randomUUID();
+      const id = uid();
       setToasts((prev) => {
         const next = [...prev, { ...opts, id }];
         return next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next;
