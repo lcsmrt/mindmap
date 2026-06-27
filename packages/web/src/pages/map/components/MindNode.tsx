@@ -275,11 +275,14 @@ function MindNodeBase({ data }: MindNodeProps) {
       )}
 
       {/* Alça de resize revelada no hover (borda direita). O gesto de arraste é
-          detectado no wrapper em MapCanvas (que tem acesso ao scale do zoom). */}
+          detectado no wrapper em MapCanvas (que tem acesso ao scale do zoom). A barra
+          interna (bg-current = cor do texto do card) dá o indicador visível. */}
       <div
         data-testid="resize-handle"
-        className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize rounded-r-[11px] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
-      />
+        className="absolute right-0 top-0 flex h-full w-2.5 cursor-ew-resize items-center justify-end opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+      >
+        <div className="mr-0.5 h-8 w-1 rounded-full bg-current opacity-60" />
+      </div>
     </div>
   );
 }

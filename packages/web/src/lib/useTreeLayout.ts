@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { flextree } from 'd3-flextree';
 import type { NodeDto } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { estimateNodeHeight, nodeWidth } from './nodeSize.js';
+import { estimateNodeHeight, nodeWidth, NODE_WIDTH } from './nodeSize.js';
 
 /**
  * Altura de um nó para o layout: a altura **medida** (quando já reportada pelo
@@ -205,17 +205,23 @@ export function useTreeLayout(
   nodes: NodeDto[],
   edges: Array<{ parentId: string; childId: string }>,
   heights?: ReadonlyMap<string, number>,
+  widths?: ReadonlyMap<string, number>,
   activeResize?: { id: string; width: number } | null,
 ): LayoutResult {
   return useMemo(() => {
     const tree = buildVisibleTree(nodes, edges);
     if (!tree) return EMPTY_LAYOUT;
-    const widthFn = (n: NodeDto) =>
-      activeResize?.id === n.id ? activeResize.width : nodeWidth(n);
+    // Precedência: rascunho do arraste > largura explícita persistida > largura medida
+    // do conteúdo (card sem `width` ajusta-se ao texto) > default de 1º paint.
+    const widthFn = (n: NodeDto) => {
+      if (activeResize?.id === n.id) return activeResize.width;
+      if (n.width != null) return n.width;
+      return widths?.get(n.id) ?? NODE_WIDTH;
+    };
     return computeTreeLayout(
       tree,
       (node) => nodeSizeFromHeights(heights, node),
       widthFn,
     );
-  }, [nodes, edges, heights, activeResize]);
+  }, [nodes, edges, heights, widths, activeResize]);
 }

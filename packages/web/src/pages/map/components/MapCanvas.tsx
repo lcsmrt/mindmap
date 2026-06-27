@@ -12,7 +12,7 @@ import type { TreeNode } from '@/lib/tree.js';
 import { useTreeLayout } from '@/lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '@/lib/useTreeLayout.js';
 import { slotToMoveBody, type Slot } from '@/lib/slots.js';
-import { nodeWidth, MIN_NODE_WIDTH } from '@/lib/nodeSize.js';
+import { MIN_NODE_WIDTH, NODE_WIDTH } from '@/lib/nodeSize.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
@@ -47,7 +47,6 @@ interface CanvasLayersProps {
   bounds: LayoutBounds;
   tree: TreeNode | null;
   nodeDataById: Map<string, MindNodeData>;
-  nodeById: Map<string, NodeDto>;
   isRoot: (id: string) => boolean;
   onPlace: (draggedId: string, slot: Slot) => void;
   onInvalidDrop: () => void;
@@ -67,7 +66,6 @@ function CanvasLayers({
   bounds,
   tree,
   nodeDataById,
-  nodeById,
   isRoot,
   onPlace,
   onInvalidDrop,
@@ -175,6 +173,14 @@ function CanvasLayers({
           const data = nodeDataById.get(p.id);
           if (!data) return null;
           const isDragging = draggingId === p.id;
+          const isResizing = activeResize?.id === p.id;
+          // Card sem largura explícita ajusta-se ao conteúdo (max-content), limitado
+          // entre o piso e o default; com largura definida (ou em arraste), usa o valor.
+          const widthStyle: React.CSSProperties = isResizing
+            ? { width: activeResize!.width }
+            : data.node.width != null
+              ? { width: data.node.width }
+              : { width: 'max-content', minWidth: MIN_NODE_WIDTH, maxWidth: NODE_WIDTH };
           return (
             <div
               key={p.id}
@@ -186,7 +192,7 @@ function CanvasLayers({
               style={{
                 left: p.x,
                 top: p.y,
-                width: p.width,
+                ...widthStyle,
                 cursor: data.isRoot ? 'default' : 'grab',
                 transform: isDragging
                   ? `translate(${ghostOffset.x / scale}px, ${ghostOffset.y / scale}px)`
@@ -197,16 +203,13 @@ function CanvasLayers({
               onPointerDown={(e) => {
                 if ((e.target as HTMLElement).closest('[data-testid="resize-handle"]')) {
                   e.currentTarget.setPointerCapture(e.pointerId);
-                  const node = nodeById.get(p.id);
-                  if (node) {
-                    const cardEl = e.currentTarget.firstElementChild as HTMLElement;
-                    resizeRef.current = {
-                      id: p.id,
-                      startClientX: e.clientX,
-                      startWidth: nodeWidth(node),
-                      ceiling: measureContentWidth(cardEl),
-                    };
-                  }
+                  const cardEl = e.currentTarget.firstElementChild as HTMLElement;
+                  resizeRef.current = {
+                    id: p.id,
+                    startClientX: e.clientX,
+                    startWidth: e.currentTarget.offsetWidth,
+                    ceiling: measureContentWidth(cardEl),
+                  };
                 } else {
                   onNodePointerDown(p.id, e);
                 }
@@ -356,9 +359,9 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   // Medição real das alturas dos cards (M12): o ResizeObserver compartilhado preenche
   // `heights`, que realimenta o layout. Largura fixa ⇒ reposicionar não muda a altura
   // medida ⇒ sem loop medir↔layout (ver Invariante de convergência no design).
-  const { heights, registerNode } = useMeasuredHeights();
   const [activeResize, setActiveResize] = useState<ActiveResize | null>(null);
-  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights, activeResize);
+  const { heights, widths, registerNode } = useMeasuredHeights();
+  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights, widths, activeResize);
   const allMeasured = positioned.length > 0 && positioned.every((p) => heights.has(p.id));
 
   const handlePersistWidth = useCallback(
@@ -490,7 +493,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               bounds={bounds}
               tree={visTree}
               nodeDataById={nodeDataById}
-              nodeById={nodeById}
               isRoot={isRoot}
               onPlace={handlePlace}
               onInvalidDrop={handleInvalidDrop}
