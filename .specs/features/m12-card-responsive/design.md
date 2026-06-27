@@ -1,7 +1,7 @@
 # M12 — Card responsivo (texto sempre visível + altura dinâmica) — Design
 
 **Spec:** `.specs/features/m12-card-responsive/spec.md`
-**Status:** Executado (gates verdes; pendente review AD-013, 2026-06-25)
+**Status:** Concluído e aprovado (review AD-013, 2026-06-27 — APROVADO COM RESSALVAS, 0 bloqueantes; L-007)
 
 ---
 

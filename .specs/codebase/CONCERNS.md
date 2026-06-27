@@ -46,6 +46,11 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - **Resolvido** no próprio review: `nearestSlot` virou lexicográfico (coluna → grupo por `groupDy` → banda; `Slot` ganhou `groupTop`/`groupBottom`), commit `94fbe68`. Cobertura adicionada (2 testes de regressão: sintético + layout real). Ver AD-021 addendum / L-006 em STATE.md.
 - Severity: era Medium (bug funcional visível em uso); agora fechado. Pendente só o **smoke visual no app** (túnel Postgres) confirmando o caso co-coluna.
 
+**Reviews AD-013 de M9/M11/M12 (2026-06-27) — lacunas de teste não-bloqueantes:**
+
+- **Card-fantasma (M9): o e2e usa `toBeVisible()`, que não valida tamanho nem oclusão** (`packages/web/e2e/drag-to-place.spec.ts`). O bug do `81d1028` (placeholder do tamanho do card, sem `zIndex`, cortado e atrás dos cards) passou pelo e2e — só smoke visual o pegaria. A cobertura visual do fantasma depende exclusivamente de smoke manual. Severity: Low.
+- **Smoke M12: `lineCount` assume `line-height` em px** (`packages/web/e2e/smoke-visual.spec.ts`, `parseFloat(getComputedStyle(el).lineHeight)`). Se a tipografia virar `line-height: normal`, `parseFloat` → `NaN` e a asserção quebra silenciosamente. Robusto hoje (`text-sm` = 20px). Severity: Low.
+
 **CONCERNS.md desatualizado pós-M7 (descoberto no review AD-013 de M8):**
 
 - As entradas abaixo referenciam arquivos/símbolos que o M7 (migração React Flow → visx, AD-015) **removeu** e portanto estão obsoletas: a Fragile Area `rfNodes`↔`useNodesState` (eliminada por design — ver L-004), os Performance Bottlenecks de `useLayoutedTree.ts`/`treeLayout.ts`/`simpleTreeLayout` (arquivos removidos), e o seletor `.react-flow__node` citado no Known Bug `persistence.spec.ts:136` (migrado para `data-testid` em M7-T5 — o bug em si pode ter mudado de natureza).
@@ -107,8 +112,25 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Severity: Medium — não quebra os testes (verdes), mas é frágil e suja dados reais de dev. Contradiz a intenção de "banco de testes isolado" de Q-002/Q-003 (validar se o isolamento existe só p/ Vitest API e não p/ Playwright).
 - Improvement path: apontar o `webServer` do Playwright para um DATABASE_URL de teste dedicado com reset por run (truncate/migrate), espelhando o setup dos testes de API. Candidato a quick task pós-M6.
 - **Validado no review AD-013 de M6:** confirmado — o DB compartilhado/acumulativo já está quebrando um teste preexistente (`persistence.spec.ts:136`, ver "Known Bugs"). As specs de M6 não foram afetadas (usam o workaround de título único + cleanup). Reforça a prioridade do DB de teste isolado.
+- **Addendum (2026-06-27, reviews AD-013 de M9/M11/M12 + deploy AD-022) — mecanismo confirmado e severidade escalada para HIGH:** o `webServer` do Playwright (`playwright.config.ts:33`) sobe a API com `pnpm --filter @mindmap/api run dev` = `tsx watch src/server.ts`, que carrega `.env` via `src/env.ts:2` (`config()` sem path). O `.env` local aponta para o banco **`mindmap`** — que, **pós-deploy (AD-022)**, é o banco de **PRODUÇÃO** servido pelo app na VPS (mesmo Postgres, via túnel SSH). Logo **rodar `pnpm test:e2e` cria/altera mapas no banco de produção do usuário** — não mais só "dados de dev". `pnpm dev` local idem (todo desenvolvimento local mexe em prod). Os testes de integração da API (vitest) **estão isolados** (`vitest.config.ts:4` força `dotenv.config({ path: '.env.test', override: true })` → `dev_mindmap`), confirmando a suspeita registrada acima de que o isolamento só valia para o Vitest, não para o Playwright. Fixes: **(a) aplicado (2026-06-27)** — o `packages/api/.env` local (gitignored) foi repontado de `mindmap` para **`dev_mindmap`**; como o `pnpm dev` e o `webServer` do e2e leem esse `.env`, **ambos deixaram de tocar produção** (prod `mindmap` fica só com o app deployado, que usa o env do Portainer). **Residual:** dev/e2e **ainda precisam do túnel** (`dev_mindmap` mora na VPS) e agora **compartilham** o `dev_mindmap` com o `vitest` da API (`.env.test`), então `pnpm test` (que faz `deleteMany`) limpa os dados do `pnpm dev` — aceito por ora. Reabre risco só se alguém repontar `.env` para prod manualmente e rodar e2e na sequência. **(b) estrutural (adiado pelo usuário — "pipeline pra dev mais pra frente")** — Postgres **local** (Docker) para dev, banco de **teste dedicado** (separado do dev) para vitest+e2e, eliminando a dependência do túnel e a partilha dev↔teste.
 
 ## Tech Debt
+
+**`useMeasuredHeights`: `refCallbacks` não é podado no unregister (review AD-013 de M12, 2026-06-27):**
+
+- Files: `packages/web/src/pages/map/components/useMeasuredHeights.ts:62-77`
+- Quando um nó é deletado, o ref é chamado com `null` (limpa `elements`/`heights`), mas a closure memoizada em `refCallbacks.current` persiste pela vida do componente → crescimento lento e ilimitado de closures numa sessão longa com muitos create/delete. Sem impacto em corretude (ids únicos).
+- Fix: podar `refCallbacks.current[id]` no ramo `el == null`. Severity: Low.
+
+**`move` para a raiz sem `side` assume `RIGHT` (review AD-013 de M9, 2026-06-27):**
+
+- Files: `packages/api/src/routes/nodes.ts:159`
+- Salvaguarda que pode flipar silenciosamente um nó `LEFT` se um cliente futuro omitir `side` num `move` cujo destino é a raiz. Hoje **inalcançável** (o frontend sempre envia `side` via `slotToMoveBody`). Considerar exigir `side` quando `newParentId` é a raiz. Severity: Low (latente).
+
+**Comentário datado em `nodeSize.ts` pós-M12 (review AD-013 de M11, 2026-06-27):**
+
+- Files: `packages/web/src/lib/nodeSize.ts:6-7`
+- O comentário descreve a reserva de altura da divisória (`NODE_HEIGHT_WITH_FOOTER`) como se governasse o `GAP_Y` final, mas pós-M12 a altura final vem da medição real (`nodeSizeFromHeights`); a constante é só estimativa de 1º paint (`estimateNodeHeight`). Alinhar o comentário. Severity: cosmético.
 
 ~~**Helper `request<T>` duplicado entre módulos de API web:**~~ — resolvido: extraído para `packages/web/src/api/_request.ts`.
 

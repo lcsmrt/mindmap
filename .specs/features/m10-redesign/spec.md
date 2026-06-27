@@ -194,7 +194,7 @@ Explicitamente excluído para evitar scope creep.
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 27 total, 27 implementados e verificados (M10-NN → tasks T1–T12, gates verdes incl. e2e/smoke visual). ✅ Pendente review AD-013.
+**Coverage:** 27 total, 27 implementados e verificados (M10-NN → tasks T1–T12, gates verdes incl. e2e/smoke visual). ✅ Review AD-013 aprovado (2026-06-25).
 
 ---
 

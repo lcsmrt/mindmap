@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** [`design.md`](./design.md)
-**Status:** Executado (gates verdes; pendente review AD-013, 2026-06-25)
+**Status:** Concluído e aprovado (review AD-013, 2026-06-27 — APROVADO COM RESSALVAS, 0 bloqueantes; L-007)
 
 ---
 

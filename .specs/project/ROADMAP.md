@@ -69,9 +69,17 @@ Milestones de v1 organizados por dependência técnica. Cada milestone agrupa um
 
 ---
 
-## Pós-v1 — executado (pendente review AD-013)
+## Infra — entregue
 
-### M9 — Drag-to-place unificado (AD-011/AD-017/AD-018) 📝 spec pronta (2026-06-24)
+### Deploy na VPS (AD-022) ✅ concluído (2026-06-27)
+
+- App no ar na VPS Hostinger (mesma do Postgres, AD-006) via stack Docker: `mindmap-api` (Fastify, `network_mode: host` p/ alcançar o Postgres localhost-only) + `mindmap-web` (nginx servindo a SPA + proxy `/api` → `host.docker.internal:3100`). Banco de prod `mindmap`, `DATABASE_URL` no Portainer. **Redeploy contínuo:** push no `master` → GitHub Action `deploy.yml` → webhook do Portainer rebuilda/redeploya. Exposto em `http://72.60.1.97:8080`. Acompanham dois fixes de prod: ids sem `crypto.randomUUID` em contexto HTTP (`uid.ts`) e badge de versão (`VersionBadge`). Ver AD-022 em `STATE.md`. Sem spec (infra).
+
+---
+
+## Pós-v1 — executado e revisado
+
+### M9 — Drag-to-place unificado (AD-011/AD-017/AD-018) ✅ concluído e aprovado (review AD-013, 2026-06-27 — APROVADO COM RESSALVAS, 0 bloqueantes; L-007)
 
 - Unifica o gesto de arraste num modelo **"soltar num slot"** `(pai, posição)`: reorder (mesmo pai), reparent **já posicionado** (outro pai) e troca de **lado** (slot de 1º nível) viram o mesmo gesto, com **card-fantasma** indicando o alvo. **Lado persistido** (modelo b): filhos de 1º nível ganham um campo de lado no schema; o usuário arrasta um ramo para o outro lado e ele fica (inclusive tudo de um lado). Balance do M8 **rebaixado a default de criação**. **Full-stack** (schema+migration+backend+frontend), revisa AD-016 e parcialmente AD-002 (persiste só 1 bit de lado, **sem x/y**). Spec em `.specs/features/m9-drag-to-place/spec.md`. **Design + tasks pendentes** (chat separado).
 
@@ -94,26 +102,26 @@ M12 ─┬─→ M13   (geometria vertical do drop; M15 toca a mesma slots.ts no
 - **M14** também depende de **M15** apenas para o sub-item "central maior **em largura**" (o resto do M14 — skin por profundidade, cor de edge — só precisa de M12).
 - **M13** depende **só de M12**; M15 compartilha arquivo (`slots.ts`/ghost) no eixo da largura, mas é ortogonal ao fix vertical do M13 → coordenar, não bloquear.
 
-### M11 — Polish de ícones, divisória e overflow 🛠️ executado (gates verdes; pendente review AD-013, 2026-06-25)
+### M11 — Polish de ícones, divisória e overflow ✅ concluído e aprovado (review AD-013, 2026-06-27 — APROVADO COM RESSALVAS; L-007)
 
-Três ajustes independentes e de baixo risco, agrupados. **Executado** sem spec (quick wins): 3 commits atômicos (`fc102b6` ícones, `c37ffd4` divisória, `4d1eefe` overflow). Gates verdes: typecheck/lint, unit web 88, e2e 32/32, smoke visual conferido (ícones lucide + divisória + sem overlap). **Pendente review AD-013** (chat separado).
+Três ajustes independentes e de baixo risco, agrupados. **Executado** sem spec (quick wins): 4 commits de código + 1 docs — `fc102b6` ícones, `c37ffd4` divisória, `4d1eefe` overflow (1ª tentativa, **incompleta**), `b193294` docs, `e233492` overflow (fix-do-fix: faltava `min-w-0` no grid item raiz do `DialogContent`). Gates verdes: typecheck/lint, unit web 88, e2e 32/32, smoke visual conferido (ícones lucide + divisória + sem overlap). **Review AD-013 aprovado com ressalvas (2026-06-27, L-007):** overflow de fato resolvido no estado atual; ressalva de processo (STATE.md dizia "3 commits"; fix incompleto declarado completo, espírito L-001).
 
 - **Ícones de texto → lucide:** trocar caracteres usados como ícone por componentes `lucide-react` (padrão já no projeto). Ocorrências: `▲` crítico (`MindNode.tsx`, `NodeEditDialog.tsx`), `✓/!/⚠` do medidor de contraste (`NodeEditDialog.tsx`), `←` voltar (`MapPage.tsx`). O `—` placeholder de responsável fica (é travessão de UI). Caso algum cenário não tenha ícone lucide equivalente → trazer para discussão.
 - **Divisória título/footer no card:** replicar no `MindNode` a linha (`border-t` condicional) que já existe no `NodeEditDialog`, exibida só quando há status e/ou responsável (`hasTaskProps`).
 - **Overflow do dialog com texto longo:** título/responsável muito longos estouram o `NodeEditDialog`. Fix de CSS (`min-w-0`/`overflow`/`break-words` nos containers do preview e da linha de responsável).
 
-### M12 — Card responsivo: texto sempre visível + altura dinâmica 🔴 alta (spec própria) 🛠️ executado (gates verdes; pendente review AD-013, 2026-06-25)
+### M12 — Card responsivo: texto sempre visível + altura dinâmica 🔴 alta (spec própria) ✅ concluído e aprovado (review AD-013, 2026-06-27 — APROVADO COM RESSALVAS; L-007)
 
 Metade arquitetural do "Card responsivo + resize" original — **fatiada** (decisão do usuário, 2026-06-25, AD-020): M12 entrega só **texto sempre 100% visível + altura derivada de medição real**; o **resize horizontal** virou **M15**.
 
 - **Texto sempre visível:** remove `truncate`, deixa quebrar linha (incl. palavra única longa via `break-words`); altura do card cresce/encolhe para caber.
 - **Altura por medição real:** a altura deixa de ser fórmula (40/79 de `nodeSize.ts`) e passa a vir de medição no DOM → pipeline **medir→layout** (`ResizeObserver` compartilhado → estado `heights` → `useTreeLayout` realimenta o `d3-flextree`, que já trata altura por nó). `nodeHeight`→`estimateNodeHeight` vira estimativa de 1º paint. **Invariante de convergência:** largura fixa ⇒ reposicionar não muda a altura medida ⇒ observer não re-dispara ⇒ ≤1 relayout, sem loop.
 - **Só frontend.** Sem schema, sem migration, **sem coluna `width`**, sem x/y. AD-002 intacta. `slots.ts` (geometria do drop) fica para M13.
-- Spec/design/tasks em `.specs/features/m12-card-responsive/` (19 req. M12-NN, 5 tasks; T1/T2 paralelos). **Executado** em 6 commits atômicos (`c5797b7` refactor de polish do `MindNode` separado do milestone + T1–T5 `3e7eaf4`…`6958fbc`). Gates verdes: typecheck/lint, unit **web 88→96** + api 56, **e2e 32→33/33**, smoke visual conferido (cards multi-linha + palavra gigante sem truncar/vazar, sem sobreposição, `fitView` enquadra). Só frontend, AD-002 intacta. **Pendente review AD-013** (chat separado).
+- Spec/design/tasks em `.specs/features/m12-card-responsive/` (19 req. M12-NN, 5 tasks; T1/T2 paralelos). **Executado** em 6 commits atômicos (`c5797b7` refactor de polish do `MindNode` separado do milestone + T1–T5 `3e7eaf4`…`6958fbc`). Gates verdes: typecheck/lint, unit **web 88→96** + api 56, **e2e 32→33/33**, smoke visual conferido (cards multi-linha + palavra gigante sem truncar/vazar, sem sobreposição, `fitView` enquadra). Só frontend, AD-002 intacta. **Review AD-013 aprovado com ressalvas (2026-06-27, L-007):** convergência medir→layout verificada no código (sem loop), testes não-vacuosos; ressalvas não-bloqueantes (micro-leak de `refCallbacks`, `lineCount` frágil).
 
-### M13 — Geometria da barra de inserção (drag) 🟡 média ✅ executado e revisado (review AD-013, 2026-06-26; 1 finding corrigido; smoke visual no app pendente)
+### M13 — Geometria da barra de inserção (drag) 🟡 média ✅ concluído e aprovado (review AD-013, 2026-06-26; 1 finding corrigido; smoke visual confirmado pelo usuário, 2026-06-27)
 
-Corrige a assimetria da linha de drop entre dois cards (tende a subir / cola no card de baixo). Causa confirmada: `nearestSlot` usava distância euclidiana ao `anchorY`, gerando fronteiras assimétricas com cards de alturas variáveis (pós-M12). **Fix:** seleção por **band vertical** — cada `Slot` carrega `[bandTop, bandBottom)` com fronteiras no **centro vertical dos cards vizinhos**; `score = dx + dy` (dy=0 dentro do band, senão dist. à borda). `PLACEHOLDER_H` removido (era vestigial). Shape do `Slot`: `{ colX, anchorY, bandTop, bandBottom }` substitui `{ x, y, height }`. `slotToMoveBody`/`isOriginSlot` **inalterados** → mesmas mutações `move` → e2e drag-to-place intacto. **Só frontend, AD-002 intacta** (sem schema, sem migration). Spec/design/tasks em `.specs/features/m13-drop-bar-geometry/`. **Executado** em 4 commits atômicos (`12a7cb5` T1+T2, `8badcfd` T3, `9799c01` T4, `f18af64` T5). Gates verdes: typecheck/lint ✓, unit **web 102** (slots 21 + 6 novos casos de band) + api 56 ✓, **e2e 34/34** ✓ (33→34 com smoke M13), **smoke visual conferido** (ghost-slot aparece no vão durante drag entre cards de alturas diferentes). **Revisado (AD-013, 2026-06-26):** o review reproduziu um bug remanescente — grupos co-coluna (pais de mesma profundidade compartilham `colX`) empatavam em `dx + dy` e o drop era roubado pela ordem de enumeração; **corrigido** com seleção lexicográfica (commit `94fbe68`, `nearestSlot` + `groupTop/groupBottom`; unit web 102→104). Ver AD-021 addendum + L-006 em STATE.md. **Smoke visual do caso co-coluna no app pendente** (túnel Postgres down).
+Corrige a assimetria da linha de drop entre dois cards (tende a subir / cola no card de baixo). Causa confirmada: `nearestSlot` usava distância euclidiana ao `anchorY`, gerando fronteiras assimétricas com cards de alturas variáveis (pós-M12). **Fix:** seleção por **band vertical** — cada `Slot` carrega `[bandTop, bandBottom)` com fronteiras no **centro vertical dos cards vizinhos**; `score = dx + dy` (dy=0 dentro do band, senão dist. à borda). `PLACEHOLDER_H` removido (era vestigial). Shape do `Slot`: `{ colX, anchorY, bandTop, bandBottom }` substitui `{ x, y, height }`. `slotToMoveBody`/`isOriginSlot` **inalterados** → mesmas mutações `move` → e2e drag-to-place intacto. **Só frontend, AD-002 intacta** (sem schema, sem migration). Spec/design/tasks em `.specs/features/m13-drop-bar-geometry/`. **Executado** em 4 commits atômicos (`12a7cb5` T1+T2, `8badcfd` T3, `9799c01` T4, `f18af64` T5). Gates verdes: typecheck/lint ✓, unit **web 102** (slots 21 + 6 novos casos de band) + api 56 ✓, **e2e 34/34** ✓ (33→34 com smoke M13), **smoke visual conferido** (ghost-slot aparece no vão durante drag entre cards de alturas diferentes). **Revisado (AD-013, 2026-06-26):** o review reproduziu um bug remanescente — grupos co-coluna (pais de mesma profundidade compartilham `colX`) empatavam em `dx + dy` e o drop era roubado pela ordem de enumeração; **corrigido** com seleção lexicográfica (commit `94fbe68`, `nearestSlot` + `groupTop/groupBottom`; unit web 102→104). Ver AD-021 addendum + L-006 em STATE.md. **Smoke visual do caso co-coluna confirmado pelo usuário em uso real (2026-06-27) — milestone fechado.**
 
 ### M14 — Hierarquia visual (estilo MindMeister) 🟡 média (muito design)
 

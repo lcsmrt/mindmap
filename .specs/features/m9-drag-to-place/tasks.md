@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** [`design.md`](./design.md) (Approved 2026-06-25)
-**Status:** Executed (T1–T11, 2026-06-25) — gates verdes (typecheck/lint ✅, unit api 53 + web 66 ✅, e2e 25/25 ✅); **review AD-013 pendente** (chat separado). Commits `7b0f170`…`65e647d`.
+**Status:** Concluído e aprovado (review AD-013, 2026-06-27 — APROVADO COM RESSALVAS, 0 bloqueantes; L-007). Execução T1–T11 (2026-06-25), commits `7b0f170`…`65e647d` + fix visual `81d1028`. Gates não-DB reexecutados verdes no review; DB-dependentes dispensados (túnel down + uso real sem anomalias).
 
 ---
 

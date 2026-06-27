@@ -2,7 +2,7 @@
 
 **Spec:** [`spec.md`](./spec.md)
 **Design:** [`design.md`](./design.md)
-**Status:** Executado — T1–T13 concluídas; gates verdes (typecheck/lint, unit api 56/web 88, e2e 32/32, smoke visual). Pendente review AD-013 (chat separado, [[feedback-plan-execute-split]]).
+**Status:** Concluído e aprovado (review AD-013, 2026-06-25). T1–T13; gates verdes (typecheck/lint, unit api 56/web 88, e2e 32/32, smoke visual). 1 finding corrigido no review (▲ crítico movido p/ a linha do título, `87bd9de`); 2 não-bloqueantes em CONCERNS.md.
 
 ---
 
@@ -373,8 +373,8 @@ Fase 3 — Integração (sequencial — e2e DB compartilhado):
 
 **Done when:**
 - [ ] AD-019 registrada (GET /maps agrega `nodeCount`/`criticalCount`/`createdAt`; sem schema; trade-off da semântica de `nodeCount`).
-- [ ] STATE `Current Work` reflete M10 executado (gates verdes, contagens de teste) — **review AD-013 pendente** (chat separado).
-- [ ] ROADMAP: M10 movido para "concluído" **após** o review (deixar como "executado, pendente review" aqui).
+- [x] STATE `Current Work` reflete M10 executado (gates verdes, contagens de teste) — review AD-013 aprovado (2026-06-25).
+- [x] ROADMAP: M10 movido para "concluído" após o review.
 - [ ] Traceability da spec atualizada (Pending → Verified).
 
 **Tests:** none · **Gate:** —

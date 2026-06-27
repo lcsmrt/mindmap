@@ -1,7 +1,7 @@
 # M10 — Redesign (web) Design
 
 **Spec**: `.specs/features/m10-redesign/spec.md`
-**Status**: Executado (M10, 2026-06-25) — pendente review AD-013
+**Status**: Concluído e aprovado (review AD-013, 2026-06-25 — 1 finding corrigido em `87bd9de`)
 
 ---
 
