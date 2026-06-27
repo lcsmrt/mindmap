@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeTreeLayout, nodeSizeFromHeights } from './useTreeLayout.js';
 import type { TreeNode } from './tree.js';
-import { NODE_WIDTH, NODE_HEIGHT_BASE, NODE_HEIGHT_WITH_FOOTER } from './nodeSize.js';
+import { NODE_WIDTH, NODE_HEIGHT_BASE, NODE_HEIGHT_WITH_FOOTER, nodeWidth } from './nodeSize.js';
 import type { NodeDto } from '@mindmap/shared';
 
 function node(id: string, overrides: Partial<NodeDto> = {}): NodeDto {
@@ -300,5 +300,74 @@ describe('nodeSizeFromHeights', () => {
     expect(nodeSizeFromHeights(undefined, node('t', { status: 'PENDING' }))).toBe(
       NODE_HEIGHT_WITH_FOOTER,
     );
+  });
+});
+
+describe('nodeWidth', () => {
+  it('retorna NODE_WIDTH quando width é null', () => {
+    expect(nodeWidth(node('x', { width: null }))).toBe(NODE_WIDTH);
+  });
+
+  it('retorna a largura persistida quando definida', () => {
+    expect(nodeWidth(node('x', { width: 240 }))).toBe(240);
+  });
+});
+
+describe('computeTreeLayout — largura por nó', () => {
+  it('PositionedNode.width reflete a largura do nó (não a constante global)', () => {
+    const tree: TreeNode = {
+      node: node('root', { width: 300 }),
+      children: [
+        leaf('a', { side: 'RIGHT', width: 240 }),
+        leaf('b', { sortOrder: 1, side: 'LEFT', width: 120 }),
+      ],
+    };
+    const { positioned } = computeTreeLayout(tree, undefined, nodeWidth);
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    expect(byId('root').width).toBe(300);
+    expect(byId('a').width).toBe(240);
+    expect(byId('b').width).toBe(120);
+  });
+
+  it('irmãos de larguras diferentes não se sobrepõem horizontalmente com seus filhos', () => {
+    // Pai largo (dir=RIGHT) tem filho; confirmar que o filho começa após a borda direita do pai.
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [
+        {
+          node: node('wide', { side: 'RIGHT', width: 300 }),
+          children: [leaf('child', { width: 180, parentId: 'wide' })],
+        },
+      ],
+    };
+    const { positioned } = computeTreeLayout(tree, undefined, nodeWidth);
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    const wide = byId('wide');
+    const child = byId('child');
+    // filho começa após a borda direita do pai
+    expect(child.x).toBeGreaterThan(wide.x + wide.width);
+  });
+
+  it('bounds cobrem o nó mais largo', () => {
+    const tree: TreeNode = {
+      node: node('root', { width: 400 }),
+      children: [leaf('a', { side: 'RIGHT', width: 180 })],
+    };
+    const { positioned, bounds } = computeTreeLayout(tree, undefined, nodeWidth);
+    const root = positioned.find((p) => p.id === 'root')!;
+    expect(bounds.minX).toBeLessThanOrEqual(root.x);
+    expect(bounds.minX + bounds.width).toBeGreaterThanOrEqual(root.x + root.width);
+  });
+
+  it('width=null usa NODE_WIDTH como fallback (zero regressão)', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [leaf('a', { side: 'RIGHT' })],
+    };
+    const { positioned } = computeTreeLayout(tree, undefined, nodeWidth);
+    const root = positioned.find((p) => p.id === 'root')!;
+    const a = positioned.find((p) => p.id === 'a')!;
+    expect(root.width).toBe(NODE_WIDTH);
+    expect(a.width).toBe(NODE_WIDTH);
   });
 });

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { flextree } from 'd3-flextree';
 import type { NodeDto } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { NODE_WIDTH, estimateNodeHeight } from './nodeSize.js';
+import { NODE_WIDTH, estimateNodeHeight, nodeWidth } from './nodeSize.js';
 
 /**
  * Altura de um nó para o layout: a altura **medida** (quando já reportada pelo
@@ -84,17 +84,19 @@ function splitChildren(children: TreeNode[]): { right: TreeNode[]; left: TreeNod
 export function computeTreeLayout(
   tree: TreeNode,
   nodeSizeFn: (node: NodeDto) => number = estimateNodeHeight,
+  nodeWidthFn: (node: NodeDto) => number = nodeWidth,
 ): LayoutResult {
   const positioned: PositionedNode[] = [];
   const links: LayoutLink[] = [];
 
   // Raiz centrada na origem; a edge raiz→1º nível parte do seu centro (M8-09).
   const rootHeight = nodeSizeFn(tree.node);
+  const rootW = nodeWidthFn(tree.node);
   positioned.push({
     id: tree.node.id,
-    x: -NODE_WIDTH / 2,
+    x: -rootW / 2,
     y: -rootHeight / 2,
-    width: NODE_WIDTH,
+    width: rootW,
     height: rootHeight,
   });
   const rootCenter = { x: 0, y: 0 };
@@ -109,7 +111,7 @@ export function computeTreeLayout(
     const sideTree: TreeNode = { node: tree.node, children: sideChildren };
     const layout = flextree<TreeNode>({
       // [breadth, depth] = [altura, largura] no layout horizontal.
-      nodeSize: (n) => [nodeSizeFn(n.data.node) + GAP_Y, NODE_WIDTH + GAP_X],
+      nodeSize: (n) => [nodeSizeFn(n.data.node) + GAP_Y, nodeWidthFn(n.data.node) + GAP_X],
       spacing: 0,
     });
     const sideRoot = layout.hierarchy(sideTree, (d) => d.children);
@@ -122,12 +124,14 @@ export function computeTreeLayout(
       if (n === sideRoot) return; // raiz já emitida uma única vez
 
       const height = nodeSizeFn(n.data.node);
+      const w = nodeWidthFn(n.data.node);
       const cy = n.x - breadthOffset; // centro vertical do nó no mundo
-      const worldX = dir * n.y - NODE_WIDTH / 2; // top-left x (espelhado à esquerda)
-      positioned.push({ id: n.data.node.id, x: worldX, y: cy - height / 2, width: NODE_WIDTH, height });
+      // n.y é o centro do nó no eixo de profundidade (d3-flextree com nodeSize variável).
+      const worldX = dir * n.y - w / 2;
+      positioned.push({ id: n.data.node.id, x: worldX, y: cy - height / 2, width: w, height });
 
       // Âncora do nó voltada para a raiz (borda interna).
-      const nearX = dir * (n.y - NODE_WIDTH / 2);
+      const nearX = dir * (n.y - w / 2);
       if (n.parent === sideRoot) {
         // 1º nível: sai do centro da raiz (M8-09) em direção ao lado.
         links.push({ source: rootCenter, target: { x: nearX, y: cy } });
@@ -135,7 +139,8 @@ export function computeTreeLayout(
         // Níveis profundos: horizontal pai→filho no mesmo lado (M8-10).
         const p = n.parent!;
         const parentCy = p.x - breadthOffset;
-        const parentFarX = dir * (p.y + NODE_WIDTH / 2); // borda externa do pai
+        const wp = nodeWidthFn(p.data.node);
+        const parentFarX = dir * (p.y + wp / 2); // borda externa do pai
         links.push({ source: { x: parentFarX, y: parentCy }, target: { x: nearX, y: cy } });
       }
     });
@@ -200,10 +205,17 @@ export function useTreeLayout(
   nodes: NodeDto[],
   edges: Array<{ parentId: string; childId: string }>,
   heights?: ReadonlyMap<string, number>,
+  activeResize?: { id: string; width: number } | null,
 ): LayoutResult {
   return useMemo(() => {
     const tree = buildVisibleTree(nodes, edges);
     if (!tree) return EMPTY_LAYOUT;
-    return computeTreeLayout(tree, (node) => nodeSizeFromHeights(heights, node));
-  }, [nodes, edges, heights]);
+    const widthFn = (n: NodeDto) =>
+      activeResize?.id === n.id ? activeResize.width : nodeWidth(n);
+    return computeTreeLayout(
+      tree,
+      (node) => nodeSizeFromHeights(heights, node),
+      widthFn,
+    );
+  }, [nodes, edges, heights, activeResize]);
 }
