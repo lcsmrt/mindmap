@@ -5,12 +5,11 @@ services:
       dockerfile: Dockerfile.api
     image: mindmap-api
     container_name: mindmap-api
+    network_mode: host
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - PORT=3000
+      - PORT=3100
     restart: unless-stopped
-    networks:
-      - mindmap
 
   mindmap-web:
     build:
@@ -19,13 +18,9 @@ services:
     image: mindmap-web
     container_name: mindmap-web
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8090}:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - mindmap-api
     restart: unless-stopped
-    networks:
-      - mindmap
-
-networks:
-  mindmap:
-    driver: bridge
