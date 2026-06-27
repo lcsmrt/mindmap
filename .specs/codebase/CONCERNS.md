@@ -6,6 +6,14 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Known Bugs
 
+**Trepidação da árvore durante o resize horizontal do card (relato do usuário, pós-M15, 2026-06-27):**
+
+- Files: `packages/web/src/pages/map/components/MapCanvas.tsx` (gesto de resize: `onPointerMove`→`setActiveResize` por frame), `packages/web/src/lib/useTreeLayout.ts` (relayout por frame), `packages/web/src/pages/map/components/useMeasuredHeights.ts`.
+- Symptom: ao arrastar a alça de resize, a árvore "treme" visivelmente a cada frame do arraste.
+- Investigação até agora: hipótese inicial era o pipeline medir→layout — cada `pointermove` muda a largura → o texto reflui → o `ResizeObserver` remede a **altura** → relayout vertical por frame, com a altura oscilando quando o texto troca de nº de linhas. **Hipótese descartada:** congelar a medição de altura durante o arraste (pausar o RO + re-observar no `pointerup`) **não** eliminou a trepidação. Logo a causa não é (só) a remedição de altura. Suspeitos restantes a investigar: movimento horizontal do próprio nó/descendentes por frame, sub-pixel sob o `transform` de zoom do visx, re-render do `<Zoom>`, recentralização de breadth. O mecanismo de pausa foi **revertido** (não ajudava e alterava o timing da medição, atrapalhando o diagnóstico).
+- Fix: pendente — usuário vai trazer mais pistas (qual nó treme: o redimensionado, os filhos, a árvore toda? em que zoom? com/sem filhos?).
+- Test coverage: nenhum (comportamento de render/animação; o e2e funcional `card-resize.spec.ts` passa — não testa trepidação).
+
 **`persistence.spec.ts:136` — teste e2e "mover nó para outro pai" falha consistentemente (descoberto no review AD-013 de M6):**
 
 - Files: `packages/web/e2e/persistence.spec.ts:136-176`
