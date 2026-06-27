@@ -39,6 +39,13 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Severity: Low — a matemática está correta (verificada manualmente + por reviewer independente); é lacuna de teste, não bug.
 - Fix: usar 3+ filhos para garantir ≥2 do mesmo lado, ou expor `computeTreeLayout` com split injetável. Candidato a quick task.
 
+**Seleção de slot (`slots.ts`) — testes do M13 cobriam só coluna única (review AD-013 de M13, 2026-06-26 — corrigido):**
+
+- Files: `packages/web/src/lib/slots.test.ts`, `packages/web/src/lib/slots.ts`
+- Symptom: a T4/T5 do M13 só exercitaram um grupo/coluna; o caso **inter-grupo co-coluna** (dois pais de mesma profundidade/lado com `colX` idêntico) passou verde apesar de a barra mirar o grupo errado (roubo pela ordem de enumeração no empate `dx + dy`).
+- **Resolvido** no próprio review: `nearestSlot` virou lexicográfico (coluna → grupo por `groupDy` → banda; `Slot` ganhou `groupTop`/`groupBottom`), commit `94fbe68`. Cobertura adicionada (2 testes de regressão: sintético + layout real). Ver AD-021 addendum / L-006 em STATE.md.
+- Severity: era Medium (bug funcional visível em uso); agora fechado. Pendente só o **smoke visual no app** (túnel Postgres) confirmando o caso co-coluna.
+
 **CONCERNS.md desatualizado pós-M7 (descoberto no review AD-013 de M8):**
 
 - As entradas abaixo referenciam arquivos/símbolos que o M7 (migração React Flow → visx, AD-015) **removeu** e portanto estão obsoletas: a Fragile Area `rfNodes`↔`useNodesState` (eliminada por design — ver L-004), os Performance Bottlenecks de `useLayoutedTree.ts`/`treeLayout.ts`/`simpleTreeLayout` (arquivos removidos), e o seletor `.react-flow__node` citado no Known Bug `persistence.spec.ts:136` (migrado para `data-testid` em M7-T5 — o bug em si pode ter mudado de natureza).
