@@ -1,0 +1,20 @@
+FROM node:24-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
+WORKDIR /app
+
+FROM base AS build
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/api/package.json packages/api/
+RUN pnpm install --frozen-lockfile
+COPY packages/shared packages/shared
+COPY packages/api packages/api
+RUN pnpm --filter @mindmap/api exec prisma generate
+RUN pnpm --filter @mindmap/shared build && pnpm --filter @mindmap/api build
+
+FROM base AS runtime
+ENV NODE_ENV=production
+COPY --from=build /app /app
+CMD ["sh", "-c", "pnpm --filter @mindmap/api exec prisma migrate deploy && node packages/api/dist/server.js"]

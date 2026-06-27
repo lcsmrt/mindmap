@@ -1,0 +1,31 @@
+services:
+  mindmap-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: mindmap-api
+    container_name: mindmap-api
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=3000
+    restart: unless-stopped
+    networks:
+      - mindmap
+
+  mindmap-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: mindmap-web
+    container_name: mindmap-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - mindmap-api
+    restart: unless-stopped
+    networks:
+      - mindmap
+
+networks:
+  mindmap:
+    driver: bridge
