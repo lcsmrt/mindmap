@@ -12,11 +12,13 @@ import type { TreeNode } from '@/lib/tree.js';
 import { useTreeLayout } from '@/lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '@/lib/useTreeLayout.js';
 import { slotToMoveBody, type Slot } from '@/lib/slots.js';
-import { NODE_WIDTH } from '@/lib/nodeSize.js';
+import { nodeWidth, MIN_NODE_WIDTH } from '@/lib/nodeSize.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
 import { useMeasuredHeights } from './useMeasuredHeights.js';
+import { clampWidth } from './clampWidth.js';
+import { measureContentWidth } from './measureContentWidth.js';
 
 const SCALE_MIN = 0.1;
 const SCALE_MAX = 3;
@@ -31,6 +33,11 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+interface ActiveResize {
+  id: string;
+  width: number;
+}
+
 interface CanvasLayersProps {
   zoom: ZoomApi;
   width: number;
@@ -40,11 +47,15 @@ interface CanvasLayersProps {
   bounds: LayoutBounds;
   tree: TreeNode | null;
   nodeDataById: Map<string, MindNodeData>;
+  nodeById: Map<string, NodeDto>;
   isRoot: (id: string) => boolean;
   onPlace: (draggedId: string, slot: Slot) => void;
   onInvalidDrop: () => void;
   registerNode: (id: string) => (el: HTMLElement | null) => void;
   allMeasured: boolean;
+  activeResize: ActiveResize | null;
+  setActiveResize: React.Dispatch<React.SetStateAction<ActiveResize | null>>;
+  onPersistWidth: (id: string, width: number) => void;
 }
 
 function CanvasLayers({
@@ -56,11 +67,15 @@ function CanvasLayers({
   bounds,
   tree,
   nodeDataById,
+  nodeById,
   isRoot,
   onPlace,
   onInvalidDrop,
   registerNode,
   allMeasured,
+  activeResize,
+  setActiveResize,
+  onPersistWidth,
 }: CanvasLayersProps) {
   // O <Zoom> do visx entrega `zoom` (com containerRef) no render-prop e exige ler
   // toString()/transformMatrix/applyInverseToPoint e fixar containerRef durante o render —
@@ -79,6 +94,13 @@ function CanvasLayers({
 
   const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset, targetSlot } =
     useNodeDrag({ positioned, tree, clientToWorld, onPlace, onInvalidDrop, isRoot });
+
+  const resizeRef = useRef<{
+    id: string;
+    startClientX: number;
+    startWidth: number;
+    ceiling: number;
+  } | null>(null);
 
   // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem
   // **e todos os nós visíveis já foram medidos** — assim enquadramos os bounds reais
@@ -142,7 +164,7 @@ function CanvasLayers({
             style={{
               left: targetSlot.colX,
               top: targetSlot.anchorY - GHOST_BAR_HEIGHT / 2,
-              width: NODE_WIDTH,
+              width: targetSlot.colWidth,
               height: GHOST_BAR_HEIGHT,
               pointerEvents: 'none',
               zIndex: 20,
@@ -172,9 +194,43 @@ function CanvasLayers({
                 zIndex: isDragging ? 10 : undefined,
                 opacity: isDragging ? 0.85 : undefined,
               }}
-              onPointerDown={(e) => onNodePointerDown(p.id, e)}
-              onPointerMove={onNodePointerMove}
-              onPointerUp={onNodePointerUp}
+              onPointerDown={(e) => {
+                if ((e.target as HTMLElement).closest('[data-testid="resize-handle"]')) {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  const node = nodeById.get(p.id);
+                  if (node) {
+                    const cardEl = e.currentTarget.firstElementChild as HTMLElement;
+                    resizeRef.current = {
+                      id: p.id,
+                      startClientX: e.clientX,
+                      startWidth: nodeWidth(node),
+                      ceiling: measureContentWidth(cardEl),
+                    };
+                  }
+                } else {
+                  onNodePointerDown(p.id, e);
+                }
+              }}
+              onPointerMove={(e) => {
+                if (resizeRef.current?.id === p.id) {
+                  const { startClientX, startWidth, ceiling } = resizeRef.current;
+                  const worldDx = (e.clientX - startClientX) / scale;
+                  const w = clampWidth(startWidth, worldDx, MIN_NODE_WIDTH, ceiling);
+                  setActiveResize({ id: p.id, width: Math.round(w) });
+                } else {
+                  onNodePointerMove(e);
+                }
+              }}
+              onPointerUp={(e) => {
+                if (resizeRef.current?.id === p.id) {
+                  const width = activeResize?.width;
+                  resizeRef.current = null;
+                  setActiveResize(null);
+                  if (width !== undefined) onPersistWidth(p.id, width);
+                } else {
+                  onNodePointerUp(e);
+                }
+              }}
             >
               <MindNode data={data} />
             </div>
@@ -301,8 +357,16 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   // `heights`, que realimenta o layout. Largura fixa ⇒ reposicionar não muda a altura
   // medida ⇒ sem loop medir↔layout (ver Invariante de convergência no design).
   const { heights, registerNode } = useMeasuredHeights();
-  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights);
+  const [activeResize, setActiveResize] = useState<ActiveResize | null>(null);
+  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights, activeResize);
   const allMeasured = positioned.length > 0 && positioned.every((p) => heights.has(p.id));
+
+  const handlePersistWidth = useCallback(
+    (id: string, width: number) => {
+      updateNode({ id, mapId, body: { width } });
+    },
+    [updateNode, mapId],
+  );
 
   // Árvore visível (subárvores colapsadas já removidas) — fonte dos slots de drag.
   const visTree = useMemo(() => buildTree(visNodes), [visNodes]);
@@ -426,11 +490,15 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               bounds={bounds}
               tree={visTree}
               nodeDataById={nodeDataById}
+              nodeById={nodeById}
               isRoot={isRoot}
               onPlace={handlePlace}
               onInvalidDrop={handleInvalidDrop}
               registerNode={registerNode}
               allMeasured={allMeasured}
+              activeResize={activeResize}
+              setActiveResize={setActiveResize}
+              onPersistWidth={handlePersistWidth}
             />
           )}
         </Zoom>

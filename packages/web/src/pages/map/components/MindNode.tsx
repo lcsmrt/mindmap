@@ -273,6 +273,13 @@ function MindNodeBase({ data }: MindNodeProps) {
           <NodeTaskIndicators node={node} />
         </div>
       )}
+
+      {/* Alça de resize revelada no hover (borda direita). O gesto de arraste é
+          detectado no wrapper em MapCanvas (que tem acesso ao scale do zoom). */}
+      <div
+        data-testid="resize-handle"
+        className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize rounded-r-[11px] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+      />
     </div>
   );
 }
