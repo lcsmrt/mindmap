@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { flextree } from 'd3-flextree';
 import type { NodeDto } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { NODE_WIDTH, estimateNodeHeight, nodeWidth } from './nodeSize.js';
+import { estimateNodeHeight, nodeWidth } from './nodeSize.js';
 
 /**
  * Altura de um nó para o layout: a altura **medida** (quando já reportada pelo

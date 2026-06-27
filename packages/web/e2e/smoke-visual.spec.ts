@@ -114,6 +114,59 @@ test.describe('smoke visual (L-005)', () => {
     await page.screenshot({ path: 'test-results/m12-card-responsive.png', fullPage: true });
   });
 
+  // Smoke do M15: card redimensionado (width via API), alça revelada no hover e filho
+  // reposicionado sem sobreposição. Verifica que o card largo é mais largo que o default.
+  test('M15 — card redimensionado com alça no hover e filho reposicionado', async ({ page }) => {
+    createdNodeIds = [];
+    await page.goto('/');
+    await page.locator('[data-testid="map-card"]').first().click();
+    await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
+
+    const mapId = page.url().split('/maps/').pop()!;
+    const stamp = Date.now();
+    const res = await page.request.get(`/api/maps/${mapId}/nodes`);
+    const { nodes } = (await res.json()) as { nodes: { id: string; parentId: string | null }[] };
+    const root = nodes.find((n) => n.parentId === null)!;
+
+    const wideRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: root.id, title: `M15-${stamp}-largo` },
+    });
+    const wideNode = (await wideRes.json()) as { id: string };
+    createdNodeIds.push(wideNode.id);
+
+    await page.request.patch(`/api/nodes/${wideNode.id}`, { data: { width: 320 } });
+
+    const narrowRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: root.id, title: `M15-${stamp}-estreito` },
+    });
+    const narrowNode = (await narrowRes.json()) as { id: string };
+    createdNodeIds.push(narrowNode.id);
+
+    const childRes = await page.request.post('/api/nodes', {
+      data: { mapId, parentId: wideNode.id, title: `M15-${stamp}-filho` },
+    });
+    const childNode = (await childRes.json()) as { id: string };
+    createdNodeIds.push(childNode.id);
+
+    await page.reload();
+    await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
+
+    const wideEl = page.locator(`[data-node-id="${wideNode.id}"]`);
+    const narrowEl = page.locator(`[data-node-id="${narrowNode.id}"]`);
+    await expect(wideEl).toBeVisible({ timeout: 5_000 });
+    await expect(narrowEl).toBeVisible({ timeout: 5_000 });
+
+    const wideBox = await wideEl.boundingBox();
+    const narrowBox = await narrowEl.boundingBox();
+    if (!wideBox || !narrowBox) throw new Error('boundingBox indisponível');
+    expect(wideBox.width).toBeGreaterThan(narrowBox.width);
+
+    await wideEl.hover();
+    await expect(wideEl.locator('[data-testid="resize-handle"]')).toBeVisible({ timeout: 2_000 });
+
+    await page.screenshot({ path: 'test-results/m15-card-resize.png', fullPage: false });
+  });
+
   // Smoke do M13: barra de inserção simétrica no centro do vão entre dois irmãos de
   // alturas diferentes (card curto vs. card multi-linha pós-M12). Verifica que o
   // ghost-slot aparece durante o drag e que seu centro vertical está no vão entre os cards.
