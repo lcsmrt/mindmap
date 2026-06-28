@@ -5,9 +5,36 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# IDs/URL da instância do Portainer (não-sensíveis). O token de API vai em secret.
+env:
+  PORTAINER_URL: http://72.60.1.97:9000
+  STACK_ID: "45"
+  ENDPOINT_ID: "3"
+
 jobs:
   redeploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Portainer redeploy
-        run: curl -fsS -X POST "${{ secrets.PORTAINER_WEBHOOK }}"
+      - name: Pull and redeploy stack (git/redeploy força re-pull + rebuild)
+        env:
+          API_KEY: ${{ secrets.PORTAINER_API_KEY }}
+        run: |
+          set -euo pipefail
+          # O webhook simples só recria os containers da imagem já buildada (código
+          # velho). git/redeploy é o que o botão "Pull and redeploy" usa: re-pulla o
+          # repo e rebuilda. Reaproveitamos o env atual da stack (DATABASE_URL/WEB_PORT)
+          # para não duplicar a senha do banco no GitHub.
+          env_json=$(curl -fsS -H "X-API-Key: $API_KEY" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID" | jq '.Env // []')
+          body=$(jq -cn --argjson env "$env_json" '{
+            env: $env,
+            prune: false,
+            PullImage: false,
+            RepositoryReferenceName: "refs/heads/master",
+            RepositoryAuthentication: false
+          }')
+          curl -fsS -X PUT \
+            -H "X-API-Key: $API_KEY" \
+            -H 'Content-Type: application/json' \
+            "$PORTAINER_URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
+            --data "$body"

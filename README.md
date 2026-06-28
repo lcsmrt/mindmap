@@ -63,7 +63,11 @@ badge do app vem de `packages/web/package.json` (injetada em build via `vite.con
 
 Servido na VPS via stack Docker de dois serviços — `mindmap-api` (Fastify) e
 `mindmap-web` (nginx servindo a SPA buildada + proxy de `/api`). O deploy é contínuo:
-push no `master` dispara a GitHub Action `deploy.yml`, que aciona um webhook do
-Portainer para rebuildar/redeployar a stack. Detalhes em `.specs/project/STATE.md`
-(AD-022); arquivos: `Dockerfile.api`, `Dockerfile.web`, `docker-compose.yml`,
-`nginx.conf`, `.github/workflows/deploy.yml`.
+push no `master` dispara a GitHub Action `deploy.yml`, que chama a API do Portainer
+(`PUT /stacks/{id}/git/redeploy`, mesmo caminho do botão "Pull and redeploy") para
+**re-pullar o repo e rebuildar** as imagens. O webhook simples de stack era
+insuficiente: recriava os containers reusando a imagem já buildada (código velho),
+pois o compose builda localmente (`build:` + `image:`, sem registry). Secret
+necessário: `PORTAINER_API_KEY` (Access Token do Portainer). Detalhes em
+`.specs/project/STATE.md` (AD-022); arquivos: `Dockerfile.api`, `Dockerfile.web`,
+`docker-compose.yml`, `nginx.conf`, `.github/workflows/deploy.yml`.
