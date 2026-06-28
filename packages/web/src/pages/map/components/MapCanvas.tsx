@@ -12,7 +12,7 @@ import type { TreeNode } from '@/lib/tree.js';
 import { useTreeLayout } from '@/lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '@/lib/useTreeLayout.js';
 import { slotToMoveBody, type Slot } from '@/lib/slots.js';
-import { MIN_NODE_WIDTH, NODE_WIDTH } from '@/lib/nodeSize.js';
+import { MIN_NODE_WIDTH } from '@/lib/nodeSize.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
@@ -174,13 +174,14 @@ function CanvasLayers({
           if (!data) return null;
           const isDragging = draggingId === p.id;
           const isResizing = activeResize?.id === p.id;
-          // Card sem largura explícita ajusta-se ao conteúdo (max-content), limitado
-          // entre o piso e o default; com largura definida (ou em arraste), usa o valor.
+          // Card sem largura explícita ajusta-se ao conteúdo (max-content) numa linha,
+          // com piso MIN_NODE_WIDTH e sem teto (mesmo limite do resize manual); com
+          // largura definida (ou em arraste), usa o valor.
           const widthStyle: React.CSSProperties = isResizing
             ? { width: activeResize!.width }
             : data.node.width != null
               ? { width: data.node.width }
-              : { width: 'max-content', minWidth: MIN_NODE_WIDTH, maxWidth: NODE_WIDTH };
+              : { width: 'max-content', minWidth: MIN_NODE_WIDTH };
           return (
             <div
               key={p.id}
