@@ -34,7 +34,7 @@ graph TD
 
 **Decisão de colunas (usuário, 2026-06-27): por nó.** Mantém o comportamento natural do `d3-flextree` — cada nó espaça seus filhos pela **própria** largura; colunas ficam escalonadas entre ramos de larguras distintas. Sem alinhar por profundidade (sem `max(width)` por nível). Preserva a simplicidade e o invariante.
 
-**Addendum (pós-M15, 2026-06-27 — AD-024):** o invariante "largura é sempre *input*, nunca medida" foi **revisado para o caso `width=null`**. Em uso, cards nunca redimensionados nasciam na constante fixa `NODE_WIDTH` (180), maiores que o conteúdo. Agora a largura default deriva da **medição de conteúdo** do DOM (`width: max-content` no wrapper, limitado a `[MIN_NODE_WIDTH, NODE_WIDTH]`), realimentada no layout pelo mesmo `ResizeObserver` do M12 (que passou a expor `widths`). O invariante de convergência **continua válido**: a largura de conteúdo é intrínseca ao texto (`max-content`), independente da largura aplicada → sem loop. Largura **explícita** (após resize) segue input puro. Ver AD-024 no STATE. (Bug aberto não relacionado: trepidação durante o arraste — CONCERNS.md.)
+**Addendum (pós-M15, 2026-06-27):** o invariante "largura é sempre *input*, nunca medida" **permanece válido** — tentou-se derivar a largura default (`width=null`) da medição de conteúdo, mas foi **revertido** a pedido do usuário (ver AD-024 REVERTIDA no STATE): o tamanho padrão segue **fixo** em `NODE_WIDTH` (180). O bug real era o **teto do resize** (`measureContentWidth`) subestimando a largura de uma linha (cadeia flex `flex-1 min-w-0` + sub-pixel) — corrigido forçando `nowrap` no título + `getBoundingClientRect`/`Math.ceil`+1px. (Bug aberto não relacionado: trepidação durante o arraste — CONCERNS.md.)
 
 ---
 

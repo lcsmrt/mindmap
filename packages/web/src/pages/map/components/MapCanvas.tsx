@@ -173,15 +173,6 @@ function CanvasLayers({
           const data = nodeDataById.get(p.id);
           if (!data) return null;
           const isDragging = draggingId === p.id;
-          const isResizing = activeResize?.id === p.id;
-          // Card sem largura explícita ajusta-se ao conteúdo (max-content) numa linha,
-          // com piso MIN_NODE_WIDTH e sem teto (mesmo limite do resize manual); com
-          // largura definida (ou em arraste), usa o valor.
-          const widthStyle: React.CSSProperties = isResizing
-            ? { width: activeResize!.width }
-            : data.node.width != null
-              ? { width: data.node.width }
-              : { width: 'max-content', minWidth: MIN_NODE_WIDTH };
           return (
             <div
               key={p.id}
@@ -193,7 +184,7 @@ function CanvasLayers({
               style={{
                 left: p.x,
                 top: p.y,
-                ...widthStyle,
+                width: p.width,
                 cursor: data.isRoot ? 'default' : 'grab',
                 transform: isDragging
                   ? `translate(${ghostOffset.x / scale}px, ${ghostOffset.y / scale}px)`
@@ -361,8 +352,8 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   // `heights`, que realimenta o layout. Largura fixa ⇒ reposicionar não muda a altura
   // medida ⇒ sem loop medir↔layout (ver Invariante de convergência no design).
   const [activeResize, setActiveResize] = useState<ActiveResize | null>(null);
-  const { heights, widths, registerNode } = useMeasuredHeights();
-  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights, widths, activeResize);
+  const { heights, registerNode } = useMeasuredHeights();
+  const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights, activeResize);
   const allMeasured = positioned.length > 0 && positioned.every((p) => heights.has(p.id));
 
   const handlePersistWidth = useCallback(

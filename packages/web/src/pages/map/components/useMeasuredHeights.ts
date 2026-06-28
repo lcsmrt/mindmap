@@ -19,23 +19,8 @@ export function nextHeights(
   return next;
 }
 
-/** Mesmo reducer de `nextHeights`, aplicado à largura medida (id → largura). */
-export function nextWidths(
-  prev: ReadonlyMap<string, number>,
-  id: string,
-  width: number,
-): ReadonlyMap<string, number> {
-  const rounded = Math.round(width);
-  if (prev.get(id) === rounded) return prev;
-  const next = new Map(prev);
-  next.set(id, rounded);
-  return next;
-}
-
-export interface MeasuredSizes {
+export interface MeasuredHeights {
   heights: ReadonlyMap<string, number>;
-  /** Largura medida do DOM por nó; alimenta a largura de cards sem `width` explícita. */
-  widths: ReadonlyMap<string, number>;
   registerNode: (id: string) => (el: HTMLElement | null) => void;
 }
 
@@ -48,9 +33,8 @@ export interface MeasuredSizes {
  * Espelha o padrão do observer do container em `MapCanvas.tsx`, mas compartilhado
  * entre os nós (um observer, não N — custo baixo p/ mapas grandes).
  */
-export function useMeasuredHeights(): MeasuredSizes {
+export function useMeasuredHeights(): MeasuredHeights {
   const [heights, setHeights] = useState<ReadonlyMap<string, number>>(() => new Map());
-  const [widths, setWidths] = useState<ReadonlyMap<string, number>>(() => new Map());
 
   // Elemento atualmente observado por id (para `unobserve` no null / troca de el).
   const elements = useRef(new Map<string, HTMLElement>());
@@ -69,16 +53,6 @@ export function useMeasuredHeights(): MeasuredSizes {
             if (!id) continue;
             const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
             acc = nextHeights(acc, id, h);
-          }
-          return acc;
-        });
-        setWidths((prev) => {
-          let acc = prev;
-          for (const entry of entries) {
-            const id = (entry.target as HTMLElement).dataset.nodeId;
-            if (!id) continue;
-            const w = entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width;
-            acc = nextWidths(acc, id, w);
           }
           return acc;
         });
@@ -108,12 +82,6 @@ export function useMeasuredHeights(): MeasuredSizes {
             next.delete(id);
             return next;
           });
-          setWidths((prev) => {
-            if (!prev.has(id)) return prev;
-            const next = new Map(prev);
-            next.delete(id);
-            return next;
-          });
         }
       };
       refCallbacks.current.set(id, cb);
@@ -133,5 +101,5 @@ export function useMeasuredHeights(): MeasuredSizes {
     };
   }, []);
 
-  return { heights, widths, registerNode };
+  return { heights, registerNode };
 }
