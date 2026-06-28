@@ -50,6 +50,20 @@ pnpm dev
 ```
 packages/
   api/      # Fastify + Prisma
-  web/      # React + Vite + React Flow + TanStack Query + Tailwind v4
+  web/      # React + Vite + visx (zoom/shape) + d3-flextree + TanStack Query + Tailwind v4 + Base UI
   shared/   # Tipos compartilhados (DTOs, schemas Zod)
 ```
+
+O canvas é renderizado com visx (`@visx/zoom` para pan/zoom, `@visx/shape` para as
+arestas em SVG) e `d3-flextree` para o layout de árvore de altura variável; os nós são
+componentes HTML posicionados sobre o SVG (arquitetura híbrida). A versão exibida no
+badge do app vem de `packages/web/package.json` (injetada em build via `vite.config.ts`).
+
+## Deploy
+
+Servido na VPS via stack Docker de dois serviços — `mindmap-api` (Fastify) e
+`mindmap-web` (nginx servindo a SPA buildada + proxy de `/api`). O deploy é contínuo:
+push no `master` dispara a GitHub Action `deploy.yml`, que aciona um webhook do
+Portainer para rebuildar/redeployar a stack. Detalhes em `.specs/project/STATE.md`
+(AD-022); arquivos: `Dockerfile.api`, `Dockerfile.web`, `docker-compose.yml`,
+`nginx.conf`, `.github/workflows/deploy.yml`.
