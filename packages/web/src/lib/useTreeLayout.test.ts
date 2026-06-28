@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTreeLayout, nodeSizeFromHeights } from './useTreeLayout.js';
+import { computeTreeLayout, nodeSizeFromHeights, GAP_X } from './useTreeLayout.js';
 import type { TreeNode } from './tree.js';
 import { NODE_WIDTH, NODE_HEIGHT_BASE, NODE_HEIGHT_WITH_FOOTER, nodeWidth } from './nodeSize.js';
 import type { NodeDto } from '@mindmap/shared';
@@ -346,6 +346,37 @@ describe('computeTreeLayout — largura por nó', () => {
     const child = byId('child');
     // filho começa após a borda direita do pai
     expect(child.x).toBeGreaterThan(wide.x + wide.width);
+  });
+
+  it('filho mais largo que o pai não invade o pai (regressão do resize)', () => {
+    // n.y do flextree é borda-near (cumulativa), não centro: o deslocamento p/ centrar
+    // a raiz deve ser constante (rootW/2). Com o bug (w/2 por nó) um filho largo invadia
+    // o pai estreito. RIGHT e LEFT cobertos.
+    const tree: TreeNode = {
+      node: node('root', { width: 180 }),
+      children: [
+        {
+          node: node('pR', { side: 'RIGHT', width: 180 }),
+          children: [leaf('cR', { width: 420, parentId: 'pR' })],
+        },
+        {
+          node: node('pL', { sortOrder: 1, side: 'LEFT', width: 180 }),
+          children: [leaf('cL', { width: 420, parentId: 'pL' })],
+        },
+      ],
+    };
+    const { positioned } = computeTreeLayout(tree, undefined, nodeWidth);
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    const pR = byId('pR');
+    const cR = byId('cR');
+    // lado direito: filho começa após a borda direita do pai, com folga ~GAP_X
+    expect(cR.x).toBeGreaterThanOrEqual(pR.x + pR.width);
+    expect(cR.x - (pR.x + pR.width)).toBeCloseTo(GAP_X, 5);
+    const pL = byId('pL');
+    const cL = byId('cL');
+    // lado esquerdo (espelhado): filho termina antes da borda esquerda do pai
+    expect(cL.x + cL.width).toBeLessThanOrEqual(pL.x);
+    expect(pL.x - (cL.x + cL.width)).toBeCloseTo(GAP_X, 5);
   });
 
   it('bounds cobrem o nó mais largo', () => {

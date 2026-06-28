@@ -120,18 +120,22 @@ export function computeTreeLayout(
     // Alinha a raiz deste lado no centro vertical (breadth) global.
     const breadthOffset = sideRoot.x;
 
+    // n.y do d3-flextree é a **borda-near** do nó no eixo de profundidade (cumulativa
+    // a partir da raiz; van der Ploeg 2013), não o centro. Para centrar a raiz na
+    // origem, deslocamos por uma **constante** (rootW/2) — usar w/2 do próprio nó
+    // sobreporia nós de larguras distintas (filho mais largo invade o pai).
+    const depthShift = rootW / 2;
+
     sideRoot.each((n) => {
       if (n === sideRoot) return; // raiz já emitida uma única vez
 
       const height = nodeSizeFn(n.data.node);
       const w = nodeWidthFn(n.data.node);
       const cy = n.x - breadthOffset; // centro vertical do nó no mundo
-      // n.y é o centro do nó no eixo de profundidade (d3-flextree com nodeSize variável).
-      const worldX = dir * n.y - w / 2;
+      const nearX = dir * (n.y - depthShift); // borda do nó voltada para a raiz
+      const worldX = dir === 1 ? nearX : nearX - w; // top-left (lado esq. espelhado)
       positioned.push({ id: n.data.node.id, x: worldX, y: cy - height / 2, width: w, height });
 
-      // Âncora do nó voltada para a raiz (borda interna).
-      const nearX = dir * (n.y - w / 2);
       if (n.parent === sideRoot) {
         // 1º nível: sai do centro da raiz (M8-09) em direção ao lado.
         links.push({ source: rootCenter, target: { x: nearX, y: cy } });
@@ -140,7 +144,7 @@ export function computeTreeLayout(
         const p = n.parent!;
         const parentCy = p.x - breadthOffset;
         const wp = nodeWidthFn(p.data.node);
-        const parentFarX = dir * (p.y + wp / 2); // borda externa do pai
+        const parentFarX = dir * (p.y - depthShift + wp); // borda externa do pai
         links.push({ source: { x: parentFarX, y: parentCy }, target: { x: nearX, y: cy } });
       }
     });
