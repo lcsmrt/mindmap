@@ -50,7 +50,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 **Review AD-013 de M15 (2026-07-02) — lacunas de teste não-bloqueantes:**
 
 - ~~**`card-resize.spec.ts:99` — asserção fraca de persistência:**~~ — **resolvido (2026-07-02):** trocado por `expect(persisted?.width).toBeGreaterThan(180)` — arrastar para a direita alarga além do default, então a asserção agora pega um valor persistido errado (mas não-nulo).
-- **Backend: `width` não-inteiro e nó-novo-null sem asserção direta** (`packages/api/src/routes/nodes.test.ts`): o Zod `.int()` rejeita `1.5` com 400, mas nenhum teste cobre o ramo não-inteiro (cobrem-se 0, negativo, > max, limite 1000). M15-10 (nó novo nasce `width=null`) é coberto só indiretamente (nenhum assert direto do `POST /`). Severity: Low.
+- ~~**Backend: `width` não-inteiro e nó-novo-null sem asserção direta**~~ — **resolvido (2026-07-02):** adicionados dois testes em `nodes.test.ts` — PATCH `width: 1.5` → 400 (ramo `.int()`) e `POST /` seguido de read-back via `GET /maps/:id/nodes` assere `width === null` (M15-10 direto). API 61→63.
 
 **CONCERNS.md desatualizado pós-M7 (descoberto no review AD-013 de M8):**
 

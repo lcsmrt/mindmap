@@ -558,6 +558,41 @@ describe('Nodes API', () => {
       });
       expect(patch.statusCode).toBe(400);
     });
+
+    it('PATCH com width: 1.5 (não-inteiro) retorna 400', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Teste' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const patch = await app.inject({
+        method: 'PATCH',
+        url: `/nodes/${id}`,
+        payload: { width: 1.5 },
+      });
+      expect(patch.statusCode).toBe(400);
+    });
+
+    it('nó recém-criado nasce com width: null (POST não seta width)', async () => {
+      const { id: mapId } = await createMap(app);
+      const root = await getRootNode(mapId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/nodes',
+        payload: { mapId, parentId: root.id, title: 'Novo' },
+      });
+      const { id } = res.json<{ id: string }>();
+
+      const nodesRes = await app.inject({ method: 'GET', url: `/maps/${mapId}/nodes` });
+      const nodes = nodesRes.json<{ nodes: { id: string; width: number | null }[] }>().nodes;
+      expect(nodes.find((n) => n.id === id)?.width).toBeNull();
+    });
   });
 
   describe('DELETE /nodes/:id', () => {
