@@ -131,14 +131,14 @@ Dar hierarquia aos nós por profundidade. Sub-itens de esforço distinto:
 - **Cor da edge herdada do nó de 1º nível:** hoje toda edge é `stroke-border` fixo e `LayoutLink` não carrega cor; propagar a cor do nó para sua aresta.
 - Majoritariamente **design** — vale exploração visual antes de virar tarefa.
 
-### M15 — Resize horizontal do card 🔴 alta (depende de M12) ✅ executado; review AD-013 pendente (2026-06-27)
+### M15 — Resize horizontal do card 🔴 alta (depende de M12) ✅ concluído e aprovado (review AD-013, 2026-07-02 — L-009)
 
 Segunda metade do "Card responsivo + resize" original, **fatiada de M12** (decisão do usuário, 2026-06-25, AD-020). Largura controlada pelo usuário por arraste; texto reflui; altura derivada (M12 já entrega o pipeline de medição).
 
 - **Resize horizontal por nó:** alça na borda direita do card, **revelada no hover** (consistente com a toolbar M10). `NODE_WIDTH` deixa de ser constante → vira largura por nó em `useTreeLayout.ts`, `lib/slots.ts`, barra-fantasma e render.
 - **Largura persistida:** coluna nova `width Int?` no `Node` (full-stack). Revisa AD-002 parcialmente (mais 1 dado estrutural por nó, mantendo "sem x/y livre" — largura não é posição em pixel; mesmo precedente do M9/`side`). **AD-023 registrada.**
 - **Sem reset de largura** em M15 (por decisão do usuário) — candidato a quick task futura (ver Deferred Ideas).
-- Spec/design/tasks em `.specs/features/m15-card-resize/`. **Executado** em 6 commits (T1: schema+DTO+mapper; T2: PATCH width; T3: layout por nó; T4: slots.ts eixo X; T5: `3c0c429` alça+drag+persist; T6: `16439e0` e2e+smoke). Gates verdes: typecheck/lint ✅, unit **web 117/api 61** ✅, **e2e 37/37** ✅ (2 testes funcionais de resize + smoke visual M15). **Review AD-013 pendente (chat separado, [[feedback-plan-execute-split]]).**
+- Spec/design/tasks em `.specs/features/m15-card-resize/`. **Executado** em 6 commits (T1: schema+DTO+mapper; T2: PATCH width; T3: layout por nó; T4: slots.ts eixo X; T5: `3c0c429` alça+drag+persist; T6: `16439e0` e2e+smoke). **Review AD-013 concluída (2026-07-02): APROVADO por 3 sub-agents independentes, zero bloqueantes** (L-009). Gates reexecutados verdes: typecheck/lint ✅, unit **web 118/api 61** ✅, **e2e 37/37** ✅ (2 testes funcionais de resize + smoke visual M15). Probe empírico do d3-flextree fechou o risco geométrico da L-008; reversão da AD-024 confirmada limpa. Findings Low → CONCERNS.md. **Bug aberto não-bloqueante:** trepidação no arraste (CONCERNS.md → Known Bugs).
 
 ---
 
