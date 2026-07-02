@@ -52,7 +52,6 @@ interface CanvasLayersProps {
   onInvalidDrop: () => void;
   registerNode: (id: string) => (el: HTMLElement | null) => void;
   allMeasured: boolean;
-  activeResize: ActiveResize | null;
   setActiveResize: React.Dispatch<React.SetStateAction<ActiveResize | null>>;
   onPersistWidth: (id: string, width: number) => void;
 }
@@ -71,7 +70,6 @@ function CanvasLayers({
   onInvalidDrop,
   registerNode,
   allMeasured,
-  activeResize,
   setActiveResize,
   onPersistWidth,
 }: CanvasLayersProps) {
@@ -98,7 +96,14 @@ function CanvasLayers({
     startClientX: number;
     startWidth: number;
     ceiling: number;
+    width: number;
   } | null>(null);
+
+  const endResize = (r: { id: string; startWidth: number; width: number }) => {
+    resizeRef.current = null;
+    setActiveResize(null);
+    if (r.width !== r.startWidth) onPersistWidth(r.id, r.width);
+  };
 
   // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem
   // **e todos os nós visíveis já foram medidos** — assim enquadramos os bounds reais
@@ -196,11 +201,13 @@ function CanvasLayers({
                 if ((e.target as HTMLElement).closest('[data-testid="resize-handle"]')) {
                   e.currentTarget.setPointerCapture(e.pointerId);
                   const cardEl = e.currentTarget.firstElementChild as HTMLElement;
+                  const startWidth = e.currentTarget.offsetWidth;
                   resizeRef.current = {
                     id: p.id,
                     startClientX: e.clientX,
-                    startWidth: e.currentTarget.offsetWidth,
+                    startWidth,
                     ceiling: measureContentWidth(cardEl),
+                    width: startWidth,
                   };
                 } else {
                   onNodePointerDown(p.id, e);
@@ -210,21 +217,22 @@ function CanvasLayers({
                 if (resizeRef.current?.id === p.id) {
                   const { startClientX, startWidth, ceiling } = resizeRef.current;
                   const worldDx = (e.clientX - startClientX) / scale;
-                  const w = clampWidth(startWidth, worldDx, MIN_NODE_WIDTH, ceiling);
-                  setActiveResize({ id: p.id, width: Math.round(w) });
+                  const width = Math.round(clampWidth(startWidth, worldDx, MIN_NODE_WIDTH, ceiling));
+                  resizeRef.current.width = width;
+                  setActiveResize({ id: p.id, width });
                 } else {
                   onNodePointerMove(e);
                 }
               }}
               onPointerUp={(e) => {
                 if (resizeRef.current?.id === p.id) {
-                  const width = activeResize?.width;
-                  resizeRef.current = null;
-                  setActiveResize(null);
-                  if (width !== undefined) onPersistWidth(p.id, width);
+                  endResize(resizeRef.current);
                 } else {
                   onNodePointerUp(e);
                 }
+              }}
+              onPointerCancel={() => {
+                if (resizeRef.current?.id === p.id) endResize(resizeRef.current);
               }}
             >
               <MindNode data={data} />
@@ -490,7 +498,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               onInvalidDrop={handleInvalidDrop}
               registerNode={registerNode}
               allMeasured={allMeasured}
-              activeResize={activeResize}
               setActiveResize={setActiveResize}
               onPersistWidth={handlePersistWidth}
             />

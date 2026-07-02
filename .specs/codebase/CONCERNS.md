@@ -49,7 +49,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 **Review AD-013 de M15 (2026-07-02) — lacunas de teste não-bloqueantes:**
 
-- **`card-resize.spec.ts:99` — asserção fraca de persistência:** o teste "arrastar alça para a direita persiste a largura" só assere `expect(persisted?.width).not.toBeNull()` — qualquer `width` não-nulo passa, sem validar que a largura **aumentou** nem a magnitude do arraste. Um resize que persistisse um valor errado (mas não-nulo) passaria verde. Fix: `expect(persisted.width).toBeGreaterThan(180)`. Severity: Low.
+- ~~**`card-resize.spec.ts:99` — asserção fraca de persistência:**~~ — **resolvido (2026-07-02):** trocado por `expect(persisted?.width).toBeGreaterThan(180)` — arrastar para a direita alarga além do default, então a asserção agora pega um valor persistido errado (mas não-nulo).
 - **Backend: `width` não-inteiro e nó-novo-null sem asserção direta** (`packages/api/src/routes/nodes.test.ts`): o Zod `.int()` rejeita `1.5` com 400, mas nenhum teste cobre o ramo não-inteiro (cobrem-se 0, negativo, > max, limite 1000). M15-10 (nó novo nasce `width=null`) é coberto só indiretamente (nenhum assert direto do `POST /`). Severity: Low.
 
 **CONCERNS.md desatualizado pós-M7 (descoberto no review AD-013 de M8):**
@@ -124,16 +124,9 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Files: `packages/api/src/routes/nodes.ts:159`
 - Salvaguarda que pode flipar silenciosamente um nó `LEFT` se um cliente futuro omitir `side` num `move` cujo destino é a raiz. Hoje **inalcançável** (o frontend sempre envia `side` via `slotToMoveBody`). Considerar exigir `side` quando `newParentId` é a raiz. Severity: Low (latente).
 
-**Gesto de resize sem handler de `pointercancel` (review AD-013 de M15, 2026-07-02):**
+~~**Gesto de resize sem handler de `pointercancel` (review AD-013 de M15, 2026-07-02):**~~ — **resolvido (2026-07-02):** adicionado `onPointerCancel` que chama o mesmo `endResize` do `pointerup`, liberando o estado preso (e persistindo o que foi arrastado) se o SO cancelar o ponteiro no meio do gesto. `MapCanvas.tsx`.
 
-- Files: `packages/web/src/pages/map/components/MapCanvas.tsx:195-228`
-- O ciclo do gesto de resize trata `pointerdown`/`pointermove`/`pointerup`, mas não `pointercancel`. Se o SO cancelar o ponteiro no meio do arraste (gesto do sistema, menu de contexto), `resizeRef.current` e `activeResize` ficam setados → estado de resize "preso" e a largura não persiste. O `pointerup` normal limpa corretamente; só o caminho de cancelamento fica descoberto. Fora dos ACs do M15. Severity: Low (latente).
-- Fix: adicionar handler de `pointercancel` que limpa `resizeRef`/`activeResize` (com ou sem persistir).
-
-**Resize persiste a largura do closure de estado, não de um ref (review AD-013 de M15, 2026-07-02):**
-
-- Files: `packages/web/src/pages/map/components/MapCanvas.tsx:220-224`
-- O `pointerup` persiste `activeResize?.width` lido do estado React (closure), dependendo de o React já ter re-renderizado com o último `pointermove` antes do `pointerup`. Na prática os eventos de ponteiro discretos são flushados entre si e funciona (e2e verde); guardar o width final no `resizeRef` (como já se faz com `startWidth`/`ceiling`) seria determinístico. Severity: Low.
+~~**Resize persiste a largura do closure de estado, não de um ref (review AD-013 de M15, 2026-07-02):**~~ — **resolvido (2026-07-02):** o `resizeRef` passou a carregar a `width` corrente (atualizada no `pointermove`); `endResize` persiste a partir do ref, não do estado React — determinístico. Persiste só se `width !== startWidth` (preserva o no-op do clique simples, M15-24). `MapCanvas.tsx`.
 
 **Doc drift: `design.md` do M15 descreve a alça via callbacks que não existem (review AD-013 de M15, 2026-07-02):**
 

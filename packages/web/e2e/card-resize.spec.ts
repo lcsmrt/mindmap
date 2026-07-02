@@ -96,7 +96,8 @@ test.describe('M15 — card resize', () => {
 
     const afterNodes = await getNodes(page, mapId);
     const persisted = afterNodes.find((n) => n.id === child.id);
-    expect(persisted?.width).not.toBeNull();
+    // arrastar para a direita alarga: a largura persistida cresce além do default (180).
+    expect(persisted?.width).toBeGreaterThan(180);
   });
 
   test('arrastar alça não altera o pai do nó (não dispara drag-to-place)', async ({ page }) => {
