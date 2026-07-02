@@ -117,11 +117,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Tech Debt
 
-**`useMeasuredHeights`: `refCallbacks` não é podado no unregister (review AD-013 de M12, 2026-06-27):**
-
-- Files: `packages/web/src/pages/map/components/useMeasuredHeights.ts:62-77`
-- Quando um nó é deletado, o ref é chamado com `null` (limpa `elements`/`heights`), mas a closure memoizada em `refCallbacks.current` persiste pela vida do componente → crescimento lento e ilimitado de closures numa sessão longa com muitos create/delete. Sem impacto em corretude (ids únicos).
-- Fix: podar `refCallbacks.current[id]` no ramo `el == null`. Severity: Low.
+~~**`useMeasuredHeights`: `refCallbacks` não é podado no unregister (review AD-013 de M12, 2026-06-27):**~~ — **resolvido (2026-07-02):** o ramo `el == null` do ref callback agora faz `refCallbacks.current.delete(id)` junto de `elements`/`heights`, podando a closure memoizada quando o nó desmonta. Um remount do mesmo id recria o callback via `registerNode`. `useMeasuredHeights.ts`.
 
 **`move` para a raiz sem `side` assume `RIGHT` (review AD-013 de M9, 2026-06-27):**
 

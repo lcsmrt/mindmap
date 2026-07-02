@@ -76,6 +76,7 @@ export function useMeasuredHeights(): MeasuredHeights {
           observer?.observe(el);
         } else {
           elements.current.delete(id);
+          refCallbacks.current.delete(id);
           setHeights((prev) => {
             if (!prev.has(id)) return prev;
             const next = new Map(prev);
