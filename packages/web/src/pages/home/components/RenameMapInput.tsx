@@ -4,10 +4,10 @@ import { Input } from '@/components/ui/input.js';
 type RenameMapInputProps = {
   initialTitle: string;
   onConfirm: (title: string) => Promise<unknown>;
-  onCancel: () => void;
+  onClose: () => void;
 };
 
-export const RenameMapInput = ({ initialTitle, onConfirm, onCancel }: RenameMapInputProps) => {
+export const RenameMapInput = ({ initialTitle, onConfirm, onClose }: RenameMapInputProps) => {
   const [value, setValue] = useState(initialTitle);
   const ref = useRef<HTMLInputElement>(null);
 
@@ -18,13 +18,13 @@ export const RenameMapInput = ({ initialTitle, onConfirm, onCancel }: RenameMapI
   const handleBlur = async () => {
     const trimmed = value.trim();
     if (!trimmed || trimmed === initialTitle) {
-      onCancel();
+      onClose();
       return;
     }
     try {
       await onConfirm(trimmed);
-    } catch {
-      onCancel();
+    } finally {
+      onClose();
     }
   };
 
@@ -33,7 +33,7 @@ export const RenameMapInput = ({ initialTitle, onConfirm, onCancel }: RenameMapI
       e.preventDefault();
       ref.current?.blur();
     }
-    if (e.key === 'Escape') onCancel();
+    if (e.key === 'Escape') onClose();
   };
 
   return (

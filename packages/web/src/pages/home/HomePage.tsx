@@ -132,7 +132,7 @@ export const HomePage = () => {
                   <RenameMapInput
                     initialTitle={map.title}
                     onConfirm={(title) => updateMap({ id: map.id, body: { title } })}
-                    onCancel={() => setRenamingId(null)}
+                    onClose={() => setRenamingId(null)}
                   />
                 </div>
               ) : (

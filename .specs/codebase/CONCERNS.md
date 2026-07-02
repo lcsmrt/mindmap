@@ -23,13 +23,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Fix: trocar o `.first()` por criação via API com título único + localização por título + cleanup no `afterEach` — exatamente o padrão robusto que `task-properties.spec.ts` (M6) já adota. Candidato a quick task.
 - Test coverage: o próprio teste (frágil); a correção do DB isolado (infra) destrava a robustez.
 
-**Rename inline do card da home não fecha ao confirmar com sucesso (descoberto no review AD-013 de M10):**
-
-- Files: `packages/web/src/pages/home/components/RenameMapInput.tsx:18-29`, `packages/web/src/pages/home/HomePage.tsx:127-145`
-- Symptom: `RenameMapInput.handleBlur` faz `await onConfirm(trimmed)` mas, no caminho de sucesso, nada limpa `renamingId` — só cancelar/erro/inalterado chamam `onCancel`. Depois de renomear com sucesso (blur/Enter), o card permanece em modo de edição mostrando o `<Input>` em vez de voltar ao `MapCard`.
-- **Não é regressão de M10:** `RenameMapInput` não mudou no milestone e a `HomePage` antiga (pré-M10, `81d1028`) tinha a mesma fiação (`onConfirm` sem limpar `renamingId`). Bug latente pré-existente, só herdado pela home reescrita.
-- Test coverage: nenhum — o e2e novo da home (`home.spec.ts`) cobre criar/métricas/excluir, **não** rename.
-- Fix: após `await onConfirm(...)` bem-sucedido, fechar a edição (ex.: `RenameMapInput` chamar `onCancel`/um `onClose` no sucesso, ou a `HomePage` limpar `renamingId` no `onSuccess` do `useUpdateMap`). Candidato a quick task.
+~~**Rename inline do card da home não fecha ao confirmar com sucesso (descoberto no review AD-013 de M10):**~~ — **resolvido (2026-07-02):** o prop `onCancel` de `RenameMapInput` virou `onClose` (semântica real: "fechar o editor", disparado em cancelar/vazio/inalterado/erro **e** no sucesso) e o `handleBlur` troca o `catch { onClose }` por `finally { onClose }` → toda tentativa de confirmar fecha a edição (sucesso volta ao `MapCard`; erro fecha com rollback+toast do hook). `RenameMapInput.tsx` + `HomePage.tsx`.
 
 ~~**Root ("Central") não é renomeável via UI (relato do usuário):**~~ — resolvido em Q-003: clique no texto do nó dispara edição via `onStartEdit`, sem depender de `onNodeDoubleClick`.
 
@@ -39,13 +33,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Test Gaps
 
-**`useTreeLayout.test.ts:165-189` — teste "alturas variáveis não se sobrepõem" é vacuoso (review AD-013 de M8):**
-
-- Files: `packages/web/src/lib/useTreeLayout.test.ts:165-189`
-- Symptom: o teste cria a raiz com **2 filhos**; `splitChildren` manda exatamente 1 para cada lado, então cada grupo `sameSide` tem 1 nó e o loop de comparação de sobreposição (linha 183) **nunca executa** — não assere nada. O próprio comentário (linhas 171-172) admite que forçar 2 nós no mesmo lado "não é trivial via API pública".
-- Cobertura faltante: o caso real que importa — irmãos de **alturas diferentes no mesmo lado** sem sobreposição vertical (o que o flextree deve garantir, M8-03) — fica descoberto.
-- Severity: Low — a matemática está correta (verificada manualmente + por reviewer independente); é lacuna de teste, não bug.
-- Fix: usar 3+ filhos para garantir ≥2 do mesmo lado, ou expor `computeTreeLayout` com split injetável. Candidato a quick task.
+~~**`useTreeLayout.test.ts:165-189` — teste "alturas variáveis não se sobrepõem" é vacuoso (review AD-013 de M8):**~~ — **resolvido no M9** (confirmado 2026-07-02): o teste agora força **3 filhos co-laterais** (mesmo `side: 'RIGHT'`) com alturas distintas (com/sem props de tarefa), assere `length === 3`, que as alturas realmente variam (`Set(heights).size > 1` — guarda anti-vacuidade) e a não-sobreposição vertical real (`curr.y >= prev.y + prev.height`). Ver `useTreeLayout.test.ts:195-220`.
 
 **Seleção de slot (`slots.ts`) — testes do M13 cobriam só coluna única (review AD-013 de M13, 2026-06-26 — corrigido):**
 
