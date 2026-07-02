@@ -138,29 +138,25 @@ test.describe('persistência e restauração (M4)', () => {
 
   test('mover nó para outro pai persiste após reload', async ({ page }) => {
     await openFirstMap(page);
-
-    // T10: hover no nó-raiz antes de cada clique para revelar a toolbar.
-    const rootNode = page.locator('[data-testid="mind-node"]').first();
-    const addBtn = rootNode.getByTitle('Adicionar filho');
-    await rootNode.hover();
-    await addBtn.click();
-    await page.waitForTimeout(500);
-    await rootNode.hover();
-    await addBtn.click();
-    await page.waitForTimeout(1_000);
-
     const mapId = page.url().split('/maps/').pop()!;
+
     const res = await page.request.get(`/api/maps/${mapId}/nodes`);
     const { nodes } = (await res.json()) as {
       nodes: { id: string; parentId: string | null }[];
     };
-
     const root = nodes.find((n) => n.parentId === null)!;
-    const children = nodes.filter((n) => n.parentId === root.id);
-    expect(children.length).toBeGreaterThanOrEqual(2);
 
-    const source = children[0]!;
-    const target = children[children.length - 1]!;
+    // Cria os dois filhos via API com título único — evita o seletor `.first()`
+    // frágil e os cliques de UI dependentes de hover/timing (L-003). Limpa no fim.
+    const label = `m4-move-${Date.now()}`;
+    const createChild = async (title: string) => {
+      const r = await page.request.post('/api/nodes', {
+        data: { mapId, parentId: root.id, title },
+      });
+      return (await r.json()) as { id: string };
+    };
+    const source = await createChild(`${label}-a`);
+    const target = await createChild(`${label}-b`);
 
     await page.request.patch(`/api/nodes/${source.id}/move`, {
       data: { parentId: target.id, index: 0 },
@@ -176,9 +172,8 @@ test.describe('persistência e restauração (M4)', () => {
     const moved = after.find((n) => n.id === source.id)!;
     expect(moved.parentId).toBe(target.id);
 
-    await page.request.patch(`/api/nodes/${source.id}/move`, {
-      data: { parentId: root.id, index: 0 },
-    });
+    // Deletar o target cascateia source (agora sua subárvore) — não polui o mapa compartilhado.
+    await page.request.delete(`/api/nodes/${target.id}`);
   });
 
   test('todos os nós expandidos ao reabrir (AD-004)', async ({ page }) => {

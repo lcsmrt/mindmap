@@ -14,14 +14,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 - Fix: pendente — usuário vai trazer mais pistas (qual nó treme: o redimensionado, os filhos, a árvore toda? em que zoom? com/sem filhos?).
 - Test coverage: nenhum (comportamento de render/animação; o e2e funcional `card-resize.spec.ts` passa — não testa trepidação).
 
-**`persistence.spec.ts:136` — teste e2e "mover nó para outro pai" falha consistentemente (descoberto no review AD-013 de M6):**
-
-- Files: `packages/web/e2e/persistence.spec.ts:136-176`
-- Symptom: O teste espera ≥2 filhos da raiz (`expect(children.length).toBeGreaterThanOrEqual(2)`) após clicar 2x em "Adicionar filho", mas encontra 1 → falha determinística (não flaky: reproduzido isolado, 2x).
-- **Não é regressão de M6:** provado revertendo `MindNode.tsx` + `layout.worker.ts` + `treeLayout.ts` para a versão pré-M6 (`e7095ed`) e rodando o mesmo teste — falha idêntica. As 6 specs de `task-properties.spec.ts` (M6) passam todas.
-- Causa raiz: seletor frágil `.react-flow__node').first().getByTitle('Adicionar filho')` assume que o primeiro nó no DOM é sempre a raiz. Depois do 1º filho criado + re-layout, `.first()` deixa de apontar para a raiz, então o 2º clique adiciona filho ao nó errado e a raiz fica com 1 filho. Agravado pelo DB de e2e compartilhado/acumulativo (ver "Test Infrastructure" abaixo) — o teste nem deleta os nós que cria.
-- Fix: trocar o `.first()` por criação via API com título único + localização por título + cleanup no `afterEach` — exatamente o padrão robusto que `task-properties.spec.ts` (M6) já adota. Candidato a quick task.
-- Test coverage: o próprio teste (frágil); a correção do DB isolado (infra) destrava a robustez.
+~~**`persistence.spec.ts:136` — teste e2e "mover nó para outro pai" falha consistentemente (descoberto no review AD-013 de M6):**~~ — **resolvido (2026-07-02):** o teste foi reescrito para criar os dois filhos **via API** (`POST /nodes` com título único `m4-move-<ts>`) em vez dos cliques de UI via `.first()`/hover que assumiam "o 1º nó no DOM é a raiz" (causa raiz da falha). Removidos os `waitForTimeout` e a asserção circular `children.length >= 2`. Ao final deleta o `target` (cascateia o `source`, agora sua subárvore) → não polui mais o mapa compartilhado. 6/6 specs de `persistence.spec.ts` verdes. A dívida estrutural de **DB de teste isolado** segue aberta em "Test Infrastructure" (mas este teste deixou de depender dela).
 
 ~~**Rename inline do card da home não fecha ao confirmar com sucesso (descoberto no review AD-013 de M10):**~~ — **resolvido (2026-07-02):** o prop `onCancel` de `RenameMapInput` virou `onClose` (semântica real: "fechar o editor", disparado em cancelar/vazio/inalterado/erro **e** no sucesso) e o `handleBlur` troca o `catch { onClose }` por `finally { onClose }` → toda tentativa de confirmar fecha a edição (sucesso volta ao `MapCard`; erro fecha com rollback+toast do hook). `RenameMapInput.tsx` + `HomePage.tsx`.
 
