@@ -132,7 +132,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   const statusInfo = status != null ? statusMeta(status) : null;
   const trimmedAssignee = assignee.trim();
   const initials = trimmedAssignee.length > 0 ? getInitials(trimmedAssignee) : '';
-  const criticalColor = dark ? 'var(--color-brand)' : '#b01818';
+  const criticalColor = dark ? 'var(--color-brand)' : 'var(--color-critical-strong)';
   const dividerColor = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.1)';
 
   return (

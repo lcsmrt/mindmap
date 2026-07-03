@@ -51,7 +51,7 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         text,
         border: 'rgba(0,0,0,.08)',
         boxShadow: '0 3px 14px rgba(0,0,0,.25)',
-        critical: '#b01818',
+        critical: 'var(--color-critical-strong)',
         divider: 'rgba(0,0,0,.1)',
       };
 }

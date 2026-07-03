@@ -64,6 +64,7 @@
   --color-node-toolbar: #232128;
   --color-node-toolbar-border: #37343f;
   --color-node-toolbar-hover: #2d2b34;
+  --color-critical-strong: #b01818;
 }
 
 @layer base {
