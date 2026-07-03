@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/mergeClasses.js';
 import { ColorSwatchGrid } from './ColorSwatchGrid.js';
 import { StatusSelector } from './StatusSelector.js';
+import { NodeTaskIndicators } from './NodeTaskIndicators.js';
 import { BG_PALETTE, TEXT_PALETTE, DEFAULT_BG } from './color-palette.js';
-import { statusMeta, getInitials } from './task-meta.js';
+import { getInitials } from './task-meta.js';
 import { autoTextColor, contrastRatio, contrastVerdict, isDarkBg } from './contrast.js';
 import type { ContrastLevel } from './contrast.js';
 import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
@@ -129,7 +130,6 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   const verdict = contrastVerdict(ratio);
 
   const VerdictIcon = CONTRAST_ICON[verdict.level];
-  const statusInfo = status != null ? statusMeta(status) : null;
   const trimmedAssignee = assignee.trim();
   const initials = trimmedAssignee.length > 0 ? getInitials(trimmedAssignee) : '';
   const criticalColor = dark ? 'var(--color-brand)' : 'var(--color-critical-strong)';
@@ -163,28 +163,12 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
               {title || 'Sem título'}
             </span>
           </div>
-          {(statusInfo || initials) && (
+          {(status != null || trimmedAssignee.length > 0) && (
             <div
-              className="mt-2.5 flex items-center gap-2.5 border-t pt-2.5"
-              style={{ borderColor: dividerColor }}
+              className="mt-2.5 border-t pt-2.5"
+              style={{ borderColor: dividerColor, color: effectiveText }}
             >
-              {statusInfo && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold leading-none"
-                  style={{ color: effectiveText }}
-                >
-                  <span
-                    className="h-[7px] w-[7px] shrink-0 rounded-full"
-                    style={{ backgroundColor: statusInfo.color }}
-                  />
-                  {statusInfo.label}
-                </span>
-              )}
-              {initials && (
-                <span className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold leading-none text-primary-foreground/80">
-                  {initials}
-                </span>
-              )}
+              <NodeTaskIndicators node={{ ...node, status, assignee: trimmedAssignee || null, isCritical }} />
             </div>
           )}
         </div>
