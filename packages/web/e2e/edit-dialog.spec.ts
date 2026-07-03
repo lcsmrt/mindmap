@@ -7,7 +7,8 @@ async function openFirstMap(page: import('@playwright/test').Page) {
 }
 
 async function openEditDialog(page: import('@playwright/test').Page) {
-  const node = page.locator('[data-testid="mind-node"]').first();
+  // M16: raiz ignora cor de usuário — usamos o segundo nó (branch) para testes de cor.
+  const node = page.locator('[data-testid="mind-node"]').nth(1);
   // T10: a toolbar (incluindo "Editar nó") é revelada apenas no hover.
   await node.hover();
   const editBtn = node.getByTitle('Editar nó');
@@ -20,7 +21,7 @@ test.describe('dialog de edição e cores (M5)', () => {
   test('clicar no botão Palette abre dialog com título correto', async ({ page }) => {
     await openFirstMap(page);
 
-    const node = page.locator('[data-testid="mind-node"]').first();
+    const node = page.locator('[data-testid="mind-node"]').nth(1);
     const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
@@ -34,7 +35,7 @@ test.describe('dialog de edição e cores (M5)', () => {
   test('editar título no dialog atualiza nó no canvas', async ({ page }) => {
     await openFirstMap(page);
 
-    const node = page.locator('[data-testid="mind-node"]').first();
+    const node = page.locator('[data-testid="mind-node"]').nth(1);
     const titleSpan = node.locator('[data-testid="node-title"]');
     const originalTitle = await titleSpan.textContent();
 
@@ -67,7 +68,7 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     await page.keyboard.press('Escape');
 
-    const node = page.locator('[data-testid="mind-node"]').first();
+    const node = page.locator('[data-testid="mind-node"]').nth(1);
     const nodeDiv = node.locator('div').first();
     // T11: paleta realinhada — "Vermelho claro" agora é #f4b8b8.
     await expect(nodeDiv).toHaveCSS('background-color', 'rgb(244, 184, 184)', { timeout: 3_000 });
@@ -90,7 +91,7 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     await page.keyboard.press('Escape');
 
-    const node = page.locator('[data-testid="mind-node"]').first();
+    const node = page.locator('[data-testid="mind-node"]').nth(1);
     const nodeDiv = node.locator('div').first();
     // T11: paleta de texto realinhada — "Vermelho" agora é #e23b3b.
     await expect(nodeDiv).toHaveCSS('color', 'rgb(226, 59, 59)', { timeout: 3_000 });
@@ -118,7 +119,7 @@ test.describe('dialog de edição e cores (M5)', () => {
     await page.reload();
     await expect(page.locator('[data-testid="mind-node"]').first()).toBeVisible({ timeout: 10_000 });
 
-    const node = page.locator('[data-testid="mind-node"]').first();
+    const node = page.locator('[data-testid="mind-node"]').nth(1);
     const nodeDiv = node.locator('div').first();
     // T11: "Azul claro" agora é #bcd0f2.
     await expect(nodeDiv).toHaveCSS('background-color', 'rgb(188, 208, 242)', { timeout: 3_000 });
@@ -144,11 +145,10 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     await page.keyboard.press('Escape');
 
-    const node = page.locator('[data-testid="mind-node"]').first();
+    const node = page.locator('[data-testid="mind-node"]').nth(1);
     const nodeDiv = node.locator('div').first();
-    // T11/reskin: o "Padrão" grava bgColor=null e o card volta ao tom escuro
-    // padrão do estudo (DEFAULT_BG = #1c1c22), não mais a um fundo vazio.
-    await expect(nodeDiv).toHaveCSS('background-color', 'rgb(28, 28, 34)', { timeout: 3_000 });
+    // M16: DEFAULT_BG = #19181c = rgb(25, 24, 28).
+    await expect(nodeDiv).toHaveCSS('background-color', 'rgb(25, 24, 28)', { timeout: 3_000 });
   });
 
   test('fechar dialog via Escape funciona sem efeito colateral', async ({ page }) => {

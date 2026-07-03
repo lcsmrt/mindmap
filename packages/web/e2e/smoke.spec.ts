@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('app carrega a home com lista de mapas', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/mindmap/i);
+  await expect(page).toHaveTitle(/kaos/i);
   await expect(page.getByRole('heading', { name: 'Meus Mapas' })).toBeVisible();
 });
 

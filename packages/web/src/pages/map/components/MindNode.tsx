@@ -11,7 +11,7 @@ interface MindNodeProps {
   data: MindNodeData;
 }
 
-const DEFAULT_BG = 'var(--color-node-root)';
+const DEFAULT_BG = '#19181c';
 
 interface CardSkin {
   background: string;
@@ -31,23 +31,23 @@ interface CardSkin {
 
 function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
   const background = bgColor ?? DEFAULT_BG;
-  const text = textColor ?? autoTextColor(bgColor ?? '#19181c');
-  const dark = isDarkBg(bgColor ?? '#19181c');
+  const text = textColor ?? autoTextColor(bgColor ?? DEFAULT_BG);
+  const dark = isDarkBg(bgColor ?? DEFAULT_BG);
   return dark
     ? {
         background,
         text,
-        border: 'var(--color-node-root-border)',
+        border: '#38353f',
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
-        critical: 'var(--color-brand)',
+        critical: '#c4151f',
         divider: 'rgba(255,255,255,.14)',
-        toolbarBg: 'var(--color-node-toolbar)',
-        toolBtn: 'var(--color-muted-foreground)',
-        toolBtnHoverBg: 'var(--color-node-toolbar-hover)',
+        toolbarBg: 'rgba(38,36,43,.9)',
+        toolBtn: '#8a807b',
+        toolBtnHoverBg: '#2a2830',
         toolBtnHoverText: '#ffffff',
-        delBtn: 'var(--color-muted-foreground)',
+        delBtn: '#8a807b',
         delBtnHoverBg: 'rgba(160,17,27,.25)',
-        delBtnHoverText: 'var(--color-brand)',
+        delBtnHoverText: '#c4151f',
       }
     : {
         background,
@@ -128,16 +128,13 @@ function MindNodeBase({ data }: MindNodeProps) {
 
   return (
     <div
-      className="group relative flex w-full flex-col px-3.25 py-2.75 animate-sprout"
+      className="group relative flex w-full flex-col px-3.25 py-2.75"
       style={{
         backgroundColor: skin.background,
         color: skin.text,
         border: `1px solid ${skin.border}`,
         boxShadow: skin.boxShadow,
         borderRadius,
-        animationDuration: '180ms',
-        animationFillMode: 'both',
-        animationTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       }}
     >
       <div className="flex items-start gap-1.75 pr-4">
@@ -199,10 +196,9 @@ function MindNodeBase({ data }: MindNodeProps) {
       </div>
 
       <div
-        className="absolute top-2 right-2 flex gap-px rounded-[7px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+        className="group/toolbar absolute top-2 right-2 flex gap-px rounded-[7px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
         style={{
           backgroundColor: skin.toolbarBg,
-          border: `1px solid var(--color-node-toolbar-border)`,
           ['--tool-fg' as string]: skin.toolBtn,
           ['--tool-bg-h' as string]: skin.toolBtnHoverBg,
           ['--tool-fg-h' as string]: skin.toolBtnHoverText,
@@ -218,7 +214,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onAddChild();
           }}
-          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
+          className="pointer-events-none group-hover/toolbar:pointer-events-auto h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Adicionar filho"
         >
           <Plus className="w-3 h-3" />
@@ -231,7 +227,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onOpenEditDialog();
           }}
-          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
+          className="pointer-events-none group-hover/toolbar:pointer-events-auto h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Editar nó"
         >
           <Pencil className="w-3 h-3" />
@@ -245,7 +241,7 @@ function MindNodeBase({ data }: MindNodeProps) {
               e.stopPropagation();
               onDelete();
             }}
-            className="h-5.75 w-5.75 rounded-[5px] text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
+            className="pointer-events-none group-hover/toolbar:pointer-events-auto h-5.75 w-5.75 rounded-[5px] text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
             title="Excluir"
           >
             <X className="w-3 h-3" />
