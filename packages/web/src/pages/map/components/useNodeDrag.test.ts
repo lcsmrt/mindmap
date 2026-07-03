@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { NodeDto } from '@mindmap/shared';
-import type { TreeNode } from '../../../lib/tree.js';
-import { computeTreeLayout } from '../../../lib/useTreeLayout.js';
+import type { TreeNode } from '../lib/tree.js';
+import { computeTreeLayout } from '../lib/useTreeLayout.js';
 import { buildDragContext, resolveDrop } from './useNodeDrag.js';
 
 function node(id: string, overrides: Partial<NodeDto> = {}): NodeDto {

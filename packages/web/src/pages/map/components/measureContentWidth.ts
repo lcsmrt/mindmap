@@ -1,4 +1,4 @@
-import { NODE_WIDTH } from '@/lib/nodeSize.js';
+import { NODE_WIDTH } from '../lib/nodeSize.js';
 
 const FALLBACK = NODE_WIDTH * 4;
 

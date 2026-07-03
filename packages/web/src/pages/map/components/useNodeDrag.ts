@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import type { PositionedNode } from '../../../lib/useTreeLayout.js';
-import type { TreeNode } from '../../../lib/tree.js';
-import { computeSlots, nearestSlot, isOriginSlot, type Slot } from '../../../lib/slots.js';
+import type { PositionedNode } from '../lib/useTreeLayout.js';
+import type { TreeNode } from '../lib/tree.js';
+import { computeSlots, nearestSlot, isOriginSlot, type Slot } from '../lib/slots.js';
 
 // Deslocamento mínimo (em px de tela) para tratar o gesto como drag, não clique.
 const DRAG_THRESHOLD = 5;
