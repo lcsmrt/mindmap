@@ -139,6 +139,13 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ~~**`persistence.spec.ts` tem mudanças não commitadas (teste de move node):**~~ — resolvido em Q-006 (commit `ad520ec`).
 
+## Design Notes
+
+**`useMeasuredHeights` — por que o effect re-observa todos os elementos no setup (resiliência ao StrictMode):**
+
+- Files: `packages/web/src/pages/map/components/useMeasuredHeights.ts` (`useEffect`)
+- A cada (re)mount, o effect cria um novo `ResizeObserver` **e re-observa todos os elementos já registrados pelos ref callbacks** (iterando `elements.current`). Sem isso, o `ResizeObserver` criado no commit inicial seria desconectado pelo cleanup do double-invoke do `StrictMode` (mount→cleanup→mount), e os ref callbacks — que rodam só uma vez no commit — nunca recriariam o observer, deixando as alturas sem medição ao reabrir um mapa com dados cacheados. O pattern "effect é o dono do observer + re-observa no setup" é a invariante que garante a convergência do pipeline medir→layout mesmo no StrictMode.
+
 ## Dependencies at Risk
 
 ~~**`@xyflow/react` com `hideAttribution: true` exige licença paga:**~~ — resolvido: `proOptions` removido, atribuição visível.

@@ -36,8 +36,6 @@ async function deleteMapRequest(id: string): Promise<void> {
   return request<void>(`/api/maps/${id}`, { method: 'DELETE' });
 }
 
-// --- Hooks ---
-
 export const useMaps = (options?: QueryOptions<MapListResponse>) =>
   useQuery({ queryKey: ['maps'], queryFn: fetchMaps, ...options });
 

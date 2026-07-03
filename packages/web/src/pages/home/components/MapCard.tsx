@@ -29,10 +29,6 @@ const DIVISIONS: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
   { amount: Number.POSITIVE_INFINITY, unit: 'years' },
 ];
 
-/**
- * Relative label for "Editado" (e.g. "há 2 horas", "ontem").
- * Falls back to the absolute date for spans of 30 days or more.
- */
 const formatRelative = (iso: string): string => {
   const date = new Date(iso);
   const diffMs = date.getTime() - Date.now();

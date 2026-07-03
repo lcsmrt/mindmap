@@ -23,9 +23,7 @@ import { measureContentWidth } from './measureContentWidth.js';
 const SCALE_MIN = 0.1;
 const SCALE_MAX = 3;
 
-// Espessura (px de mundo) da barra de inserção do card-fantasma. Fina o bastante para
-// caber no vão entre irmãos (GAP_Y = 24) sem invadir os cards.
-const GHOST_BAR_HEIGHT = 6;
+const GHOST_BAR_HEIGHT = 6; // 6px cabe no GAP_Y=24 sem invadir cards
 
 type ZoomApi = ProvidedZoom<HTMLDivElement> & ZoomState;
 
@@ -73,10 +71,7 @@ function CanvasLayers({
   setActiveResize,
   onPersistWidth,
 }: CanvasLayersProps) {
-  // O <Zoom> do visx entrega `zoom` (com containerRef) no render-prop e exige ler
-  // toString()/transformMatrix/applyInverseToPoint e fixar containerRef durante o render —
-  // uso correto da API, mas o react-hooks/refs (v7) o trata como leitura de ref proibida.
-  /* eslint-disable react-hooks/refs */
+  /* eslint-disable react-hooks/refs -- visx entrega containerRef no render-prop; react-hooks/refs (v7) trata como leitura de ref proibida */
   const clientToWorld = useCallback(
     (clientX: number, clientY: number) => {
       const rect = zoom.containerRef.current?.getBoundingClientRect();
@@ -111,9 +106,7 @@ function CanvasLayers({
     if (r.width !== r.startWidth) onPersistWidth(r.id, r.width);
   };
 
-  // fitView: enquadra a árvore uma única vez, quando dimensões e bounds existem
-  // **e todos os nós visíveis já foram medidos** — assim enquadramos os bounds reais
-  // (altura medida), não a estimativa de 1º paint (M12-08/M12-13).
+  // aguarda allMeasured para enquadrar bounds reais, não a estimativa de 1º paint
   const fittedRef = useRef(false);
   useEffect(() => {
     if (fittedRef.current) return;
@@ -153,9 +146,7 @@ function CanvasLayers({
             <LinkHorizontal
               key={`${l.source.x},${l.source.y}-${l.target.x},${l.target.y}`}
               data={l}
-              // LinkHorizontal troca x↔y por padrão (convenção d3-tree: x=breadth,
-              // y=depth). Nossos links já são coordenadas de tela reais, então
-              // sobrescrevemos os acessores para usá-las sem inversão.
+              // LinkHorizontal troca x↔y por padrão (d3-tree); sobrescreve para usar coordenadas reais
               x={(d: { x: number; y: number }) => d.x}
               y={(d: { x: number; y: number }) => d.y}
               className="stroke-edge fill-none"
@@ -165,11 +156,7 @@ function CanvasLayers({
         </g>
       </svg>
 
-      {/* Camada de nós (HTML) — mesma matriz, origem 0 0 */}
       <div className="absolute left-0 top-0" style={{ transform, transformOrigin: '0 0' }}>
-        {/* Card-fantasma: barra de inserção no slot-alvo durante o arraste (estilo
-            MindMeister). Centrada no anchor do slot (centro vertical) e na camada acima
-            dos cards (zIndex), para não ser cortada por eles. */}
         {targetSlot && (
           <div
             className="absolute rounded-full bg-primary shadow-sm"
@@ -270,9 +257,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const [editDialogNodeId, setEditDialogNodeId] = useState<string | null>(null);
   const isMutating = useIsMutating();
 
-  // Medição do container para o <Zoom> (sem dep nova). Callback ref para medir assim que
-  // o container monta — ele só aparece depois do estado de carregamento, então um
-  // useEffect([]) não o observaria.
+  // callback ref porque o container só monta após carregamento; useEffect([]) não o observaria
   const [size, setSize] = useState({ width: 0, height: 0 });
   const observerRef = useRef<ResizeObserver | null>(null);
   const measureRef = useCallback((el: HTMLDivElement | null) => {
@@ -368,9 +353,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     return map;
   }, [data]);
 
-  // Medição real das alturas dos cards (M12): o ResizeObserver compartilhado preenche
-  // `heights`, que realimenta o layout. Largura fixa ⇒ reposicionar não muda a altura
-  // medida ⇒ sem loop medir↔layout (ver Invariante de convergência no design).
   const [activeResize, setActiveResize] = useState<ActiveResize | null>(null);
   const { heights, registerNode } = useMeasuredHeights();
   const { positioned, links, bounds } = useTreeLayout(visNodes, visEdges, heights, activeResize);
@@ -383,7 +365,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [updateNode, mapId],
   );
 
-  // Árvore visível (subárvores colapsadas já removidas) — fonte dos slots de drag.
   const visTree = useMemo(() => buildTree(visNodes), [visNodes]);
 
   const nodeById = useMemo(() => {
