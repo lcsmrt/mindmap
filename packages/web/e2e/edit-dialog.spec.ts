@@ -147,8 +147,8 @@ test.describe('dialog de edição e cores (M5)', () => {
 
     const node = page.locator('[data-testid="mind-node"]').nth(1);
     const nodeDiv = node.locator('div').first();
-    // M16: DEFAULT_BG = #19181c = rgb(25, 24, 28).
-    await expect(nodeDiv).toHaveCSS('background-color', 'rgb(25, 24, 28)', { timeout: 3_000 });
+    // DEFAULT_BG = --color-card = #201f24 = rgb(32, 31, 36): nó default combina com os cards da home.
+    await expect(nodeDiv).toHaveCSS('background-color', 'rgb(32, 31, 36)', { timeout: 3_000 });
   });
 
   test('fechar dialog via Escape funciona sem efeito colateral', async ({ page }) => {

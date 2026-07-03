@@ -3,9 +3,10 @@ export interface ColorSwatch {
   name: string;
 }
 
-/** Fundo padrão do card (nó sem cor de usuário), alinhado ao guia. Compartilhado
- * entre canvas (`cardSkin`) e o preview/contraste do dialog para evitar divergência. */
-export const DEFAULT_BG = '#19181c';
+/** Fundo padrão do card (nó sem cor de usuário) = `--color-card`, para o nó default
+ * combinar com os cards da home. Compartilhado entre canvas (`cardSkin`) e o
+ * preview/contraste do dialog para evitar divergência. */
+export const DEFAULT_BG = '#201f24';
 
 /**
  * Background palette aligned to the M10 study export ("Estudo de Nos.dc.html",

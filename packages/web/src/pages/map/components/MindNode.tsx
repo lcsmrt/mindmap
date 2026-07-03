@@ -12,16 +12,16 @@ interface MindNodeProps {
   data: MindNodeData;
 }
 
-/** Chrome fixo da toolbar do nó, alinhado ao guia. Fica sobre o canvas escuro
- * (posição `top:-23px`, acima do card), então não varia com a cor do card. */
+/** Chrome fixo da toolbar do nó. Fica sobre o canvas escuro (posição `top:-23px`,
+ * acima do card), então não varia com a cor do card. */
 const TOOLBAR = {
-  bg: '#26242b',
-  border: '#3a3742',
-  fg: '#8a807b',
-  hoverBg: '#2a2830',
-  hoverText: '#ffffff',
+  bg: 'var(--color-node-toolbar)',
+  border: 'var(--color-node-toolbar-border)',
+  fg: 'var(--color-muted-foreground)',
+  hoverBg: 'var(--color-node-toolbar-hover)',
+  hoverText: 'var(--color-primary-foreground)',
   delHoverBg: 'rgba(160,17,27,.25)',
-  delHoverText: '#c4151f',
+  delHoverText: 'var(--color-brand)',
 } as const;
 
 interface CardSkin {
@@ -41,9 +41,9 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
     ? {
         background,
         text,
-        border: '#38353f',
+        border: 'var(--color-node-root-border)',
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
-        critical: '#c4151f',
+        critical: 'var(--color-brand)',
         divider: 'rgba(255,255,255,.14)',
       }
     : {
