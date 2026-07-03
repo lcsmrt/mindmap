@@ -7,6 +7,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
+import { Button } from '@/components/ui/button.js';
+import { cn } from '@/lib/mergeClasses.js';
 import { ColorSwatchGrid } from './ColorSwatchGrid.js';
 import { StatusSelector } from './StatusSelector.js';
 import { BG_PALETTE, TEXT_PALETTE, DEFAULT_BG } from './color-palette.js';
@@ -231,20 +233,22 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
             const selected = textColor === swatch.hex;
             const aaColor = effectiveTextColor(bgColor, swatch.hex);
             return (
-              <button
+              <Button
                 key={swatch.hex ?? 'auto'}
                 type="button"
+                variant="ghost"
                 aria-label={swatch.name}
                 aria-pressed={selected}
                 onClick={() => selectTextColor(swatch.hex)}
-                className={`flex h-7 w-[34px] items-center justify-center rounded-md border border-border text-[13px] font-bold transition-shadow ${
-                  selected ? 'ring-2 ring-primary ring-offset-2' : ''
-                }`}
+                className={cn(
+                  'h-7 w-[34px] rounded-md border border-border p-0 text-[13px] font-bold',
+                  selected && 'ring-2 ring-primary ring-offset-2',
+                )}
                 style={{ backgroundColor: previewBg, color: aaColor }}
                 title={swatch.name}
               >
                 {swatch.hex === null ? <Contrast className="h-4 w-4" /> : 'Aa'}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -280,20 +284,22 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       <div className="space-y-1.5">
         <span className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">Prioridade</span>
         <div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             data-testid="critical-toggle"
             aria-pressed={isCritical}
             onClick={toggleCritical}
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
+            className={cn(
+              'h-auto gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium',
               isCritical
-                ? 'border-transparent bg-destructive text-white'
-                : 'border-border bg-background text-foreground hover:bg-muted'
-            }`}
+                ? 'border-transparent bg-destructive text-white hover:bg-destructive hover:text-white'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
           >
             <Flag className="h-3.5 w-3.5" />
             Crítico
-          </button>
+          </Button>
         </div>
       </div>
     </div>

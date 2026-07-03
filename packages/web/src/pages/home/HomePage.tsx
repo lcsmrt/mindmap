@@ -5,6 +5,8 @@ import type { MapSummary } from '@mindmap/shared';
 import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js';
 import { BrandMark } from '@/components/BrandMark.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
+import { Button } from '@/components/ui/button.js';
+import { Input } from '@/components/ui/input.js';
 import { cn } from '@/lib/mergeClasses.js';
 import { MapCard } from './components/MapCard.js';
 import { CreateMapModal } from './components/CreateMapModal.js';
@@ -70,25 +72,25 @@ export const HomePage = () => {
             <h1 className="font-heading text-[26px] font-bold tracking-[-0.02em]">Meus Mapas</h1>
             <p className="mt-[5px] font-mono text-[13px] text-fg-subtle">{countLabel}</p>
           </div>
-          <button
+          <Button
             type="button"
             data-testid="new-map-button"
             onClick={() => setCreating(true)}
-            className="flex items-center gap-2 rounded-md bg-primary px-[17px] py-[11px] text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"
+            className="h-auto gap-2 rounded-md px-[17px] py-[11px] text-sm font-semibold shadow-sm hover:bg-primary-hover"
           >
             <span className="-mt-px text-[17px] leading-none">+</span> Novo mapa
-          </button>
+          </Button>
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="flex min-w-[220px] max-w-[340px] flex-1 items-center gap-[9px] rounded-md border border-border bg-card px-[13px] py-[9px]">
             <SearchIcon />
-            <input
+            <Input
               data-testid="map-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar mapas"
-              className="w-full border-none bg-transparent text-[13.5px] text-foreground placeholder:text-fg-faint focus:outline-none"
+              className="h-auto border-none bg-transparent p-0 text-[13.5px] text-foreground placeholder:text-fg-faint focus-visible:border-transparent focus-visible:ring-0"
             />
           </div>
           <div className="flex items-center gap-[7px]" data-testid="map-sort">
@@ -96,20 +98,21 @@ export const HomePage = () => {
             {SORT_OPTIONS.map((option) => {
               const active = sort === option.value;
               return (
-                <button
+                <Button
                   key={option.value}
                   type="button"
+                  variant="ghost"
                   aria-pressed={active}
                   onClick={() => setSort(option.value)}
                   className={cn(
-                    'rounded-[8px] border px-[13px] py-2 text-[12.5px] font-medium transition-colors',
+                    'h-auto rounded-[8px] border px-[13px] py-2 text-[12.5px] font-medium',
                     active
-                      ? 'border-primary/40 bg-primary/10 text-primary'
-                      : 'border-border bg-card text-muted-foreground hover:text-foreground',
+                      ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary'
+                      : 'border-border bg-card text-muted-foreground hover:bg-card hover:text-foreground',
                   )}
                 >
                   {option.label}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -197,22 +200,23 @@ const EmptyState = ({ title, subtitle, onCreate, onClear }: EmptyStateProps) => 
       <h3 className="mb-1.5 font-heading text-base font-semibold">{title}</h3>
       <p className="mb-[18px] text-[13.5px] text-muted-foreground">{subtitle}</p>
       {onCreate && (
-        <button
+        <Button
           type="button"
           onClick={onCreate}
-          className="rounded-md bg-primary px-[18px] py-2.5 text-[13.5px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          className="h-auto rounded-md px-[18px] py-2.5 text-[13.5px] font-semibold hover:bg-primary-hover"
         >
           + Despejar o primeiro mapa
-        </button>
+        </Button>
       )}
       {onClear && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={onClear}
-          className="rounded-md border border-border px-[18px] py-2.5 text-[13.5px] font-semibold text-foreground transition-colors hover:bg-accent"
+          className="h-auto rounded-md px-[18px] py-2.5 text-[13.5px] font-semibold text-foreground hover:bg-accent"
         >
           Limpar busca
-        </button>
+        </Button>
       )}
     </div>
   </div>

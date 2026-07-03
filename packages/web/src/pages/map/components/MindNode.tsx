@@ -114,17 +114,15 @@ function MindNodeBase({ data }: MindNodeProps) {
   }
 
   const skin = cardSkin(isRoot ? null : node.bgColor, isRoot ? null : node.textColor);
-  const borderRadius = isRoot ? '0.5rem' : hasChildren ? '0.3125rem' : '0.1875rem';
 
   return (
     <div
-      className="group relative flex w-full flex-col px-3.25 py-2.75"
+      className="group relative flex w-full flex-col rounded-md px-3.25 py-2.75"
       style={{
         backgroundColor: skin.background,
         color: skin.text,
         border: `1px solid ${skin.border}`,
         boxShadow: skin.boxShadow,
-        borderRadius,
       }}
     >
       <div className="flex items-start gap-1.75 pr-4">
