@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Zoom } from '@visx/zoom';
 import type { ProvidedZoom, ZoomState } from '@visx/zoom';
 import { LinkHorizontal } from '@visx/shape';
-import { useNodes, useCreateNode, useUpdateNode, useDeleteNode, useMoveNode } from '@/api/nodes.js';
+import { useNodes, useCreateNode, useUpdateNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
@@ -17,13 +17,14 @@ import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
 import { useMeasuredHeights } from './useMeasuredHeights.js';
+import { useContainerSize } from './useContainerSize.js';
+import { useNodeEditing } from './useNodeEditing.js';
+import { GhostBar } from './GhostBar.js';
 import { clampWidth } from './clampWidth.js';
 import { measureContentWidth } from './measureContentWidth.js';
 
 const SCALE_MIN = 0.1;
 const SCALE_MAX = 3;
-
-const GHOST_BAR_HEIGHT = 6; // 6px cabe no GAP_Y=24 sem invadir cards
 
 type ZoomApi = ProvidedZoom<HTMLDivElement> & ZoomState;
 
@@ -139,7 +140,6 @@ function CanvasLayers({
       ref={zoom.containerRef as React.Ref<HTMLDivElement>}
       className="relative h-full w-full touch-none overflow-hidden cursor-grab active:cursor-grabbing"
     >
-      {/* Camada de arestas (SVG) */}
       <svg width={width} height={height} className="absolute inset-0">
         <g transform={transform}>
           {links.map((l) => (
@@ -157,20 +157,7 @@ function CanvasLayers({
       </svg>
 
       <div className="absolute left-0 top-0" style={{ transform, transformOrigin: '0 0' }}>
-        {targetSlot && (
-          <div
-            className="absolute rounded-full bg-primary shadow-sm"
-            data-testid="ghost-slot"
-            style={{
-              left: targetSlot.colX,
-              top: targetSlot.anchorY - GHOST_BAR_HEIGHT / 2,
-              width: targetSlot.colWidth,
-              height: GHOST_BAR_HEIGHT,
-              pointerEvents: 'none',
-              zIndex: 20,
-            }}
-          />
-        )}
+        <GhostBar targetSlot={targetSlot} />
         {positioned.map((p) => {
           const data = nodeDataById.get(p.id);
           if (!data) return null;
@@ -252,46 +239,32 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useNodes(mapId);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<NodeDto | null>(null);
-  const [editDialogNodeId, setEditDialogNodeId] = useState<string | null>(null);
   const isMutating = useIsMutating();
 
-  // callback ref porque o container só monta após carregamento; useEffect([]) não o observaria
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const observerRef = useRef<ResizeObserver | null>(null);
-  const measureRef = useCallback((el: HTMLDivElement | null) => {
-    observerRef.current?.disconnect();
-    if (!el) {
-      observerRef.current = null;
-      return;
-    }
-    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight });
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    observerRef.current = observer;
-  }, []);
+  const { size, measureRef } = useContainerSize();
+
+  const { mutate: updateNode } = useUpdateNode();
+  const { mutate: moveNode } = useMoveNode();
+
+  const {
+    editingId,
+    setEditingId,
+    deleteTarget,
+    setDeleteTarget,
+    editDialogNodeId,
+    setEditDialogNodeId,
+    handleStartEdit,
+    handleSubmitEdit,
+    handleCancelEdit,
+    handleDelete,
+    handleConfirmDelete,
+    editDialogNode,
+    handleDialogUpdate,
+  } = useNodeEditing({ mapId, nodes: data?.nodes, updateNode });
 
   const { mutate: createNode } = useCreateNode({
     onSuccess: (newNode) => setEditingId(newNode.id),
   });
-
-  const { mutate: updateNode } = useUpdateNode();
-
-  const handleStartEdit = useCallback((id: string) => setEditingId(id), []);
-
-  const handleSubmitEdit = useCallback(
-    (id: string, title: string) => {
-      setEditingId(null);
-      const trimmed = title.trim();
-      if (!trimmed) return;
-      updateNode({ id, mapId, body: { title: trimmed } });
-    },
-    [updateNode, mapId],
-  );
-
-  const handleCancelEdit = useCallback(() => setEditingId(null), []);
 
   const handleToggleCollapse = useCallback((id: string) => {
     setCollapsedIds((prev) => {
@@ -305,36 +278,11 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     });
   }, []);
 
-  const { mutate: deleteNode } = useDeleteNode();
-
-  const handleDelete = useCallback((node: NodeDto) => setDeleteTarget(node), []);
-
-  const { mutate: moveNode } = useMoveNode();
-
-  const handleConfirmDelete = useCallback(() => {
-    if (!deleteTarget) return;
-    deleteNode({ id: deleteTarget.id, mapId });
-    setDeleteTarget(null);
-  }, [deleteNode, deleteTarget, mapId]);
-
   const handleAddChild = useCallback(
     (parentId: string) => {
       createNode({ mapId, parentId, title: 'Novo nó' });
     },
     [createNode, mapId],
-  );
-
-  const editDialogNode = useMemo(
-    () => (editDialogNodeId ? (data?.nodes.find((n) => n.id === editDialogNodeId) ?? null) : null),
-    [editDialogNodeId, data],
-  );
-
-  const handleDialogUpdate = useCallback(
-    (fields: UpdateNodeBody) => {
-      if (!editDialogNodeId) return;
-      updateNode({ id: editDialogNodeId, mapId, body: fields });
-    },
-    [updateNode, editDialogNodeId, mapId],
   );
 
   const tree = useMemo(() => (data ? buildTree(data.nodes) : null), [data]);
@@ -407,6 +355,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     handleAddChild,
     handleDelete,
     handleToggleCollapse,
+    setEditDialogNodeId,
   ]);
 
   const isRoot = useCallback((id: string) => nodeById.get(id)?.parentId === null, [nodeById]);
