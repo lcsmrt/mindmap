@@ -41,7 +41,6 @@ interface NodeEditFormProps {
   onUpdateNode: (fields: UpdateNodeBody) => void;
 }
 
-/** Effective text color for rendering: `null` ("auto") derives from the bg. */
 function effectiveTextColor(bgColor: string | null, textColor: string | null): string {
   if (textColor !== null) return textColor;
   return autoTextColor(bgColor ?? '#ffffff');
@@ -60,11 +59,6 @@ const CONTRAST_ICON: Record<ContrastLevel, LucideIcon> = {
 };
 
 function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
-  // Local mirror of every editable field so the live preview, the contrast
-  // meter and the avatar reflect edits instantly. Colors/status/criticality
-  // persist immediately (optimistic); title/assignee persist on blur/Enter,
-  // preserving the existing UX. Persistence itself is unchanged — every commit
-  // still goes through `onUpdateNode`.
   const [title, setTitle] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -127,7 +121,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   }
 
   const effectiveText = effectiveTextColor(bgColor, textColor);
-  const previewBg = bgColor ?? '#1c1c22';
+  const previewBg = bgColor ?? '#19181c';
   const dark = isDarkBg(previewBg);
   const ratio = contrastRatio(previewBg, effectiveText);
   const verdict = contrastVerdict(ratio);
@@ -136,7 +130,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   const statusInfo = status != null ? statusMeta(status) : null;
   const trimmedAssignee = assignee.trim();
   const initials = trimmedAssignee.length > 0 ? getInitials(trimmedAssignee) : '';
-  const criticalColor = dark ? '#ef7b7b' : '#b01818';
+  const criticalColor = dark ? 'var(--color-brand)' : '#b01818';
   const dividerColor = dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.1)';
 
   return (
@@ -144,10 +138,10 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       {/* Pré-visualização ao vivo */}
       <div className="space-y-2">
         <div
-          className="rounded-[10px] border px-3.5 py-3"
+          className="rounded-md border px-3.5 py-3"
           style={{
             backgroundColor: previewBg,
-            borderColor: dark ? '#34343e' : 'rgba(0,0,0,.08)',
+            borderColor: dark ? 'var(--color-node-root-border)' : 'rgba(0,0,0,.08)',
           }}
         >
           <div className="flex min-w-0 items-center gap-2">
@@ -185,7 +179,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
                 </span>
               )}
               {initials && (
-                <span className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10px] font-bold leading-none text-[#cdcdf0]">
+                <span className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold leading-none text-primary-foreground/80">
                   {initials}
                 </span>
               )}
@@ -194,7 +188,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
         </div>
 
         {/* Medidor de contraste (WCAG) */}
-        <div className="flex items-center gap-1.5 text-[11.5px] font-semibold">
+        <div className="flex items-center gap-1.5 font-mono text-[11.5px] font-semibold">
           <VerdictIcon className={`h-3.5 w-3.5 ${CONTRAST_TONE[verdict.level]}`} />
           <span className={CONTRAST_TONE[verdict.level]}>{verdict.label}</span>
           <span className="font-normal text-muted-foreground">
@@ -204,7 +198,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="node-title" className="text-xs font-medium text-muted-foreground">
+        <label htmlFor="node-title" className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Título
         </label>
         <Input
@@ -226,9 +220,9 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       />
 
       <div className="space-y-1.5">
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Cor de texto{' '}
-          <span className="font-normal lowercase text-muted-foreground/70">
+          <span className="font-normal normal-case text-muted-foreground/70">
             — prévia sobre o fundo atual
           </span>
         </span>
@@ -257,16 +251,16 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <span className="text-xs font-medium text-muted-foreground">Status</span>
+        <span className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</span>
         <StatusSelector value={status} onSelect={selectStatus} />
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="node-assignee" className="text-xs font-medium text-muted-foreground">
+        <label htmlFor="node-assignee" className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Responsável
         </label>
         <div className="flex min-w-0 items-center gap-2.5 rounded-lg border border-input px-2.5 py-1 focus-within:border-ring">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10.5px] font-bold leading-none text-[#cdcdf0]">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10.5px] font-bold leading-none text-primary-foreground/80">
             {initials || '—'}
           </span>
           <Input
@@ -284,7 +278,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <span className="text-xs font-medium text-muted-foreground">Prioridade</span>
+        <span className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">Prioridade</span>
         <div>
           <button
             type="button"
