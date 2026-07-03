@@ -1,43 +1,72 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource/chakra-petch/500.css";
+@import "@fontsource/chakra-petch/600.css";
+@import "@fontsource/chakra-petch/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Geist Variable", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: var(--font-sans);
-  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "Space Grotesk Variable", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: "Chakra Petch", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
   --radius: 0.625rem;
 
-  --color-background: #1a1a1a;
-  --color-foreground: #e8e6e3;
+  /* (A) Semânticos shadcn — valores remapeados para a paleta Kaos */
+  --color-background: #0d0a09;
+  --color-foreground: #ece7e3;
 
-  --color-card: #242424;
-  --color-card-foreground: #e8e6e3;
+  --color-card: #15110f;
+  --color-card-foreground: #ece7e3;
 
-  --color-popover: #2e2e2e;
-  --color-popover-foreground: #e8e6e3;
+  --color-popover: #1b1614;
+  --color-popover-foreground: #ece7e3;
 
-  --color-primary: #6b8aff;
-  --color-primary-foreground: #1a1a1a;
+  --color-primary: #a0111b;
+  --color-primary-foreground: #ffffff;
 
-  --color-secondary: #242424;
-  --color-secondary-foreground: #e8e6e3;
+  --color-secondary: #1b1614;
+  --color-secondary-foreground: #ece7e3;
 
-  --color-muted: #242424;
-  --color-muted-foreground: #a8a4a0;
+  --color-muted: #15110f;
+  --color-muted-foreground: #8a807b;
 
-  --color-accent: #2e2e2e;
-  --color-accent-foreground: #e8e6e3;
+  --color-accent: #241c19;
+  --color-accent-foreground: #ece7e3;
 
-  --color-destructive: #e85a5a;
-  --color-destructive-foreground: #fafafa;
+  --color-destructive: #c4151f;
+  --color-destructive-foreground: #ffffff;
 
-  --color-border: #383838;
-  --color-input: #2e2e2e;
-  --color-ring: #6b8aff;
+  --color-border: #241c19;
+  --color-input: #2c2420;
+  --color-ring: #a0111b;
+
+  /* (B) Tokens Kaos próprios */
+  --color-background-glow: #1b1310;
+  --color-field: #0e0b0a;
+  --color-border-strong: #2c2420;
+  --color-border-hover: #3a2a26;
+  --color-divider: #1f1816;
+  --color-fg-subtle: #6a615c;
+  --color-fg-faint: #5c534f;
+  --color-primary-hover: #b8141f;
+  --color-brand: #c4151f;
+  --color-critical: #b0635a;
+  --color-critical-foreground: #c79a8c;
+  --color-canvas: #101012;
+  --color-canvas-dot: rgba(255, 255, 255, 0.05);
+  --color-edge: #3a363d;
+  --color-edge-muted: #33303a;
+  --color-edge-ghost: #4a4550;
+  --color-node-root: #19181c;
+  --color-node-root-border: #38353f;
+  --color-node-toolbar: #26242b;
+  --color-node-toolbar-border: #3a3742;
+  --color-node-toolbar-hover: #2a2830;
 }
 
 @layer base {
@@ -69,5 +98,40 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .canvas-grid {
+    background-color: var(--color-canvas);
+    background-image: radial-gradient(circle, var(--color-canvas-dot) 1px, transparent 1.4px);
+    background-size: 24px 24px;
+  }
+}
+
+@keyframes sprout {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes edgeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sprout,
+  .animate-edge-in {
+    animation: none !important;
   }
 }
