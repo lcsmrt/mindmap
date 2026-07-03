@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/prisma/migrations/**',
       '**/e2e/**',
       'Mindmaps system interface/**',
+      'Mindmaps system interface(2)/**',
     ],
   },
   js.configs.recommended,
