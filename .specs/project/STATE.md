@@ -264,6 +264,11 @@
 | Q-006 | Commitar teste de move em `persistence.spec.ts` (remanescente M4) | 2026-05-20 | ad520ec | concluído |
 | Q-007 | Fix foco no inline edit do MindNode (`smoke.spec.ts:9`): forwardRef no Input + ref callback | 2026-05-20 | 46773e4 | concluído |
 | Q-008 | Fix overflow do `ConfirmDialog` com palavra única gigante (`min-w-0` no header + `break-words`); achado em uso pós-M12, verificado por screenshot | 2026-06-25 | aee4a2b | concluído |
+| Q-009 | Rename inline do card da home fecha ao confirmar (`onCancel`→`onClose`, `finally`); bug pré-existente da review AD-013 de M10 | 2026-07-02 | 4c0f2e4 | concluído |
+| Q-010 | Poda `refCallbacks` no unregister do `useMeasuredHeights` (micro-leak da review AD-013 de M12) | 2026-07-02 | 4ceb8e6 | concluído |
+| Q-011 | Endurece gesto de resize: `onPointerCancel` + persistência via `resizeRef` (não closure) + assert e2e `width>180` (findings da review AD-013 de M15) | 2026-07-02 | ba969ff | concluído |
+| Q-012 | Cobre `width` não-inteiro (400) e nó-novo-`null` no PATCH/POST (gap da review AD-013 de M15); api 61→63 | 2026-07-02 | ed9c7ce | concluído |
+| Q-013 | Torna e2e "mover nó" robusto: cria filhos via API + cleanup, elimina `.first()` frágil (Known Bug `persistence.spec.ts:136`, L-003) | 2026-07-02 | ec2800e | concluído |
 
 ---
 
