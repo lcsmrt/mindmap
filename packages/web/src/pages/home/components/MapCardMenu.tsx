@@ -7,17 +7,13 @@ type MapCardMenuProps = {
   className?: string;
 };
 
-/**
- * Card overflow menu ("⋯") with Renomear / Excluir actions.
- * Trigger click is stopped from propagating to the card body by the parent MapCard.
- */
 export const MapCardMenu = ({ onRename, onDelete, className }: MapCardMenuProps) => {
   return (
     <Menu>
       <MenuTrigger
         aria-label="Ações do mapa"
         className={cn(
-          'flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] text-base leading-none text-[#7a7a83] outline-none transition-colors hover:bg-[#26262d] hover:text-[#cfcfd6] aria-expanded:bg-[#26262d] aria-expanded:text-[#cfcfd6]',
+          'flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md text-base leading-none text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground',
           className,
         )}
       >

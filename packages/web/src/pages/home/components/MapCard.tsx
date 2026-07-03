@@ -11,7 +11,6 @@ type MapCardProps = {
   className?: string;
 };
 
-// Absolute date, consistent with HomePage's formatter (locale pt-BR).
 const dateFmt = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: 'short',
@@ -69,7 +68,7 @@ export const MapCard = ({ map, onOpen, onRename, onDelete, className }: MapCardP
         }
       }}
       className={cn(
-        'relative cursor-pointer rounded-[14px] border border-[#26262d] bg-[#17171c] px-4 pt-4 pb-[14px] outline-none transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-[#3a3a55] focus-visible:border-[#3a3a55]',
+        'relative cursor-pointer rounded-md border border-border bg-card px-4 pt-4 pb-[14px] outline-none transition-[border-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-border-hover hover:shadow-[0_4px_24px_rgba(0,0,0,.4)] focus-visible:border-border-hover',
         className,
       )}
     >
@@ -87,19 +86,19 @@ export const MapCard = ({ map, onOpen, onRename, onDelete, className }: MapCardP
       </div>
 
       <div className="mb-[11px] flex items-center justify-between gap-2">
-        <span className="font-mono text-[11.5px] text-[#8a8a93]">{nodesLabel}</span>
+        <span className="font-mono text-[11.5px] text-muted-foreground">{nodesLabel}</span>
         {map.criticalCount > 0 && (
           <span
             title="Nós com prioridade alta"
-            className="inline-flex items-center gap-[5px] rounded-full bg-[rgba(224,91,91,0.13)] px-2 py-[3px] text-[11px] font-semibold text-[#ef7b7b]"
+            className="inline-flex items-center gap-[5px] rounded-full bg-primary/10 px-2 py-[3px] font-mono text-[11px] font-semibold text-critical-foreground"
           >
-            <span className="h-[5px] w-[5px] rounded-full bg-[#ef7b7b]" />
+            <span className="h-[5px] w-[5px] rounded-full bg-critical" />
             {criticalLabel}
           </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-[#222228] pt-[11px] text-[11.5px] text-[#62626b]">
+      <div className="flex items-center justify-between gap-2 border-t border-divider pt-[11px] font-mono text-[11.5px] text-fg-subtle">
         <span>Criado {dateFmt.format(new Date(map.createdAt))}</span>
         <span>Editado {formatRelative(map.updatedAt)}</span>
       </div>

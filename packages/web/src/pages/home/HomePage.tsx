@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { MapSummary } from '@mindmap/shared';
 
 import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js';
+import { BrandMark } from '@/components/BrandMark.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import { cn } from '@/lib/mergeClasses.js';
 import { MapCard } from './components/MapCard.js';
@@ -34,10 +35,10 @@ export const HomePage = () => {
   });
 
   if (isLoading) {
-    return <p className="p-6 text-[#7a7a83]">Carregando…</p>;
+    return <p className="p-6 text-muted-foreground">Carregando…</p>;
   }
   if (isError) {
-    return <p className="p-6 text-[#ef7b7b]">Erro ao carregar mapas</p>;
+    return <p className="p-6 text-destructive">Erro ao carregar mapas</p>;
   }
 
   const maps = data?.maps ?? [];
@@ -49,45 +50,54 @@ export const HomePage = () => {
   const noResults = total > 0 && visibleMaps.length === 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[radial-gradient(120%_80%_at_50%_-10%,#18181d_0%,#111114_55%)] text-[#e7e7ea]">
-      <header className="flex items-center justify-between border-b border-[#232329] px-8 py-[18px]">
-        <div className="flex items-center gap-[11px]">
-          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-[linear-gradient(140deg,#7c7cf0,#5b5be0)] shadow-[0_2px_10px_rgba(99,99,230,0.35)]">
-            <div className="h-[7px] w-[7px] rounded-full bg-white" />
+    <div
+      className="flex min-h-screen flex-col text-foreground"
+      style={{
+        background: `radial-gradient(120% 80% at 50% -10%, var(--color-background-glow) 0%, var(--color-background) 55%)`,
+      }}
+    >
+      <header className="flex items-center justify-between border-b border-border px-8 py-[18px]">
+        <div className="flex items-center gap-3">
+          <BrandMark size={28} glow />
+          <div className="flex items-center gap-2">
+            <span className="font-heading text-base font-bold tracking-[0.12em] uppercase">
+              KAOS
+            </span>
+            <span className="h-4 w-px bg-border" />
+            <span className="font-mono text-xs text-fg-subtle">mapas mentais</span>
           </div>
-          <span className="text-base font-bold tracking-[-0.01em]">Mapas mentais</span>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1080px] flex-1 px-8 pt-10 pb-16">
         <div className="mb-[26px] flex items-end justify-between gap-5">
           <div>
-            <h1 className="text-[26px] font-bold tracking-[-0.02em]">Meus Mapas</h1>
-            <p className="mt-[5px] text-[13.5px] text-[#7a7a83]">{countLabel}</p>
+            <h1 className="font-heading text-[26px] font-bold tracking-[-0.02em]">Meus Mapas</h1>
+            <p className="mt-[5px] font-mono text-[13px] text-fg-subtle">{countLabel}</p>
           </div>
           <button
             type="button"
             data-testid="new-map-button"
             onClick={() => setCreating(true)}
-            className="flex items-center gap-2 rounded-[10px] bg-[#5b5be0] px-[17px] py-[11px] text-sm font-semibold text-white shadow-[0_4px_14px_rgba(91,91,224,0.32)] transition-colors hover:bg-[#6a6aeb]"
+            className="flex items-center gap-2 rounded-md bg-primary px-[17px] py-[11px] text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"
           >
             <span className="-mt-px text-[17px] leading-none">+</span> Novo mapa
           </button>
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="flex min-w-[220px] max-w-[340px] flex-1 items-center gap-[9px] rounded-[10px] border border-[#2a2a31] bg-[#1a1a1f] px-[13px] py-[9px]">
+          <div className="flex min-w-[220px] max-w-[340px] flex-1 items-center gap-[9px] rounded-md border border-border bg-card px-[13px] py-[9px]">
             <SearchIcon />
             <input
               data-testid="map-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar mapas"
-              className="w-full border-none bg-transparent text-[13.5px] text-[#e7e7ea] placeholder:text-[#5a5a63] focus:outline-none"
+              className="w-full border-none bg-transparent text-[13.5px] text-foreground placeholder:text-fg-faint focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-[7px]" data-testid="map-sort">
-            <span className="mr-0.5 text-xs text-[#62626b]">Ordenar:</span>
+            <span className="mr-0.5 font-mono text-xs text-fg-faint">Ordenar:</span>
             {SORT_OPTIONS.map((option) => {
               const active = sort === option.value;
               return (
@@ -99,8 +109,8 @@ export const HomePage = () => {
                   className={cn(
                     'rounded-[8px] border px-[13px] py-2 text-[12.5px] font-medium transition-colors',
                     active
-                      ? 'border-[#42426e] bg-[#26264a] text-[#b9b9f4]'
-                      : 'border-[#2a2a31] bg-[#1a1a1f] text-[#9a9aa3] hover:text-[#cfcfd6]',
+                      ? 'border-primary/40 bg-primary/10 text-primary'
+                      : 'border-border bg-card text-muted-foreground hover:text-foreground',
                   )}
                 >
                   {option.label}
@@ -113,13 +123,14 @@ export const HomePage = () => {
         {noMapsAtAll ? (
           <EmptyState
             title="Nenhum mapa ainda"
-            subtitle="Crie seu primeiro mapa mental para organizar suas ideias."
+            subtitle="Despejar o primeiro mapa para começar."
             onCreate={() => setCreating(true)}
           />
         ) : noResults ? (
           <EmptyState
             title="Nada encontrado"
             subtitle="Tente outro termo de busca."
+            onClear={() => setQuery('')}
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -127,7 +138,7 @@ export const HomePage = () => {
               renamingId === map.id ? (
                 <div
                   key={map.id}
-                  className="rounded-[14px] border border-[#3a3a55] bg-[#17171c] px-4 py-4"
+                  className="rounded-md border border-border bg-card px-4 py-4"
                 >
                   <RenameMapInput
                     initialTitle={map.title}
@@ -170,8 +181,8 @@ export const HomePage = () => {
 };
 
 const SearchIcon = () => (
-  <div className="relative h-[14px] w-[14px] shrink-0 rounded-full border-[1.6px] border-[#6b6b74]">
-    <div className="absolute -right-1 -bottom-0.5 h-[1.6px] w-[6px] rotate-45 rounded-[2px] bg-[#6b6b74]" />
+  <div className="relative h-[14px] w-[14px] shrink-0 rounded-full border-[1.6px] border-muted-foreground">
+    <div className="absolute -right-1 -bottom-0.5 h-[1.6px] w-[6px] rotate-45 rounded-[2px] bg-muted-foreground" />
   </div>
 );
 
@@ -179,23 +190,35 @@ type EmptyStateProps = {
   title: string;
   subtitle: string;
   onCreate?: () => void;
+  onClear?: () => void;
 };
 
-const EmptyState = ({ title, subtitle, onCreate }: EmptyStateProps) => (
-  <div className="rounded-[16px] border border-dashed border-[#2c2c33] bg-[#15151a] px-5 py-[72px] text-center">
-    <div className="mx-auto mb-4 flex h-[46px] w-[46px] items-center justify-center rounded-[13px] border border-[#2e2e36] bg-[#1f1f26]">
-      <div className="h-2 w-2 rounded-full bg-[#5b5be0]" />
+const EmptyState = ({ title, subtitle, onCreate, onClear }: EmptyStateProps) => (
+  <div className="relative overflow-hidden rounded-xl border border-dashed border-border bg-card px-5 py-[72px] text-center">
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <BrandMark size={220} className="opacity-[0.04]" />
     </div>
-    <h3 className="mb-1.5 text-base font-semibold">{title}</h3>
-    <p className="mb-[18px] text-[13.5px] text-[#7a7a83]">{subtitle}</p>
-    {onCreate && (
-      <button
-        type="button"
-        onClick={onCreate}
-        className="rounded-[10px] bg-[#5b5be0] px-[18px] py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#6a6aeb]"
-      >
-        + Criar primeiro mapa
-      </button>
-    )}
+    <div className="relative">
+      <h3 className="mb-1.5 font-heading text-base font-semibold">{title}</h3>
+      <p className="mb-[18px] text-[13.5px] text-muted-foreground">{subtitle}</p>
+      {onCreate && (
+        <button
+          type="button"
+          onClick={onCreate}
+          className="rounded-md bg-primary px-[18px] py-2.5 text-[13.5px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+        >
+          + Despejar o primeiro mapa
+        </button>
+      )}
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="rounded-md border border-border px-[18px] py-2.5 text-[13.5px] font-semibold text-foreground transition-colors hover:bg-accent"
+        >
+          Limpar busca
+        </button>
+      )}
+    </div>
   </div>
 );
