@@ -43,22 +43,17 @@ export function useMeasuredHeights(): MeasuredHeights {
   const refCallbacks = useRef(new Map<string, (el: HTMLElement | null) => void>());
   const observerRef = useRef<ResizeObserver | null>(null);
 
-  const getObserver = useCallback((): ResizeObserver | null => {
-    if (!observerRef.current && typeof ResizeObserver !== 'undefined') {
-      observerRef.current = new ResizeObserver((entries) => {
-        setHeights((prev) => {
-          let acc = prev;
-          for (const entry of entries) {
-            const id = (entry.target as HTMLElement).dataset.nodeId;
-            if (!id) continue;
-            const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
-            acc = nextHeights(acc, id, h);
-          }
-          return acc;
-        });
-      });
-    }
-    return observerRef.current;
+  const handleEntries = useCallback((entries: ResizeObserverEntry[]) => {
+    setHeights((prev) => {
+      let acc = prev;
+      for (const entry of entries) {
+        const id = (entry.target as HTMLElement).dataset.nodeId;
+        if (!id) continue;
+        const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+        acc = nextHeights(acc, id, h);
+      }
+      return acc;
+    });
   }, []);
 
   const registerNode = useCallback(
@@ -67,13 +62,14 @@ export function useMeasuredHeights(): MeasuredHeights {
       if (existing) return existing;
 
       const cb = (el: HTMLElement | null) => {
-        const observer = getObserver();
         const prevEl = elements.current.get(id);
-        if (prevEl) observer?.unobserve(prevEl);
+        if (prevEl) observerRef.current?.unobserve(prevEl);
 
         if (el) {
           elements.current.set(id, el);
-          observer?.observe(el);
+          // observerRef pode ser null no commit (o effect que o cria roda depois) —
+          // nesse caso o effect abaixo observa este elemento no setup.
+          observerRef.current?.observe(el);
         } else {
           elements.current.delete(id);
           refCallbacks.current.delete(id);
@@ -88,19 +84,25 @@ export function useMeasuredHeights(): MeasuredHeights {
       refCallbacks.current.set(id, cb);
       return cb;
     },
-    [getObserver],
+    [],
   );
 
-  // Desconecta no unmount. Zera o ref para que um remount (StrictMode) recrie o
-  // observer de forma lazy quando os refs dos nós reanexarem.
+  // O effect é o dono do observer: a cada (re)mount cria um novo e RE-OBSERVA todos
+  // os elementos já registrados pelos ref callbacks. Isso torna o hook resiliente ao
+  // double-invoke do StrictMode (mount→cleanup→mount dos effects): sem a re-observação
+  // aqui, o observer criado no commit inicial seria desconectado pelo cleanup e os
+  // ref callbacks — que rodam só uma vez no commit — nunca o recriariam, deixando as
+  // alturas sem serem medidas ao reabrir um mapa com dados já cacheados.
   useEffect(() => {
-    const els = elements.current;
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(handleEntries);
+    observerRef.current = observer;
+    for (const el of elements.current.values()) observer.observe(el);
     return () => {
-      observerRef.current?.disconnect();
+      observer.disconnect();
       observerRef.current = null;
-      els.clear();
     };
-  }, []);
+  }, [handleEntries]);
 
   return { heights, registerNode };
 }
