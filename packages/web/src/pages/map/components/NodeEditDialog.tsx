@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Flag, Triangle, Check, CircleAlert, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { Flag, Triangle, Check, CircleAlert, TriangleAlert, Contrast, type LucideIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 import { Input } from '@/components/ui/input.js';
 import { ColorSwatchGrid } from './ColorSwatchGrid.js';
 import { StatusSelector } from './StatusSelector.js';
-import { BG_PALETTE, TEXT_PALETTE } from './color-palette.js';
+import { BG_PALETTE, TEXT_PALETTE, DEFAULT_BG } from './color-palette.js';
 import { statusMeta, getInitials } from './task-meta.js';
 import { autoTextColor, contrastRatio, contrastVerdict, isDarkBg } from './contrast.js';
 import type { ContrastLevel } from './contrast.js';
@@ -43,7 +43,7 @@ interface NodeEditFormProps {
 
 function effectiveTextColor(bgColor: string | null, textColor: string | null): string {
   if (textColor !== null) return textColor;
-  return autoTextColor(bgColor ?? '#ffffff');
+  return autoTextColor(bgColor ?? DEFAULT_BG);
 }
 
 const CONTRAST_TONE: Record<ContrastLevel, string> = {
@@ -121,7 +121,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   }
 
   const effectiveText = effectiveTextColor(bgColor, textColor);
-  const previewBg = bgColor ?? '#19181c';
+  const previewBg = bgColor ?? DEFAULT_BG;
   const dark = isDarkBg(previewBg);
   const ratio = contrastRatio(previewBg, effectiveText);
   const verdict = contrastVerdict(ratio);
@@ -243,7 +243,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
                 style={{ backgroundColor: previewBg, color: aaColor }}
                 title={swatch.name}
               >
-                Aa
+                {swatch.hex === null ? <Contrast className="h-4 w-4" /> : 'Aa'}
               </button>
             );
           })}

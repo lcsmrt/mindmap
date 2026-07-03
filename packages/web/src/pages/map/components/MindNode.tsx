@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input.js';
 import { ChevronDown, ChevronRight, Pencil, Plus, Triangle, X } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { autoTextColor, isDarkBg } from './contrast.js';
+import { DEFAULT_BG } from './color-palette.js';
 import { NodeTaskIndicators } from './NodeTaskIndicators.js';
 import { hasTaskProps } from './task-meta.js';
 import type { MindNodeData } from './types.js';
@@ -11,7 +12,17 @@ interface MindNodeProps {
   data: MindNodeData;
 }
 
-const DEFAULT_BG = '#19181c';
+/** Chrome fixo da toolbar do nó, alinhado ao guia. Fica sobre o canvas escuro
+ * (posição `top:-23px`, acima do card), então não varia com a cor do card. */
+const TOOLBAR = {
+  bg: '#26242b',
+  border: '#3a3742',
+  fg: '#8a807b',
+  hoverBg: '#2a2830',
+  hoverText: '#ffffff',
+  delHoverBg: 'rgba(160,17,27,.25)',
+  delHoverText: '#c4151f',
+} as const;
 
 interface CardSkin {
   background: string;
@@ -20,13 +31,6 @@ interface CardSkin {
   boxShadow: string;
   critical: string;
   divider: string;
-  toolbarBg: string;
-  toolBtn: string;
-  toolBtnHoverBg: string;
-  toolBtnHoverText: string;
-  delBtn: string;
-  delBtnHoverBg: string;
-  delBtnHoverText: string;
 }
 
 function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
@@ -41,13 +45,6 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
         critical: '#c4151f',
         divider: 'rgba(255,255,255,.14)',
-        toolbarBg: 'rgba(38,36,43,.9)',
-        toolBtn: '#8a807b',
-        toolBtnHoverBg: '#2a2830',
-        toolBtnHoverText: '#ffffff',
-        delBtn: '#8a807b',
-        delBtnHoverBg: 'rgba(160,17,27,.25)',
-        delBtnHoverText: '#c4151f',
       }
     : {
         background,
@@ -56,13 +53,6 @@ function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
         boxShadow: '0 3px 14px rgba(0,0,0,.25)',
         critical: '#b01818',
         divider: 'rgba(0,0,0,.1)',
-        toolbarBg: 'rgba(0,0,0,.1)',
-        toolBtn: 'rgba(0,0,0,.5)',
-        toolBtnHoverBg: 'rgba(0,0,0,.1)',
-        toolBtnHoverText: '#000000',
-        delBtn: 'rgba(0,0,0,.5)',
-        delBtnHoverBg: 'rgba(198,40,40,.18)',
-        delBtnHoverText: '#a01919',
       };
 }
 
@@ -182,7 +172,7 @@ function MindNodeBase({ data }: MindNodeProps) {
           ) : (
             <span
               data-testid="node-title"
-              className="block break-words cursor-text text-sm font-semibold tracking-[-0.01em]"
+              className="block w-fit max-w-full break-words cursor-text text-sm font-semibold tracking-[-0.01em]"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
@@ -196,15 +186,17 @@ function MindNodeBase({ data }: MindNodeProps) {
       </div>
 
       <div
-        className="group/toolbar absolute top-2 right-2 flex gap-px rounded-[7px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+        className="group/toolbar absolute -top-[23px] right-0.5 flex gap-px rounded-[5px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
         style={{
-          backgroundColor: skin.toolbarBg,
-          ['--tool-fg' as string]: skin.toolBtn,
-          ['--tool-bg-h' as string]: skin.toolBtnHoverBg,
-          ['--tool-fg-h' as string]: skin.toolBtnHoverText,
-          ['--del-fg' as string]: skin.delBtn,
-          ['--del-bg-h' as string]: skin.delBtnHoverBg,
-          ['--del-fg-h' as string]: skin.delBtnHoverText,
+          backgroundColor: TOOLBAR.bg,
+          border: `1px solid ${TOOLBAR.border}`,
+          boxShadow: '0 8px 20px rgba(0,0,0,.6)',
+          ['--tool-fg' as string]: TOOLBAR.fg,
+          ['--tool-bg-h' as string]: TOOLBAR.hoverBg,
+          ['--tool-fg-h' as string]: TOOLBAR.hoverText,
+          ['--del-fg' as string]: TOOLBAR.fg,
+          ['--del-bg-h' as string]: TOOLBAR.delHoverBg,
+          ['--del-fg-h' as string]: TOOLBAR.delHoverText,
         }}
       >
         <Button
@@ -214,7 +206,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onAddChild();
           }}
-          className="pointer-events-none group-hover/toolbar:pointer-events-auto h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
+          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Adicionar filho"
         >
           <Plus className="w-3 h-3" />
@@ -227,7 +219,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onOpenEditDialog();
           }}
-          className="pointer-events-none group-hover/toolbar:pointer-events-auto h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
+          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Editar nó"
         >
           <Pencil className="w-3 h-3" />
@@ -241,7 +233,7 @@ function MindNodeBase({ data }: MindNodeProps) {
               e.stopPropagation();
               onDelete();
             }}
-            className="pointer-events-none group-hover/toolbar:pointer-events-auto h-5.75 w-5.75 rounded-[5px] text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
+            className="h-5.75 w-5.75 rounded-[5px] text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
             title="Excluir"
           >
             <X className="w-3 h-3" />

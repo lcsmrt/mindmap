@@ -88,8 +88,14 @@ function CanvasLayers({
     [zoom],
   );
 
-  const { onNodePointerDown, onNodePointerMove, onNodePointerUp, draggingId, ghostOffset, targetSlot } =
-    useNodeDrag({ positioned, tree, clientToWorld, onPlace, onInvalidDrop, isRoot });
+  const {
+    onNodePointerDown,
+    onNodePointerMove,
+    onNodePointerUp,
+    draggingId,
+    ghostOffset,
+    targetSlot,
+  } = useNodeDrag({ positioned, tree, clientToWorld, onPlace, onInvalidDrop, isRoot });
 
   const resizeRef = useRef<{
     id: string;
@@ -120,7 +126,14 @@ function CanvasLayers({
     );
     const translateX = (width - bounds.width * scale) / 2 - bounds.minX * scale;
     const translateY = (height - bounds.height * scale) / 2 - bounds.minY * scale;
-    zoom.setTransformMatrix({ scaleX: scale, scaleY: scale, translateX, translateY, skewX: 0, skewY: 0 });
+    zoom.setTransformMatrix({
+      scaleX: scale,
+      scaleY: scale,
+      translateX,
+      translateY,
+      skewX: 0,
+      skewY: 0,
+    });
     fittedRef.current = true;
   }, [width, height, bounds, zoom, allMeasured]);
 
@@ -131,7 +144,7 @@ function CanvasLayers({
     <div
       // visx tipa o ref como RefObject<T | null>; o ref de div do React 18 espera T não-nulo.
       ref={zoom.containerRef as React.Ref<HTMLDivElement>}
-      className="relative h-full w-full touch-none overflow-hidden canvas-grid cursor-grab active:cursor-grabbing"
+      className="relative h-full w-full touch-none overflow-hidden cursor-grab active:cursor-grabbing"
     >
       {/* Camada de arestas (SVG) */}
       <svg width={width} height={height} className="absolute inset-0">
@@ -153,10 +166,7 @@ function CanvasLayers({
       </svg>
 
       {/* Camada de nós (HTML) — mesma matriz, origem 0 0 */}
-      <div
-        className="absolute left-0 top-0"
-        style={{ transform, transformOrigin: '0 0' }}
-      >
+      <div className="absolute left-0 top-0" style={{ transform, transformOrigin: '0 0' }}>
         {/* Card-fantasma: barra de inserção no slot-alvo durante o arraste (estilo
             MindMeister). Centrada no anchor do slot (centro vertical) e na camada acima
             dos cards (zIndex), para não ser cortada por eles. */}
@@ -217,7 +227,9 @@ function CanvasLayers({
                 if (resizeRef.current?.id === p.id) {
                   const { startClientX, startWidth, ceiling } = resizeRef.current;
                   const worldDx = (e.clientX - startClientX) / scale;
-                  const width = Math.round(clampWidth(startWidth, worldDx, MIN_NODE_WIDTH, ceiling));
+                  const width = Math.round(
+                    clampWidth(startWidth, worldDx, MIN_NODE_WIDTH, ceiling),
+                  );
                   resizeRef.current.width = width;
                   setActiveResize({ id: p.id, width });
                 } else {
@@ -328,7 +340,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
   );
 
   const editDialogNode = useMemo(
-    () => (editDialogNodeId ? data?.nodes.find((n) => n.id === editDialogNodeId) ?? null : null),
+    () => (editDialogNodeId ? (data?.nodes.find((n) => n.id === editDialogNodeId) ?? null) : null),
     [editDialogNodeId, data],
   );
 
@@ -416,10 +428,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     handleToggleCollapse,
   ]);
 
-  const isRoot = useCallback(
-    (id: string) => nodeById.get(id)?.parentId === null,
-    [nodeById],
-  );
+  const isRoot = useCallback((id: string) => nodeById.get(id)?.parentId === null, [nodeById]);
 
   const handlePlace = useCallback(
     (draggedId: string, slot: Slot) => {
@@ -439,7 +448,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center canvas-grid">
+      <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-foreground">Carregando nós…</p>
       </div>
     );
@@ -447,7 +456,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   if (isError) {
     return (
-      <div className="flex flex-1 items-center justify-center canvas-grid">
+      <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-foreground">Erro ao carregar nós</p>
       </div>
     );

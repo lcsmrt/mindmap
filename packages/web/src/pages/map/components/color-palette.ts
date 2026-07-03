@@ -3,6 +3,10 @@ export interface ColorSwatch {
   name: string;
 }
 
+/** Fundo padrão do card (nó sem cor de usuário), alinhado ao guia. Compartilhado
+ * entre canvas (`cardSkin`) e o preview/contraste do dialog para evitar divergência. */
+export const DEFAULT_BG = '#19181c';
+
 /**
  * Background palette aligned to the M10 study export ("Estudo de Nos.dc.html",
  * the `BG` map). The export's `default` tone is represented here by the `null`
@@ -19,7 +23,6 @@ export const BG_PALETTE: readonly ColorSwatch[] = [
   { hex: '#dcc8f6', name: 'Lilás claro' },
   { hex: '#f4c2da', name: 'Rosa claro' },
   { hex: '#ececec', name: 'Branco' },
-  { hex: '#7c93b3', name: 'Aço' },
   { hex: '#2f3e57', name: 'Azul-marinho' },
 ] as const;
 
@@ -37,7 +40,6 @@ export interface TextColorSwatch {
 
 export const TEXT_PALETTE: readonly TextColorSwatch[] = [
   { hex: null, name: 'Automático' },
-  { hex: '#2f3e57', name: 'Azul-marinho' },
   { hex: '#ffffff', name: 'Branco' },
   { hex: '#e23b3b', name: 'Vermelho' },
   { hex: '#1f9a44', name: 'Verde' },

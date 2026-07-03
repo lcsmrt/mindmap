@@ -50,12 +50,7 @@ export const HomePage = () => {
   const noResults = total > 0 && visibleMaps.length === 0;
 
   return (
-    <div
-      className="flex min-h-screen flex-col text-foreground"
-      style={{
-        background: `radial-gradient(120% 80% at 50% -10%, var(--color-background-glow) 0%, var(--color-background) 55%)`,
-      }}
-    >
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="flex items-center justify-between border-b border-border px-8 py-[18px]">
         <div className="flex items-center gap-3">
           <BrandMark size={28} glow />

@@ -1,26 +1,26 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/space-grotesk";
-@import "@fontsource/chakra-petch/500.css";
-@import "@fontsource/chakra-petch/600.css";
-@import "@fontsource/chakra-petch/700.css";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource/chakra-petch/500.css';
+@import '@fontsource/chakra-petch/600.css';
+@import '@fontsource/chakra-petch/700.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Space Grotesk Variable", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: "Chakra Petch", system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: 'Space Grotesk Variable', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Chakra Petch', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
   --radius: 0.625rem;
 
   /* (A) Semânticos shadcn — valores remapeados para a paleta Kaos */
   --color-background: #0d0a09;
   --color-foreground: #ece7e3;
 
-  --color-card: #15110f;
+  --color-card: #201b1d;
   --color-card-foreground: #ece7e3;
 
   --color-popover: #1b1614;
@@ -32,7 +32,7 @@
   --color-secondary: #1b1614;
   --color-secondary-foreground: #ece7e3;
 
-  --color-muted: #15110f;
+  --color-muted: #201b1d;
   --color-muted-foreground: #8a807b;
 
   --color-accent: #241c19;
@@ -46,7 +46,6 @@
   --color-ring: #a0111b;
 
   /* (B) Tokens Kaos próprios */
-  --color-background-glow: #1b1310;
   --color-field: #0e0b0a;
   --color-border-strong: #2c2420;
   --color-border-hover: #3a2a26;
@@ -57,12 +56,10 @@
   --color-brand: #c4151f;
   --color-critical: #b0635a;
   --color-critical-foreground: #c79a8c;
-  --color-canvas: #101012;
-  --color-canvas-dot: rgba(255, 255, 255, 0.05);
   --color-edge: #3a363d;
   --color-edge-muted: #33303a;
   --color-edge-ghost: #4a4550;
-  --color-node-root: #19181c;
+  --color-node-root: #201b1d;
   --color-node-root-border: #38353f;
   --color-node-toolbar: #26242b;
   --color-node-toolbar-border: #3a3742;
@@ -98,14 +95,6 @@
   }
   html {
     @apply font-sans;
-  }
-}
-
-@layer utilities {
-  .canvas-grid {
-    background-color: var(--color-canvas);
-    background-image: radial-gradient(circle, var(--color-canvas-dot) 1px, transparent 1.4px);
-    background-size: 24px 24px;
   }
 }
 
