@@ -30,7 +30,7 @@ export function NodeTaskIndicators({ node }: NodeTaskIndicatorsProps) {
 
       {assignee && (
         <span
-          className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#3a3a72] text-[10px] font-bold leading-none text-[#cdcdf0]"
+          className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold leading-none text-primary-foreground/80"
           title={assignee}
           aria-label={assignee}
         >

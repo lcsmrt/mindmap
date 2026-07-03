@@ -131,7 +131,7 @@ function CanvasLayers({
     <div
       // visx tipa o ref como RefObject<T | null>; o ref de div do React 18 espera T não-nulo.
       ref={zoom.containerRef as React.Ref<HTMLDivElement>}
-      className="relative h-full w-full touch-none overflow-hidden bg-muted/30 cursor-grab active:cursor-grabbing"
+      className="relative h-full w-full touch-none overflow-hidden canvas-grid cursor-grab active:cursor-grabbing"
     >
       {/* Camada de arestas (SVG) */}
       <svg width={width} height={height} className="absolute inset-0">
@@ -145,7 +145,7 @@ function CanvasLayers({
               // sobrescrevemos os acessores para usá-las sem inversão.
               x={(d: { x: number; y: number }) => d.x}
               y={(d: { x: number; y: number }) => d.y}
-              className="stroke-border fill-none"
+              className="stroke-edge fill-none"
               strokeWidth={1.5}
             />
           ))}
@@ -439,7 +439,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-muted">
+      <div className="flex flex-1 items-center justify-center canvas-grid">
         <p className="text-muted-foreground">Carregando nós…</p>
       </div>
     );
@@ -447,7 +447,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
 
   if (isError) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-muted">
+      <div className="flex flex-1 items-center justify-center canvas-grid">
         <p className="text-muted-foreground">Erro ao carregar nós</p>
       </div>
     );

@@ -11,58 +11,43 @@ interface MindNodeProps {
   data: MindNodeData;
 }
 
-/**
- * Default card background when the node has no custom color (dark study tone).
- */
-const DEFAULT_BG = '#1c1c22';
+const DEFAULT_BG = 'var(--color-node-root)';
 
 interface CardSkin {
   background: string;
-  /** Text color applied to the card (and inherited footer via `text-current`). */
   text: string;
-  /** Subtle border adapted to the background, or `undefined` for none. */
   border: string;
   boxShadow: string;
-  /** Critical marker color, adapted to the background (mirrors the export). */
   critical: string;
-  /** Divider between title and task footer, adapted to the background. */
   divider: string;
-  /** Toolbar pill background, tuned for light vs. dark cards. */
   toolbarBg: string;
-  /** Idle/hover colors for the add + edit toolbar buttons. */
   toolBtn: string;
   toolBtnHoverBg: string;
   toolBtnHoverText: string;
-  /** Idle/hover colors for the delete toolbar button. */
   delBtn: string;
   delBtnHoverBg: string;
   delBtnHoverText: string;
 }
 
-/**
- * Derive the card presentation from the node colors, mirroring the M10 study
- * export ("Estudo de Nos.dc.html"): borders/divisors and the hover toolbar
- * adapt to whether the background reads as dark or light.
- */
 function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
   const background = bgColor ?? DEFAULT_BG;
-  const text = textColor ?? autoTextColor(background);
-  const dark = isDarkBg(background);
+  const text = textColor ?? autoTextColor(bgColor ?? '#19181c');
+  const dark = isDarkBg(bgColor ?? '#19181c');
   return dark
     ? {
         background,
         text,
-        border: '#34343e',
+        border: 'var(--color-node-root-border)',
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
-        critical: '#ef7b7b',
+        critical: 'var(--color-brand)',
         divider: 'rgba(255,255,255,.14)',
-        toolbarBg: 'rgba(20,20,24,.7)',
-        toolBtn: '#9a9aa3',
-        toolBtnHoverBg: '#2e2e36',
+        toolbarBg: 'var(--color-node-toolbar)',
+        toolBtn: 'var(--color-muted-foreground)',
+        toolBtnHoverBg: 'var(--color-node-toolbar-hover)',
         toolBtnHoverText: '#ffffff',
-        delBtn: '#9a9aa3',
-        delBtnHoverBg: '#3a2626',
-        delBtnHoverText: '#ef7b7b',
+        delBtn: 'var(--color-muted-foreground)',
+        delBtnHoverBg: 'rgba(160,17,27,.25)',
+        delBtnHoverText: 'var(--color-brand)',
       }
     : {
         background,
@@ -97,8 +82,6 @@ function MindNodeBase({ data }: MindNodeProps) {
     onOpenEditDialog,
   } = data;
 
-  // Input inline controlado: o rascunho é reinicializado a cada início de edição
-  // ajustando o estado durante o render (padrão React, sem efeito).
   const [draft, setDraft] = useState(node.title);
   const [wasEditing, setWasEditing] = useState(isEditing);
   if (isEditing !== wasEditing) {
@@ -140,16 +123,21 @@ function MindNodeBase({ data }: MindNodeProps) {
     }
   }
 
-  const skin = cardSkin(node.bgColor, node.textColor);
+  const skin = cardSkin(isRoot ? null : node.bgColor, isRoot ? null : node.textColor);
+  const borderRadius = isRoot ? '0.5rem' : hasChildren ? '0.3125rem' : '0.1875rem';
 
   return (
     <div
-      className="group relative flex w-full flex-col rounded-[11px] px-3.25 py-2.75"
+      className="group relative flex w-full flex-col px-3.25 py-2.75 animate-sprout"
       style={{
         backgroundColor: skin.background,
         color: skin.text,
         border: `1px solid ${skin.border}`,
         boxShadow: skin.boxShadow,
+        borderRadius,
+        animationDuration: '180ms',
+        animationFillMode: 'both',
+        animationTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       }}
     >
       <div className="flex items-start gap-1.75 pr-4">
@@ -171,7 +159,7 @@ function MindNodeBase({ data }: MindNodeProps) {
           </Button>
         )}
 
-        {node.isCritical && (
+        {node.isCritical && !isRoot && (
           <span
             className="inline-flex shrink-0 leading-none"
             style={{ color: skin.critical }}
@@ -210,14 +198,11 @@ function MindNodeBase({ data }: MindNodeProps) {
         </div>
       </div>
 
-      {/* Toolbar revelada no hover (CSS apenas). Os botões mantêm
-          `stopPropagation` no clique, então o drag do card permanece intacto.
-          `pointer-events-none` enquanto oculta deixa o pointerdown chegar ao
-          wrapper de arraste em MapCanvas. */}
       <div
         className="absolute top-2 right-2 flex gap-px rounded-[7px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
         style={{
           backgroundColor: skin.toolbarBg,
+          border: `1px solid var(--color-node-toolbar-border)`,
           ['--tool-fg' as string]: skin.toolBtn,
           ['--tool-bg-h' as string]: skin.toolBtnHoverBg,
           ['--tool-fg-h' as string]: skin.toolBtnHoverText,
@@ -274,9 +259,6 @@ function MindNodeBase({ data }: MindNodeProps) {
         </div>
       )}
 
-      {/* Alça de resize revelada no hover (borda direita). O gesto de arraste é
-          detectado no wrapper em MapCanvas (que tem acesso ao scale do zoom). A barra
-          interna (bg-current = cor do texto do card) dá o indicador visível. */}
       <div
         data-testid="resize-handle"
         className="absolute right-0 top-0 flex h-full w-2.5 cursor-ew-resize items-center justify-end opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
