@@ -1,4 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
+import { RequireAuth } from './auth/RequireAuth.js';
+import { RedirectIfAuthed } from './auth/RedirectIfAuthed.js';
+import { AuthPage } from './pages/auth/AuthPage.js';
 import { HomePage } from './pages/home/HomePage.js';
 import { MapPage } from './pages/map/MapPage.js';
 import { VersionBadge } from './components/VersionBadge.js';
@@ -6,8 +9,18 @@ import { VersionBadge } from './components/VersionBadge.js';
 export const App = () => (
   <>
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/maps/:id" element={<MapPage />} />
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthed>
+            <AuthPage />
+          </RedirectIfAuthed>
+        }
+      />
+      <Route element={<RequireAuth />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/maps/:id" element={<MapPage />} />
+      </Route>
     </Routes>
     <VersionBadge />
   </>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { MapSummary } from '@mindmap/shared';
 
 import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js';
+import { useLogout } from '@/api/auth.js';
 import { BrandMark } from '@/components/BrandMark.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import { Button } from '@/components/ui/button.js';
@@ -36,6 +37,9 @@ export const HomePage = () => {
   const { mutate: deleteMap } = useDeleteMap({
     onSuccess: () => setDeleteTarget(null),
   });
+  const { mutate: logout } = useLogout({
+    onSuccess: () => navigate('/login'),
+  });
 
   if (isLoading) {
     return <p className="p-6 text-muted-foreground">Carregando…</p>;
@@ -65,6 +69,10 @@ export const HomePage = () => {
             <span className="font-mono text-xs text-fg-subtle">mapas mentais</span>
           </div>
         </div>
+        {/* Provisório até o menu de conta do M20 */}
+        <Button type="button" variant="ghost" onClick={() => logout()} className="text-fg-subtle">
+          Sair
+        </Button>
       </header>
 
       <main className="mx-auto w-full max-w-270 flex-1 px-8 pt-10 pb-16">
