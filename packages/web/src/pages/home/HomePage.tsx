@@ -54,7 +54,7 @@ export const HomePage = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between border-b border-border px-8 py-[18px]">
+      <header className="flex items-center justify-between border-b border-border px-8 py-4.5">
         <div className="flex items-center gap-3">
           <BrandMark size={28} glow />
           <div className="flex items-center gap-2">
@@ -67,24 +67,24 @@ export const HomePage = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1080px] flex-1 px-8 pt-10 pb-16">
-        <div className="mb-[26px] flex items-end justify-between gap-5">
+      <main className="mx-auto w-full max-w-270 flex-1 px-8 pt-10 pb-16">
+        <div className="mb-6 flex items-end justify-between gap-5">
           <div>
             <h1 className="font-heading text-[26px] font-bold tracking-[-0.02em]">Meus Mapas</h1>
-            <p className="mt-[5px] font-mono text-[13px] text-fg-subtle">{countLabel}</p>
+            <p className="mt-1 font-mono text-[13px] text-fg-subtle">{countLabel}</p>
           </div>
           <Button
             type="button"
             data-testid="new-map-button"
             onClick={() => setCreating(true)}
-            className="h-auto gap-2 rounded-md px-[17px] py-[11px] text-sm font-semibold shadow-sm hover:bg-primary-hover"
+            className="h-auto gap-2 rounded-md px-4 py-3 text-sm font-semibold shadow-sm hover:bg-primary-hover"
           >
             <span className="-mt-px text-[17px] leading-none">+</span> Novo mapa
           </Button>
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="flex min-w-[220px] max-w-[340px] flex-1 items-center gap-[9px] rounded-md border border-border bg-card px-[13px] py-[9px]">
+          <div className="flex min-w-55 max-w-85 flex-1 items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
             <SearchIcon />
             <Input
               data-testid="map-search"
@@ -94,7 +94,7 @@ export const HomePage = () => {
               className="h-auto border-none bg-transparent p-0 text-[13.5px] text-foreground placeholder:text-fg-faint focus-visible:border-transparent focus-visible:ring-0"
             />
           </div>
-          <div className="flex items-center gap-[7px]" data-testid="map-sort">
+          <div className="flex items-center gap-2" data-testid="map-sort">
             <span className="mr-0.5 font-mono text-xs text-fg-faint">Ordenar:</span>
             {SORT_OPTIONS.map((option) => {
               const active = sort === option.value;
@@ -106,9 +106,9 @@ export const HomePage = () => {
                   aria-pressed={active}
                   onClick={() => setSort(option.value)}
                   className={cn(
-                    'h-auto rounded-[8px] border px-[13px] py-2 text-[12.5px] font-medium',
+                    'h-auto rounded-lg border px-3 py-2 text-[12.5px] font-medium',
                     active
-                      ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary'
+                      ? 'border-primary/50 bg-primary/5 text-primary hover:bg-primary/5 hover:text-primary'
                       : 'border-border bg-card text-muted-foreground hover:bg-card hover:text-foreground',
                   )}
                 >
@@ -135,10 +135,7 @@ export const HomePage = () => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visibleMaps.map((map) =>
               renamingId === map.id ? (
-                <div
-                  key={map.id}
-                  className="rounded-md border border-border bg-card px-4 py-4"
-                >
+                <div key={map.id} className="rounded-md border border-border bg-card px-4 py-4">
                   <RenameMapInput
                     initialTitle={map.title}
                     onConfirm={(title) => updateMap({ id: map.id, body: { title } })}
@@ -178,4 +175,3 @@ export const HomePage = () => {
     </div>
   );
 };
-

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Zoom } from '@visx/zoom';
-import type { ProvidedZoom, ZoomState } from '@visx/zoom';
+import type { ProvidedZoom, ZoomState, PinchDelta } from '@visx/zoom';
 import { LinkHorizontal } from '@visx/shape';
 import { useNodes, useCreateNode, useUpdateNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient, useIsMutating } from '@tanstack/react-query';
@@ -24,6 +24,12 @@ import { measureContentWidth } from './measureContentWidth.js';
 
 const SCALE_MIN = 0.1;
 const SCALE_MAX = 3;
+
+// visx detecta direção da pinça por offset acumulado, que trava em zoom out quando a pinça chega como ctrl+wheel (Linux); `direction` (sinal do delta do evento) é confiável.
+const pinchZoomDelta: PinchDelta = ({ direction: [dir] }) => {
+  const factor = dir > 0 ? 1.1 : dir < 0 ? 0.9 : 1;
+  return { scaleX: factor, scaleY: factor };
+};
 
 type ZoomApi = ProvidedZoom<HTMLDivElement> & ZoomState;
 
@@ -50,6 +56,7 @@ interface CanvasLayersProps {
   onInvalidDrop: () => void;
   registerNode: (id: string) => (el: HTMLElement | null) => void;
   allMeasured: boolean;
+  activeResize: ActiveResize | null;
   setActiveResize: React.Dispatch<React.SetStateAction<ActiveResize | null>>;
   onPersistWidth: (id: string, width: number) => void;
 }
@@ -68,6 +75,7 @@ function CanvasLayers({
   onInvalidDrop,
   registerNode,
   allMeasured,
+  activeResize,
   setActiveResize,
   onPersistWidth,
 }: CanvasLayersProps) {
@@ -162,11 +170,12 @@ function CanvasLayers({
           const data = nodeDataById.get(p.id);
           if (!data) return null;
           const isDragging = draggingId === p.id;
+          const isResizing = activeResize?.id === p.id;
           return (
             <div
               key={p.id}
               ref={registerNode(p.id)}
-              className="absolute"
+              className={`absolute${isResizing ? ' select-none' : ''}`}
               data-testid="mind-node"
               data-node-id={p.id}
               data-node-title={data.node.title}
@@ -185,6 +194,8 @@ function CanvasLayers({
                 if (!(e.target as HTMLElement).closest('[data-testid="resize-handle"]')) return;
                 // captura para do use-gesture do <Zoom> (listener nativo no container, só vê o bubble)
                 e.stopPropagation();
+                // sem isso, o navegador entende o arraste como seleção de texto do card
+                e.preventDefault();
                 e.currentTarget.setPointerCapture(e.pointerId);
                 const cardEl = e.currentTarget.firstElementChild as HTMLElement;
                 const startWidth = e.currentTarget.offsetWidth;
@@ -447,6 +458,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
           scaleXMax={SCALE_MAX}
           scaleYMin={SCALE_MIN}
           scaleYMax={SCALE_MAX}
+          pinchDelta={pinchZoomDelta}
         >
           {(zoom) => (
             <CanvasLayers
@@ -463,6 +475,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               onInvalidDrop={handleInvalidDrop}
               registerNode={registerNode}
               allMeasured={allMeasured}
+              activeResize={activeResize}
               setActiveResize={setActiveResize}
               onPersistWidth={handlePersistWidth}
             />

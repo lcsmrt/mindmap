@@ -26,7 +26,7 @@
   --color-popover: #1a191e;
   --color-popover-foreground: #ece7e3;
 
-  --color-primary: #a0111b;
+  --color-primary: #bf111b;
   --color-primary-foreground: #ffffff;
 
   --color-secondary: #1a191e;
@@ -43,7 +43,7 @@
 
   --color-border: #26252c;
   --color-input: #2e2d36;
-  --color-ring: #a0111b;
+  --color-ring: #bf111b;
 
   /* (B) Tokens Kaos próprios */
   --color-field: #0f0e11;

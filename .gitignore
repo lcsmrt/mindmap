@@ -10,5 +10,4 @@ dist/
 test-results/
 playwright-report/
 
-Mindmaps system interface/
-Mindmaps system interface(2)/
+designs/
