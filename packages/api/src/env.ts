@@ -10,4 +10,5 @@ if (!DATABASE_URL) {
 export const env = {
   DATABASE_URL,
   PORT: Number(process.env['PORT'] ?? 3000),
+  COOKIE_SECURE: (process.env['COOKIE_SECURE'] ?? 'false') === 'true',
 };
