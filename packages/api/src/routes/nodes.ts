@@ -2,13 +2,17 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Side } from '@prisma/client';
 import { prisma } from '../prisma.js';
-import { NotFoundError, ApiError } from '../errors.js';
+import { ApiError } from '../errors.js';
 import { toNodeDto } from '../mappers/nodes.js';
 import { subtreeSizes, chooseSideForNewChild } from '../services/sides.js';
+import { requireAuth, requireUser } from '../plugins/auth-guard.js';
+import { findOwnedNode } from '../services/scope.js';
 
 const IdParam = z.object({ id: z.string() });
 
 const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
+  app.addHook('preHandler', requireAuth);
+
   app.post('/', {
     schema: {
       body: z.object({
@@ -18,11 +22,11 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       }),
     },
     handler: async (req, reply) => {
+      const { id: ownerId } = requireUser(req);
       const { mapId, parentId, title } = req.body;
 
       const created = await prisma.$transaction(async (tx) => {
-        const parent = await tx.node.findUnique({ where: { id: parentId } });
-        if (!parent) throw new NotFoundError('Parent not found');
+        const parent = await findOwnedNode(tx, parentId, ownerId);
         if (parent.mapId !== mapId) {
           throw new ApiError(400, 'Parent and node must belong to the same map');
         }
@@ -71,8 +75,8 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       ),
     },
     handler: async (req) => {
-      const existing = await prisma.node.findUnique({ where: { id: req.params.id } });
-      if (!existing) throw new NotFoundError('Node not found');
+      const { id: ownerId } = requireUser(req);
+      await findOwnedNode(prisma, req.params.id, ownerId);
 
       const { title, bgColor, textColor, status, assignee, isCritical, width } = req.body;
       const data: Record<string, unknown> = {};
@@ -95,8 +99,8 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
   app.delete('/:id', {
     schema: { params: IdParam },
     handler: async (req, reply) => {
-      const existing = await prisma.node.findUnique({ where: { id: req.params.id } });
-      if (!existing) throw new NotFoundError('Node not found');
+      const { id: ownerId } = requireUser(req);
+      const existing = await findOwnedNode(prisma, req.params.id, ownerId);
       if (existing.parentId === null) throw new ApiError(400, 'Cannot delete root');
 
       await prisma.node.delete({ where: { id: req.params.id } });
@@ -114,16 +118,15 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
       }),
     },
     handler: async (req) => {
+      const { id: ownerId } = requireUser(req);
       const { id } = req.params;
       const { parentId: newParentId, index, side } = req.body;
 
       const updated = await prisma.$transaction(async (tx) => {
-        const node = await tx.node.findUnique({ where: { id } });
-        if (!node) throw new NotFoundError('Node not found');
+        const node = await findOwnedNode(tx, id, ownerId);
         if (node.parentId === null) throw new ApiError(400, 'Cannot move root');
 
-        const newParent = await tx.node.findUnique({ where: { id: newParentId } });
-        if (!newParent) throw new NotFoundError('Parent not found');
+        const newParent = await findOwnedNode(tx, newParentId, ownerId);
         if (newParent.mapId !== node.mapId) {
           throw new ApiError(400, 'Parent and node must belong to the same map');
         }
