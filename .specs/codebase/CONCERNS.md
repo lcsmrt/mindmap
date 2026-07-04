@@ -112,6 +112,13 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ~~**`useMeasuredHeights`: `refCallbacks` não é podado no unregister (review AD-013 de M12, 2026-06-27):**~~ — **resolvido (2026-07-02):** o ramo `el == null` do ref callback agora faz `refCallbacks.current.delete(id)` junto de `elements`/`heights`, podando a closure memoizada quando o nó desmonta. Um remount do mesmo id recria o callback via `registerNode`. `useMeasuredHeights.ts`.
 
+**`<Zoom>` render-prop do visx exige `eslint-disable react-hooks/refs` em `CanvasLayers` (M17, 2026-07-03):**
+
+- Files: `packages/web/src/pages/map/components/MapCanvas.tsx` (bloco `CanvasLayers`)
+- O visx armazena o estado de zoom internamente em refs e o entrega via render-prop. Ler `zoom.transformMatrix`, `zoom.toString()` e `zoom.containerRef` durante o render viola `react-hooks/refs` v7 → 5 erros sem o disable. O disable é o workaround mínimo para o padrão render-prop do visx.
+- Alternativa investigar: migrar de `<Zoom>` (render-prop) para `useZoom()` (hook do visx), subindo o estado de zoom para `MapCanvasInner` via `useState`/`useReducer`. O zoom passaria como prop para `CanvasLayers`, que deixaria de ler refs durante o render. Eliminaria o disable e alinharia ao modelo preferido pelo react-hooks v7.
+- Severity: Low (lint silenciado, sem impacto funcional). Candidato a refactor isolado em milestone de polish.
+
 **`move` para a raiz sem `side` assume `RIGHT` (review AD-013 de M9, 2026-06-27):**
 
 - Files: `packages/api/src/routes/nodes.ts:159`
