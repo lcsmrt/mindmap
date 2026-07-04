@@ -8,7 +8,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 **Trepidação da árvore durante o resize horizontal do card (relato do usuário, pós-M15, 2026-06-27):**
 
-- Files: `packages/web/src/pages/map/components/MapCanvas.tsx` (gesto de resize: `onPointerMove`→`setActiveResize` por frame), `packages/web/src/lib/useTreeLayout.ts` (relayout por frame), `packages/web/src/pages/map/components/useMeasuredHeights.ts`.
+- Files: `packages/web/src/pages/map/components/MapCanvas.tsx` (gesto de resize: `onPointerMove`→`setActiveResize` por frame), `packages/web/src/pages/map/lib/useTreeLayout.ts` (relayout por frame), `packages/web/src/pages/map/components/useMeasuredHeights.ts`.
 - Symptom: ao arrastar a alça de resize, a árvore "treme" visivelmente a cada frame do arraste.
 - Investigação até agora: hipótese inicial era o pipeline medir→layout — cada `pointermove` muda a largura → o texto reflui → o `ResizeObserver` remede a **altura** → relayout vertical por frame, com a altura oscilando quando o texto troca de nº de linhas. **Hipótese descartada:** congelar a medição de altura durante o arraste (pausar o RO + re-observar no `pointerup`) **não** eliminou a trepidação. Logo a causa não é (só) a remedição de altura. Suspeitos restantes a investigar: movimento horizontal do próprio nó/descendentes por frame, sub-pixel sob o `transform` de zoom do visx, re-render do `<Zoom>`, recentralização de breadth. O mecanismo de pausa foi **revertido** (não ajudava e alterava o timing da medição, atrapalhando o diagnóstico).
 - Fix: pendente — usuário vai trazer mais pistas (qual nó treme: o redimensionado, os filhos, a árvore toda? em que zoom? com/sem filhos?).
@@ -30,7 +30,7 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 **Seleção de slot (`slots.ts`) — testes do M13 cobriam só coluna única (review AD-013 de M13, 2026-06-26 — corrigido):**
 
-- Files: `packages/web/src/lib/slots.test.ts`, `packages/web/src/lib/slots.ts`
+- Files: `packages/web/src/pages/map/lib/slots.test.ts`, `packages/web/src/pages/map/lib/slots.ts`
 - Symptom: a T4/T5 do M13 só exercitaram um grupo/coluna; o caso **inter-grupo co-coluna** (dois pais de mesma profundidade/lado com `colX` idêntico) passou verde apesar de a barra mirar o grupo errado (roubo pela ordem de enumeração no empate `dx + dy`).
 - **Resolvido** no próprio review: `nearestSlot` virou lexicográfico (coluna → grupo por `groupDy` → banda; `Slot` ganhou `groupTop`/`groupBottom`), commit `94fbe68`. Cobertura adicionada (2 testes de regressão: sintético + layout real). Ver AD-021 addendum / L-006 em STATE.md.
 - Severity: era Medium (bug funcional visível em uso); agora fechado. Pendente só o **smoke visual no app** (túnel Postgres) confirmando o caso co-coluna.
@@ -123,13 +123,10 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 **Doc drift: `design.md` do M15 descreve a alça via callbacks que não existem (review AD-013 de M15, 2026-07-02):**
 
-- Files: `.specs/features/m15-card-resize/design.md` (componente 5) vs `MapCanvas.tsx:195-207`, `MindNode.tsx:280-285`, `types.ts`
+- Files: `.specs/features/m15-card-resize/design.md` (componente 5) vs `MapCanvas.tsx` (linhas deslocadas pós-M17-T5), `MindNode.tsx`, `types.ts`
 - O design especifica a alça com `onPointerDown`→`stopPropagation`+`setPointerCapture`+`onResizeStart` e callbacks de resize em `MindNodeData`. A implementação real detecta o resize no wrapper do `MapCanvas` via `closest('[data-testid="resize-handle"]')` (if/else que isola resize de drag-to-place), então `types.ts` **não** tem callbacks de resize (não é resíduo — é a abordagem escolhida) e a alça é um `<div>` puro. Satisfaz M15-03, mas diverge do doc. Severity: cosmético — alinhar o design ao código.
 
-**Comentário datado em `nodeSize.ts` pós-M12 (review AD-013 de M11, 2026-06-27):**
-
-- Files: `packages/web/src/lib/nodeSize.ts:6-7`
-- O comentário descreve a reserva de altura da divisória (`NODE_HEIGHT_WITH_FOOTER`) como se governasse o `GAP_Y` final, mas pós-M12 a altura final vem da medição real (`nodeSizeFromHeights`); a constante é só estimativa de 1º paint (`estimateNodeHeight`). Alinhar o comentário. Severity: cosmético.
+~~**Comentário datado em `nodeSize.ts` pós-M12 (review AD-013 de M11, 2026-06-27):**~~ — **resolvido (M17-T2, 2026-07-03):** o comentário foi reescrito para 1 linha descritiva sem a referência enganosa ao `GAP_Y`; `estimateNodeHeight` perdeu o JSDoc. `packages/web/src/pages/map/lib/nodeSize.ts` (caminho atualizado — movido de `lib/` em M17-T3).
 
 ~~**Helper `request<T>` duplicado entre módulos de API web:**~~ — resolvido: extraído para `packages/web/src/api/_request.ts`.
 

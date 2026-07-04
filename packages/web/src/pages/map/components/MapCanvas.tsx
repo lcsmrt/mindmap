@@ -5,7 +5,7 @@ import { LinkHorizontal } from '@visx/shape';
 import { useNodes, useCreateNode, useUpdateNode, useMoveNode } from '@/api/nodes.js';
 import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
-import type { NodeDto, UpdateNodeBody } from '@mindmap/shared';
+import type { NodeDto } from '@mindmap/shared';
 import { NodeEditDialog } from './NodeEditDialog.js';
 import { buildTree, visibleNodes } from '../lib/tree.js';
 import type { TreeNode } from '../lib/tree.js';
@@ -251,7 +251,6 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     setEditingId,
     deleteTarget,
     setDeleteTarget,
-    editDialogNodeId,
     setEditDialogNodeId,
     handleStartEdit,
     handleSubmitEdit,

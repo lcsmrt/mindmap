@@ -138,7 +138,28 @@ Segunda metade do "Card responsivo + resize" original, **fatiada de M12** (decis
 - **Resize horizontal por nó:** alça na borda direita do card, **revelada no hover** (consistente com a toolbar M10). `NODE_WIDTH` deixa de ser constante → vira largura por nó em `useTreeLayout.ts`, `lib/slots.ts`, barra-fantasma e render.
 - **Largura persistida:** coluna nova `width Int?` no `Node` (full-stack). Revisa AD-002 parcialmente (mais 1 dado estrutural por nó, mantendo "sem x/y livre" — largura não é posição em pixel; mesmo precedente do M9/`side`). **AD-023 registrada.**
 - **Sem reset de largura** em M15 (por decisão do usuário) — candidato a quick task futura (ver Deferred Ideas).
-- Spec/design/tasks em `.specs/features/m15-card-resize/`. **Executado** em 6 commits (T1: schema+DTO+mapper; T2: PATCH width; T3: layout por nó; T4: slots.ts eixo X; T5: `3c0c429` alça+drag+persist; T6: `16439e0` e2e+smoke). **Review AD-013 concluída (2026-07-02): APROVADO por 3 sub-agents independentes, zero bloqueantes** (L-009). Gates reexecutados verdes: typecheck/lint ✅, unit **web 118/api 61** ✅, **e2e 37/37** ✅ (2 testes funcionais de resize + smoke visual M15). Probe empírico do d3-flextree fechou o risco geométrico da L-008; reversão da AD-024 confirmada limpa. Findings Low → CONCERNS.md. **Bug aberto não-bloqueante:** trepidação no arraste (CONCERNS.md → Known Bugs).
+- Spec/design/tasks em `.specs/features/m15-card-resize/`. **Executado** em 6 commits (T1: schema+DTO+mapper; T2: PATCH width; T3: layout por nó; T4: slots.ts eixo X; T5: `3c0c429` alça+drag+persist; T6: `16439e0` e2e+smoke). **Review AD-013 concluída (2026-07-02): APROVADO por 3 sub-agents independentes, zero bloqueantes** (L-009). Gates verdes: typecheck/lint ✅, unit **web 118/api 61** ✅, **e2e 37/37** ✅ (2 testes funcionais de resize + smoke visual M15). Probe empírico do d3-flextree fechou o risco geométrico da L-008; reversão da AD-024 confirmada limpa. Findings Low → CONCERNS.md. **Bug aberto não-bloqueante:** trepidação no arraste (CONCERNS.md → Known Bugs).
+
+### M16 — Rebrand visual (design system) ✅ executado (e2e pendente de run limpo com API, 2026-07-02)
+
+Identidade visual própria: paleta de cores nova, tokens de design system, tipografia e reskin das telas home + canvas. Só frontend; sem schema/migration/contrato.
+
+- Novos tokens CSS no `@theme` (`styles.css`): paleta de brand, surface, edge, toolbar e variáveis de nó.
+- `MindNode` reskinado: raiz neutra, toolbar com `pointer-events` corretos.
+- Correção de centralização do canvas ao reabrir um mapa.
+- Spec/design/tasks em `.specs/features/m16-kaos-rebrand/`. Commits: `bdd09a9`, `b603cdf`, `3aa8feb`, `8fedd23`. Gates verdes: typecheck/lint ✅, unit web 118/api 61 ✅; **e2e 37/37 pendente** de run limpo com API (DB dev necessário). Bug de trepidação do resize segue aberto (CONCERNS.md → Known Bugs).
+
+### M17 — Limpeza da base de código ✅ executado (review AD-013 pendente — chat separado)
+
+Refactor puro — zero mudança de comportamento, contrato, schema, visual. Seis tasks atômicas:
+
+- **T1:** token `--color-critical-strong` no `@theme`; remove `#b01818` hardcoded de `MindNode`/`NodeEditDialog`.
+- **T2:** política de comentários D2 aplicada em 9 arquivos; racional arquitetural migrado para `CONCERNS.md` Design Notes.
+- **T3:** move `lib/{tree,slots,useTreeLayout,nodeSize}` + testes para `pages/map/lib/` (colocation); extrai `EmptyState` de `HomePage` para `pages/home/components/`.
+- **T4:** `NodeEditDialog` preview reusa `NodeTaskIndicators` (elimina markup duplicado).
+- **T5:** decompõe `MapCanvas.tsx` em `GhostBar`, `useContainerSize`, `useNodeEditing`; gesto de resize intocado (bug de trepidação preservado).
+- **T6:** grep-guard hex + lint limpo + 118/118 unit verdes.
+- Spec/design/tasks em `.specs/features/m17-codebase-cleanup/`. Commits T1–T5 em `master`. Gates verdes: typecheck ✅, lint ✅, unit **web 118/api 61** ✅. E2e e smoke visual pendentes de review (chat separado, [[feedback-plan-execute-split]]).
 
 ---
 
