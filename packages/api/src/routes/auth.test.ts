@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from '../app.js';
 import { prisma } from '../prisma.js';
 import { SESSION_COOKIE_NAME } from '../services/sessions.js';
@@ -17,7 +17,7 @@ const validSignup = {
   name: 'Alice',
 };
 
-function sessionCookie(res: { cookies: Array<{ name: string; value: string }> }) {
+function sessionCookie(res: LightMyRequestResponse) {
   return res.cookies.find((c) => c.name === SESSION_COOKIE_NAME);
 }
 
