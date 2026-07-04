@@ -163,6 +163,49 @@ Refactor puro — zero mudança de comportamento, contrato, schema, visual. Seis
 
 ---
 
+## Pós-v1 — Autenticação (planejado, 2026-07-04)
+
+Retrofit de autenticação **multi-usuário** sobre o app hoje single-user/sem dono. Decisões de arquitetura fixadas em chat de planejamento ([[feedback-plan-execute-split]]) — ver **AD-025** em `STATE.md`: **multi-usuário completo** (contas reais, `Map.ownerId`, signup aberto, todo endpoint escopado por dono); **roll-your-own** no Fastify/Prisma (`argon2` + sessão server-side em cookie httpOnly + tabela `Session`; `@fastify/oauth2` na etapa do Google); **serviço externo descartado** (saímos do Supabase para Postgres na VPS na AD-022). Design em `designs/v3/Autenticação.dc.html`. Quebra em 5 etapas, **executadas uma por vez em chats separados** (spec/design/tasks próprios por etapa).
+
+**Grafo de dependências:**
+
+```
+M18 (núcleo backend)
+ └─ M19 (tela + guarda)  ← portão fechado, email+senha (1ª fatia jogável)
+     ├─ M20 (menu/perfil/tema)      independentes entre si —
+     ├─ M21 (reset por e-mail)      ordem flexível depois
+     └─ M22 (Google OAuth)          que o portão existe
+```
+
+### M18 — Núcleo de auth backend (multi-tenancy) 🔴 alta · só backend · 📋 spec/design/tasks prontos (2026-07-04), execução pendente
+
+Fundação de que todo o resto depende; parte mais crítica de segurança. Planejamento concluído em `.specs/features/m18-auth-core/` (21 req. M18-NN, 12 tasks; ver AD-025 + Current Work em STATE.md). Decisões: backfill = 1º cadastro herda; sessão 7d/30d; senha mín. 8; sessão opaca com `sha256(token)` no banco.
+
+- Schema: modelo `User` (email único, `passwordHash`, nome), `Session` (token, `userId`, expiração), `Map.ownerId` (FK → `User`).
+- Migration + **backfill**: mapas globais de hoje passam a pertencer ao primeiro usuário (você); `ownerId` vira **obrigatório** após o backfill. Parte delicada da migração.
+- `argon2` para hash; sessão em cookie httpOnly + tabela `Session` (revogável).
+- Endpoints: `signup`, `login`, `logout`, `me`.
+- **Guarda global + escopo por dono**: toda query de maps/nodes filtra por `ownerId`; toda mutação checa posse (um usuário não toca no mapa/nó de outro).
+
+### M19 — Tela de auth + guarda no front 🔴 alta · **1ª fatia jogável ponta-a-ponta (email+senha)** · depende de M18
+
+- Tela KAOS: modos **Entrar** / **Criar conta** (nome só no cadastro), toggle de olho na senha.
+- react-router: rotas protegidas, redirect p/ login, bootstrap de sessão via `/me`, "manter conectado neste dispositivo" (duração do cookie), logout.
+
+### M20 — Menu de conta, perfil e tema 🟡 média · depende de M19
+
+- Avatar no header + dropdown (Perfil, Tema claro/escuro, Sair); editar nome; tema persistido. (Preferências / Ajuda & atalhos do design: mínimos ou deferred.)
+
+### M21 — Reset de senha por e-mail 🟡 média · depende de M18/M19 · puxa infra de e-mail
+
+- Provedor de e-mail/SMTP + `PasswordResetToken` (uso único, expira); fluxo "Esqueci a senha" → "Link enviado" (mensagem neutra, não vaza existência de conta) → página de nova senha.
+
+### M22 — Google OAuth 🟡 média · depende de M18 · puxa app OAuth no Google Cloud
+
+- `@fastify/oauth2` + "Continuar com Google"; criar conta nova ou **vincular** a conta existente com mesmo e-mail (política de account linking decidida no design).
+
+---
+
 ## Pós-v1 (deferred)
 
 Itens que **não** entram em v1 mas podem virar features futuras. Veja `STATE.md` para registro de ideias adiadas que surjam durante a implementação.
@@ -170,4 +213,4 @@ Itens que **não** entram em v1 mas podem virar features futuras. Veja `STATE.md
 - Exportação (PNG/PDF/JSON/markdown)
 - Undo persistente entre sessões / histórico de alterações
 - Apps mobile/desktop nativos
-- Autenticação e colaboração multi-usuário
+- **Colaboração** multi-usuário (compartilhar mapa entre contas) — a **autenticação** multi-usuário saiu do deferred e virou o lote M18–M22 acima.
