@@ -1,17 +1,23 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
-import { NotFoundError } from '../errors.js';
 import { toMapDetail, toMapSummary } from '../mappers/maps.js';
 import { toNodeDto } from '../mappers/nodes.js';
+import { requireAuth, requireUser } from '../plugins/auth-guard.js';
+import { findOwnedMap } from '../services/scope.js';
 
 const IdParam = z.object({ id: z.string() });
 const TitleBody = z.object({ title: z.string().trim().min(1) });
 
 const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
+  app.addHook('preHandler', requireAuth);
+
   app.get('/', {
-    handler: async () => {
+    handler: async (req) => {
+      const { id: ownerId } = requireUser(req);
+
       const maps = await prisma.map.findMany({
+        where: { ownerId },
         orderBy: { updatedAt: 'desc' },
         select: {
           id: true,
@@ -24,7 +30,7 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
 
       const criticalGroups = await prisma.node.groupBy({
         by: ['mapId'],
-        where: { isCritical: true },
+        where: { isCritical: true, map: { ownerId } },
         _count: { _all: true },
       });
       const criticalByMap = new Map(
@@ -42,8 +48,8 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
   app.get('/:id', {
     schema: { params: IdParam },
     handler: async (req) => {
-      const map = await prisma.map.findUnique({ where: { id: req.params.id } });
-      if (!map) throw new NotFoundError('Map not found');
+      const { id: ownerId } = requireUser(req);
+      const map = await findOwnedMap(prisma, req.params.id, ownerId);
       return toMapDetail(map);
     },
   });
@@ -51,8 +57,11 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/', {
     schema: { body: TitleBody },
     handler: async (req, reply) => {
+      const { id: ownerId } = requireUser(req);
       const map = await prisma.$transaction(async (tx) => {
-        const created = await tx.map.create({ data: { title: req.body.title } });
+        const created = await tx.map.create({
+          data: { title: req.body.title, ownerId },
+        });
         await tx.node.create({
           data: {
             mapId: created.id,
@@ -70,10 +79,8 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
   app.patch('/:id', {
     schema: { params: IdParam, body: TitleBody },
     handler: async (req) => {
-      const existing = await prisma.map.findUnique({
-        where: { id: req.params.id },
-      });
-      if (!existing) throw new NotFoundError('Map not found');
+      const { id: ownerId } = requireUser(req);
+      await findOwnedMap(prisma, req.params.id, ownerId);
 
       const map = await prisma.map.update({
         where: { id: req.params.id },
@@ -86,8 +93,8 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
   app.get('/:id/nodes', {
     schema: { params: IdParam },
     handler: async (req) => {
-      const map = await prisma.map.findUnique({ where: { id: req.params.id } });
-      if (!map) throw new NotFoundError('Map not found');
+      const { id: ownerId } = requireUser(req);
+      await findOwnedMap(prisma, req.params.id, ownerId);
 
       const nodes = await prisma.node.findMany({
         where: { mapId: req.params.id },
@@ -100,10 +107,8 @@ const mapsPlugin: FastifyPluginAsyncZod = async (app) => {
   app.delete('/:id', {
     schema: { params: IdParam },
     handler: async (req, reply) => {
-      const existing = await prisma.map.findUnique({
-        where: { id: req.params.id },
-      });
-      if (!existing) throw new NotFoundError('Map not found');
+      const { id: ownerId } = requireUser(req);
+      await findOwnedMap(prisma, req.params.id, ownerId);
 
       await prisma.map.delete({ where: { id: req.params.id } });
       return reply.status(204).send();
