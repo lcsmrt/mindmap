@@ -1,7 +1,7 @@
 # M18 — Núcleo de auth backend — Tasks
 
 **Design**: `.specs/features/m18-auth-core/design.md`
-**Status**: Draft
+**Status**: Executado (2026-07-04) — 12/12 tasks; gates verdes (typecheck, lint, unit api 63→97, web 121 intocado). Review AD-013 pendente em chat separado.
 
 > Execução em **chat separado** ([[feedback-plan-execute-split]]). Só backend (`packages/api` + `packages/shared`).
 > Skill recomendada para tasks de rota/mapper/teste: **`api-backend`**.

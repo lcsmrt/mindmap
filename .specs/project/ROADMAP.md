@@ -177,7 +177,7 @@ M18 (núcleo backend)
      └─ M22 (Google OAuth)          que o portão existe
 ```
 
-### M18 — Núcleo de auth backend (multi-tenancy) 🔴 alta · só backend · 📋 spec/design/tasks prontos (2026-07-04), execução pendente
+### M18 — Núcleo de auth backend (multi-tenancy) 🔴 alta · só backend · ✅ EXECUTADO (2026-07-04) — review AD-013 pendente
 
 Fundação de que todo o resto depende; parte mais crítica de segurança. Planejamento concluído em `.specs/features/m18-auth-core/` (21 req. M18-NN, 12 tasks; ver AD-025 + Current Work em STATE.md). Decisões: backfill = 1º cadastro herda; sessão 7d/30d; senha mín. 8; sessão opaca com `sha256(token)` no banco.
 
