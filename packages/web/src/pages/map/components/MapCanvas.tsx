@@ -12,7 +12,6 @@ import type { TreeNode } from '../lib/tree.js';
 import { useTreeLayout } from '../lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '../lib/useTreeLayout.js';
 import { slotToMoveBody, type Slot } from '../lib/slots.js';
-import { MIN_NODE_WIDTH } from '../lib/nodeSize.js';
 import { MindNode } from './MindNode.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
@@ -20,7 +19,7 @@ import { useMeasuredHeights } from './useMeasuredHeights.js';
 import { useContainerSize } from './useContainerSize.js';
 import { useNodeEditing } from './useNodeEditing.js';
 import { GhostBar } from './GhostBar.js';
-import { clampWidth } from './clampWidth.js';
+import { draftWidth, settleWidth } from './resizeWidth.js';
 import { measureContentWidth } from './measureContentWidth.js';
 
 const SCALE_MIN = 0.1;
@@ -101,10 +100,11 @@ function CanvasLayers({
     width: number;
   } | null>(null);
 
-  const endResize = (r: { id: string; startWidth: number; width: number }) => {
+  const endResize = (r: { id: string; startWidth: number; width: number; ceiling: number }) => {
+    const settled = settleWidth(r.width, r.ceiling);
     resizeRef.current = null;
     setActiveResize(null);
-    if (r.width !== r.startWidth) onPersistWidth(r.id, r.width);
+    if (settled !== r.startWidth) onPersistWidth(r.id, settled);
   };
 
   // aguarda allMeasured para enquadrar bounds reais, não a estimativa de 1º paint
@@ -181,29 +181,30 @@ function CanvasLayers({
                 zIndex: isDragging ? 10 : undefined,
                 opacity: isDragging ? 0.85 : undefined,
               }}
+              onPointerDownCapture={(e) => {
+                if (!(e.target as HTMLElement).closest('[data-testid="resize-handle"]')) return;
+                // captura para do use-gesture do <Zoom> (listener nativo no container, só vê o bubble)
+                e.stopPropagation();
+                e.currentTarget.setPointerCapture(e.pointerId);
+                const cardEl = e.currentTarget.firstElementChild as HTMLElement;
+                const startWidth = e.currentTarget.offsetWidth;
+                resizeRef.current = {
+                  id: p.id,
+                  startClientX: e.clientX,
+                  startWidth,
+                  ceiling: measureContentWidth(cardEl),
+                  width: startWidth,
+                };
+              }}
               onPointerDown={(e) => {
-                if ((e.target as HTMLElement).closest('[data-testid="resize-handle"]')) {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  const cardEl = e.currentTarget.firstElementChild as HTMLElement;
-                  const startWidth = e.currentTarget.offsetWidth;
-                  resizeRef.current = {
-                    id: p.id,
-                    startClientX: e.clientX,
-                    startWidth,
-                    ceiling: measureContentWidth(cardEl),
-                    width: startWidth,
-                  };
-                } else {
-                  onNodePointerDown(p.id, e);
-                }
+                if (resizeRef.current?.id === p.id) return;
+                onNodePointerDown(p.id, e);
               }}
               onPointerMove={(e) => {
                 if (resizeRef.current?.id === p.id) {
                   const { startClientX, startWidth, ceiling } = resizeRef.current;
                   const worldDx = (e.clientX - startClientX) / scale;
-                  const width = Math.round(
-                    clampWidth(startWidth, worldDx, MIN_NODE_WIDTH, ceiling),
-                  );
+                  const width = draftWidth(startWidth, worldDx, ceiling);
                   resizeRef.current.width = width;
                   setActiveResize({ id: p.id, width });
                 } else {
@@ -312,6 +313,32 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     [updateNode, mapId],
   );
 
+  // Pós-edição: se o título couber numa largura menor que a atual, encolhe o card pro
+  // conteúdo (mesma medição do resize). Mede com o título submetido, não o do DOM: o update
+  // otimista aterrissa depois (após o ciclo de rede), então o DOM ainda tem o texto antigo.
+  // 1 rAF só garante que o input já virou o span do título (estrutura do card).
+  const fitWidthToContent = useCallback(
+    (id: string, title: string) => {
+      requestAnimationFrame(() => {
+        const wrapper = document.querySelector<HTMLElement>(`[data-node-id="${id}"]`);
+        const cardEl = wrapper?.firstElementChild as HTMLElement | null;
+        if (!wrapper || !cardEl) return;
+        const fitted = measureContentWidth(cardEl, title);
+        if (fitted < wrapper.offsetWidth) handlePersistWidth(id, fitted);
+      });
+    },
+    [handlePersistWidth],
+  );
+
+  const handleSubmitEditAndFit = useCallback(
+    (id: string, title: string) => {
+      const trimmed = title.trim();
+      handleSubmitEdit(id, trimmed);
+      if (trimmed) fitWidthToContent(id, trimmed);
+    },
+    [handleSubmitEdit, fitWidthToContent],
+  );
+
   const visTree = useMemo(() => buildTree(visNodes), [visNodes]);
 
   const nodeById = useMemo(() => {
@@ -332,7 +359,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
         hasChildren: hasChildrenMap.get(nodeDto.id) ?? false,
         isCollapsed: collapsedIds.has(nodeDto.id),
         isEditing: editingId === nodeDto.id,
-        onSubmitEdit: (title) => handleSubmitEdit(nodeDto.id, title),
+        onSubmitEdit: (title) => handleSubmitEditAndFit(nodeDto.id, title),
         onCancelEdit: handleCancelEdit,
         onStartEdit: () => handleStartEdit(nodeDto.id),
         onAddChild: () => handleAddChild(nodeDto.id),
@@ -348,7 +375,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
     hasChildrenMap,
     collapsedIds,
     editingId,
-    handleSubmitEdit,
+    handleSubmitEditAndFit,
     handleCancelEdit,
     handleStartEdit,
     handleAddChild,

@@ -2,7 +2,9 @@ import { NODE_WIDTH } from '../lib/nodeSize.js';
 
 const FALLBACK = NODE_WIDTH * 4;
 
-export function measureContentWidth(cardEl: HTMLElement): number {
+// overrideTitle: mede um título que ainda não chegou ao DOM (ex.: pós-edição, quando o
+// update otimista aterrissa depois) — evita medir o texto antigo por dependência de timing.
+export function measureContentWidth(cardEl: HTMLElement, overrideTitle?: string): number {
   try {
     const clone = cardEl.cloneNode(true) as HTMLElement;
     Object.assign(clone.style, {
@@ -17,6 +19,7 @@ export function measureContentWidth(cardEl: HTMLElement): number {
     // nowrap evita que a cadeia flex subestime a largura intrínseca do título
     clone.querySelectorAll<HTMLElement>('[data-testid="node-title"]').forEach((el) => {
       el.style.whiteSpace = 'nowrap';
+      if (overrideTitle !== undefined) el.textContent = overrideTitle;
     });
     document.body.appendChild(clone);
     const w = clone.getBoundingClientRect().width;
