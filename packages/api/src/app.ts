@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import fastifyCookie from '@fastify/cookie';
 import { Prisma } from '@prisma/client';
 import {
   hasZodFastifySchemaValidationErrors,
@@ -9,6 +10,7 @@ import {
 import type { HealthResponse } from '@mindmap/shared';
 import { prisma } from './prisma.js';
 import { ApiError } from './errors.js';
+import authPlugin from './routes/auth.js';
 import mapsPlugin from './routes/maps.js';
 import nodesPlugin from './routes/nodes.js';
 
@@ -17,6 +19,9 @@ export function buildApp() {
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  app.register(fastifyCookie);
+  app.decorateRequest('user', null);
 
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof ApiError) {
@@ -49,6 +54,7 @@ export function buildApp() {
     }
   });
 
+  app.register(authPlugin, { prefix: '/auth' });
   app.register(mapsPlugin, { prefix: '/maps' });
   app.register(nodesPlugin, { prefix: '/nodes' });
 
