@@ -106,6 +106,12 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Tech Debt
 
+**Cookie de sessão sem `Secure` em prod HTTP (M18, 2026-07-04):**
+
+- Files: `packages/api/src/env.ts` (`COOKIE_SECURE`), `packages/api/src/plugins/auth-guard.ts` (`setSessionCookie`)
+- A prod atual é `http://72.60.1.97:8080` (AD-022, sem TLS). O flag `Secure` do cookie é **gated por env** (`COOKIE_SECURE`, default `false`) justamente porque um cookie `Secure` não trafega sobre HTTP puro — ligá-lo agora quebraria o login em prod. Consequência: o token de sessão trafega **em claro** na rede. Tolerável para ferramenta pessoal por IP, mas é uma exposição real.
+- **Recomendação:** provisionar TLS (domínio + certificado) e então setar `COOKIE_SECURE=true` no ambiente de prod. CSRF já coberto por `SameSite=Lax` (SPA + API mesma origem via nginx, AD-022). Severity: Medium (segredo em trânsito sem TLS).
+
 ~~**`useMeasuredHeights`: `refCallbacks` não é podado no unregister (review AD-013 de M12, 2026-06-27):**~~ — **resolvido (2026-07-02):** o ramo `el == null` do ref callback agora faz `refCallbacks.current.delete(id)` junto de `elements`/`heights`, podando a closure memoizada quando o nó desmonta. Um remount do mesmo id recria o callback via `registerNode`. `useMeasuredHeights.ts`.
 
 **`<Zoom>` render-prop do visx exige `eslint-disable react-hooks/refs` em `CanvasLayers` (M17, 2026-07-03):**

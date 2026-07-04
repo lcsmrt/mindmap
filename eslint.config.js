@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/e2e/**',
       'Mindmaps system interface/**',
       'Mindmaps system interface(2)/**',
+      'designs/**',
     ],
   },
   js.configs.recommended,
