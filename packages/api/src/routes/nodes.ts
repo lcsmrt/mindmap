@@ -37,9 +37,9 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
         });
         const nextOrder = (agg._max.sortOrder ?? -1) + 1;
 
-        // filho de 1º nível ganha lado default (balance); profundos ficam null
         let side: Side | null = null;
-        if (parent.parentId === null) {
+        const isFirstLevelChild = parent.parentId === null;
+        if (isFirstLevelChild) {
           const mapNodes = await tx.node.findMany({
             where: { mapId },
             select: { id: true, parentId: true, side: true },
@@ -158,8 +158,8 @@ const nodesPlugin: FastifyPluginAsyncZod = async (app) => {
           );
         }
 
-        // grava lado só para filhos da raiz; profundos ficam null; default RIGHT é salvaguarda
-        const newSide: Side | null = newParent.parentId === null ? (side ?? 'RIGHT') : null;
+        const isFirstLevelChild = newParent.parentId === null;
+        const newSide: Side | null = isFirstLevelChild ? (side ?? 'RIGHT') : null;
 
         const newSiblings = await tx.node.findMany({
           where: { parentId: newParentId, NOT: { id } },
