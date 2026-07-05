@@ -2,23 +2,24 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 // Roda com a sessão padrão injetada (storageState do playwright.config.ts) —
-// usuário fixo 'E2E' <e2e-m19@mindmap.test> (ver e2e/auth.setup.ts).
+// usuário fixo 'E2E' <e2e-m19@mindmap.test> / @e2e-m19 (ver e2e/auth.setup.ts).
 const FIXTURE_NAME = 'E2E';
 const FIXTURE_EMAIL = 'e2e-m19@mindmap.test';
+const FIXTURE_USERNAME = 'e2e-m19';
 
 async function openAccountMenu(page: Page) {
   await page.getByRole('button', { name: 'Menu de conta' }).click();
 }
 
 test.describe('menu de conta (M20)', () => {
-  test('avatar + dropdown aparecem na Home e no Mapa, com nome/e-mail e itens', async ({
+  test('avatar + dropdown aparecem na Home e no Mapa, com nome/@username e itens', async ({
     page,
   }) => {
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Menu de conta' })).toBeVisible();
     await openAccountMenu(page);
     await expect(page.getByText(FIXTURE_NAME, { exact: true })).toBeVisible();
-    await expect(page.getByText(FIXTURE_EMAIL)).toBeVisible();
+    await expect(page.getByText(`@${FIXTURE_USERNAME}`)).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Perfil' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Sair' })).toBeVisible();
     await page.keyboard.press('Escape');

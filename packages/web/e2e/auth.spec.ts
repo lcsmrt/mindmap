@@ -9,12 +9,17 @@ function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`;
 }
 
+function uniqueUsername(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
+
 const PASSWORD = 'senha-forte-123';
 
-async function signupViaUI(page: Page, email: string, name: string) {
+async function signupViaUI(page: Page, email: string, name: string, username: string) {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Criar conta' }).click();
   await page.getByPlaceholder('Como te chamamos').fill(name);
+  await page.getByPlaceholder('seu-usuario').fill(username);
   await page.getByPlaceholder('voce@exemplo.com').fill(email);
   await page.getByPlaceholder('Crie uma senha forte').fill(PASSWORD);
   await page.getByRole('button', { name: 'Criar conta' }).click();
@@ -34,7 +39,7 @@ async function logoutViaMenu(page: Page) {
 
 test.describe('auth — fluxo jogável (M19)', () => {
   test('criar conta válida cai na Home autenticada, sem 401', async ({ page }) => {
-    await signupViaUI(page, uniqueEmail('signup'), 'Nova Usuária');
+    await signupViaUI(page, uniqueEmail('signup'), 'Nova Usuária', uniqueUsername('signup'));
 
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('heading', { name: 'Meus Mapas' })).toBeVisible();
@@ -50,7 +55,7 @@ test.describe('auth — fluxo jogável (M19)', () => {
   });
 
   test('Sair derruba a sessão; reabrir / cai no login', async ({ page }) => {
-    await signupViaUI(page, uniqueEmail('logout'), 'Sai Daqui');
+    await signupViaUI(page, uniqueEmail('logout'), 'Sai Daqui', uniqueUsername('logout'));
     await expect(page).toHaveURL('/');
 
     await logoutViaMenu(page);
@@ -64,7 +69,7 @@ test.describe('auth — fluxo jogável (M19)', () => {
     page,
   }) => {
     const email = uniqueEmail('returnto');
-    await signupViaUI(page, email, 'Volta Aqui');
+    await signupViaUI(page, email, 'Volta Aqui', uniqueUsername('returnto'));
     await expect(page).toHaveURL('/');
 
     const title = `Mapa de retorno ${Date.now()}`;
@@ -90,5 +95,27 @@ test.describe('auth — fluxo jogável (M19)', () => {
 
     await loginViaUI(page, email, PASSWORD);
     await expect(page).toHaveURL(mapUrl, { timeout: 5_000 });
+  });
+});
+
+test.describe('login por username (M23)', () => {
+  test('cadastro com username → login por username → login por e-mail', async ({ page }) => {
+    const email = uniqueEmail('m23');
+    const username = uniqueUsername('m23');
+
+    await signupViaUI(page, email, 'Usuária M23', username);
+    await expect(page).toHaveURL('/');
+
+    await logoutViaMenu(page);
+    await expect(page).toHaveURL(/\/login$/);
+
+    await loginViaUI(page, username, PASSWORD);
+    await expect(page).toHaveURL('/');
+
+    await logoutViaMenu(page);
+    await expect(page).toHaveURL(/\/login$/);
+
+    await loginViaUI(page, email, PASSWORD);
+    await expect(page).toHaveURL('/');
   });
 });

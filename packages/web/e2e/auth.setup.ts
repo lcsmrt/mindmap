@@ -11,6 +11,7 @@ const BASE_URL = 'http://localhost:5173';
 // Usuário fixo, reutilizado entre runs (o DB de e2e é acumulativo — ver
 // CONCERNS.md > Test Infrastructure). Garante que a suíte roda autenticada.
 const EMAIL = 'e2e-m19@mindmap.test';
+const USERNAME = 'e2e-m19';
 const PASSWORD = 'e2e-password-123';
 
 export default async function globalSetup() {
@@ -19,12 +20,12 @@ export default async function globalSetup() {
   const context = await playwrightRequest.newContext({ baseURL: BASE_URL });
 
   const signupRes = await context.post('/api/auth/signup', {
-    data: { email: EMAIL, password: PASSWORD, name: 'E2E' },
+    data: { email: EMAIL, username: USERNAME, password: PASSWORD, name: 'E2E' },
   });
 
   if (!signupRes.ok()) {
     const loginRes = await context.post('/api/auth/login', {
-      data: { email: EMAIL, password: PASSWORD },
+      data: { identifier: EMAIL, password: PASSWORD },
     });
     if (!loginRes.ok()) {
       throw new Error(

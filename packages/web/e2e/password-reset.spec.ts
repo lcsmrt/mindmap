@@ -8,6 +8,10 @@ function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`;
 }
 
+function uniqueUsername(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
+
 const PASSWORD = 'senha-forte-123';
 const NEW_PASSWORD = 'nova-senha-456';
 
@@ -15,6 +19,7 @@ async function signupViaUI(page: Page, email: string, name: string) {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Criar conta' }).click();
   await page.getByPlaceholder('Como te chamamos').fill(name);
+  await page.getByPlaceholder('seu-usuario').fill(uniqueUsername('reset'));
   await page.getByPlaceholder('voce@exemplo.com').fill(email);
   await page.getByPlaceholder('Crie uma senha forte').fill(PASSWORD);
   await page.getByRole('button', { name: 'Criar conta' }).click();
