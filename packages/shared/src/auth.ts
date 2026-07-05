@@ -1,24 +1,27 @@
 export interface AuthUser {
   id: string;
   email: string;
+  username: string;
   name: string;
 }
 
 export interface SignupBody {
   email: string;
+  username: string;
   password: string;
   name: string;
   remember?: boolean;
 }
 
 export interface LoginBody {
-  email: string;
+  identifier: string;
   password: string;
   remember?: boolean;
 }
 
 export interface UpdateProfileBody {
   name: string;
+  username?: string;
 }
 
 export interface ForgotPasswordBody {
