@@ -27,7 +27,7 @@ export const AccountMenu = () => {
       <MenuContent align="end" className="min-w-56">
         <div className="px-2 py-1.5">
           <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
-          <p className="truncate text-xs text-fg-subtle">{user.email}</p>
+          <p className="truncate text-xs text-fg-subtle">@{user.username}</p>
         </div>
         <MenuSeparator />
         <MenuItem onClick={() => navigate('/profile')}>
