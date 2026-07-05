@@ -23,7 +23,7 @@ const {
   useValidateResetToken,
 } = await import('./auth.js');
 
-const USER: AuthUser = { id: 'u1', email: 'user@example.com', name: 'User' };
+const USER: AuthUser = { id: 'u1', email: 'user@example.com', username: 'user', name: 'User' };
 
 function wrapper(queryClient: QueryClient) {
   function Wrapper({ children }: { children: ReactNode }) {
@@ -72,26 +72,48 @@ describe('fetchMe (via useSession)', () => {
 });
 
 describe('mutações de auth atualizam o cache', () => {
-  it('useSignup grava o usuário em [auth, me] no sucesso', async () => {
+  it('useSignup envia username e grava o usuário em [auth, me] no sucesso', async () => {
     requestMock.mockResolvedValueOnce(USER);
     const queryClient = new QueryClient();
 
     const { result } = renderHook(() => useSignup(), { wrapper: wrapper(queryClient) });
-    result.current.mutate({ email: USER.email, password: 'password123', name: USER.name });
+    result.current.mutate({
+      email: USER.email,
+      username: USER.username,
+      password: 'password123',
+      name: USER.name,
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryClient.getQueryData(['auth', 'me'])).toEqual(USER);
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/auth/signup',
+      expect.objectContaining({
+        body: JSON.stringify({
+          email: USER.email,
+          username: USER.username,
+          password: 'password123',
+          name: USER.name,
+        }),
+      }),
+    );
   });
 
-  it('useLogin grava o usuário em [auth, me] no sucesso', async () => {
+  it('useLogin envia identifier e grava o usuário em [auth, me] no sucesso', async () => {
     requestMock.mockResolvedValueOnce(USER);
     const queryClient = new QueryClient();
 
     const { result } = renderHook(() => useLogin(), { wrapper: wrapper(queryClient) });
-    result.current.mutate({ email: USER.email, password: 'password123' });
+    result.current.mutate({ identifier: USER.username, password: 'password123' });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryClient.getQueryData(['auth', 'me'])).toEqual(USER);
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/auth/login',
+      expect.objectContaining({
+        body: JSON.stringify({ identifier: USER.username, password: 'password123' }),
+      }),
+    );
   });
 
   it('useLogout zera [auth, me] e limpa o cache no sucesso', async () => {
@@ -119,6 +141,25 @@ describe('mutações de auth atualizam o cache', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryClient.getQueryData(['auth', 'me'])).toEqual(updated);
+  });
+
+  it('useUpdateProfile repassa username quando presente', async () => {
+    const updated = { ...USER, username: 'novo-nome' };
+    requestMock.mockResolvedValueOnce(updated);
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['auth', 'me'], USER);
+
+    const { result } = renderHook(() => useUpdateProfile(), { wrapper: wrapper(queryClient) });
+    result.current.mutate({ name: USER.name, username: 'novo-nome' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(queryClient.getQueryData(['auth', 'me'])).toEqual(updated);
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/auth/me',
+      expect.objectContaining({
+        body: JSON.stringify({ name: USER.name, username: 'novo-nome' }),
+      }),
+    );
   });
 
   it('useUpdateProfile propaga erro sem tocar o cache', async () => {
