@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { MapSummary } from '@mindmap/shared';
 
 import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js';
-import { useLogout } from '@/api/auth.js';
+import { AppHeader } from '@/components/AppHeader.js';
 import { BrandMark } from '@/components/BrandMark.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
 import { MagnifyingGlassIcon, PlusIcon } from '@phosphor-icons/react';
@@ -38,9 +38,6 @@ export const HomePage = () => {
   const { mutate: deleteMap } = useDeleteMap({
     onSuccess: () => setDeleteTarget(null),
   });
-  const { mutate: logout } = useLogout({
-    onSuccess: () => navigate('/login'),
-  });
 
   if (isLoading) {
     return <p className="p-6 text-muted-foreground">Carregando…</p>;
@@ -59,22 +56,20 @@ export const HomePage = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between border-b border-border px-8 py-4.5">
-        <div className="flex items-center gap-3">
-          <BrandMark size={28} glow />
-          <div className="flex items-center gap-2">
-            <span className="font-heading text-base font-bold tracking-[0.12em] uppercase">
-              KAOS
-            </span>
-            <span className="h-4 w-px bg-border" />
-            <span className="font-mono text-xs text-fg-subtle">mapas mentais</span>
-          </div>
-        </div>
-        {/* Provisório até o menu de conta do M20 */}
-        <Button type="button" variant="ghost" onClick={() => logout()} className="text-fg-subtle">
-          Sair
-        </Button>
-      </header>
+      <AppHeader
+        left={
+          <>
+            <BrandMark size={28} glow />
+            <div className="flex items-center gap-2">
+              <span className="font-heading text-base font-bold tracking-[0.12em] uppercase">
+                KAOS
+              </span>
+              <span className="h-4 w-px bg-border" />
+              <span className="font-mono text-xs text-fg-subtle">mapas mentais</span>
+            </div>
+          </>
+        }
+      />
 
       <main className="mx-auto w-full max-w-270 flex-1 px-8 pt-10 pb-16">
         <div className="mb-6 flex items-end justify-between gap-5">

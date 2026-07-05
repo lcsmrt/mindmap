@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeftIcon } from '@phosphor-icons/react';
 import { useMap } from '@/api/maps.js';
+import { AppHeader } from '@/components/AppHeader.js';
 import { MapCanvas } from './components/MapCanvas.js';
 
 export const MapPage = () => {
@@ -29,16 +30,20 @@ export const MapPage = () => {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex items-center gap-4 border-b px-6 py-3">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Mapas
-        </Link>
-        <h1 className="text-lg font-semibold text-foreground">{map?.title}</h1>
-      </header>
+      <AppHeader
+        left={
+          <>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Mapas
+            </Link>
+            <h1 className="text-lg font-semibold text-foreground">{map?.title}</h1>
+          </>
+        }
+      />
 
       <div className="flex flex-1 h-0">
         <MapCanvas mapId={id!} />
