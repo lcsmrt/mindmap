@@ -332,6 +332,63 @@ describe('Auth API', () => {
       });
     });
 
+    it('troca username — atualiza e retorna o AuthUser', async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+      const userId = signup.json<{ id: string }>().id;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: 'Alice', username: 'AliceNova' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ username: string }>().username).toBe('alicenova');
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).username).toBe(
+        'alicenova',
+      );
+    });
+
+    it('username duplicado — 409, sem tocar o banco', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/auth/signup',
+        payload: { ...validSignup, email: 'bob@example.com', username: 'bob', name: 'Bob' },
+      });
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+      const userId = signup.json<{ id: string }>().id;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: 'Alice', username: 'bob' },
+      });
+
+      expect(res.statusCode).toBe(409);
+      expect(res.json<{ error: string }>().error).toBe('Nome de usuário já em uso');
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).username).toBe(
+        'alice',
+      );
+    });
+
+    it('username com formato inválido — 400', async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: 'Alice', username: '-alice-' },
+      });
+
+      expect(res.statusCode).toBe(400);
+    });
+
     it('afeta só o próprio usuário — outro user permanece intocado', async () => {
       const signupA = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
       const tokenA = sessionCookie(signupA)!.value;

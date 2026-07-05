@@ -52,6 +52,7 @@ const LoginBodySchema = z.object({
 
 const UpdateProfileBodySchema = z.object({
   name: NameField,
+  username: UsernameField.optional(),
 }) satisfies z.ZodType<UpdateProfileBody>;
 
 const ForgotPasswordBodySchema = z.object({
@@ -67,6 +68,15 @@ const ResetPasswordBodySchema = z.object({
 const ResetValidateQuerySchema = z.object({
   token: z.string().min(1),
 });
+
+function conflictFromUniqueViolation(err: unknown): ConflictError | undefined {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== 'P2002') return undefined;
+  const target = err.meta?.target as string[] | string | undefined;
+  const field = Array.isArray(target) ? target.join(',') : String(target ?? '');
+  if (field.includes('email')) return new ConflictError('E-mail já cadastrado');
+  if (field.includes('username')) return new ConflictError('Nome de usuário já em uso');
+  return undefined;
+}
 
 const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/signup', {
@@ -91,13 +101,7 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
           return created;
         });
       } catch (err) {
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-          const target = err.meta?.target as string[] | string | undefined;
-          const field = Array.isArray(target) ? target.join(',') : String(target ?? '');
-          if (field.includes('email')) throw new ConflictError('E-mail já cadastrado');
-          if (field.includes('username')) throw new ConflictError('Nome de usuário já em uso');
-        }
-        throw err;
+        throw conflictFromUniqueViolation(err) ?? err;
       }
 
       const { token, maxAgeSeconds } = await createSession(user.id, remember ?? false);
@@ -146,11 +150,16 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
     schema: { body: UpdateProfileBodySchema },
     handler: async (req) => {
       const { id } = requireUser(req);
-      const user = await prisma.user.update({
-        where: { id },
-        data: { name: req.body.name },
-      });
-      return toAuthUser(user);
+      const { name, username } = req.body;
+      try {
+        const user = await prisma.user.update({
+          where: { id },
+          data: { name, username },
+        });
+        return toAuthUser(user);
+      } catch (err) {
+        throw conflictFromUniqueViolation(err) ?? err;
+      }
     },
   });
 
