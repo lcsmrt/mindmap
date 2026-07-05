@@ -26,6 +26,12 @@ async function loginViaUI(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click();
 }
 
+// "Sair" mora no dropdown do menu de conta (M20) — abre pelo avatar antes de clicar.
+async function logoutViaMenu(page: Page) {
+  await page.getByRole('button', { name: 'Menu de conta' }).click();
+  await page.getByRole('menuitem', { name: 'Sair' }).click();
+}
+
 test.describe('auth — fluxo jogável (M19)', () => {
   test('criar conta válida cai na Home autenticada, sem 401', async ({ page }) => {
     await signupViaUI(page, uniqueEmail('signup'), 'Nova Usuária');
@@ -47,7 +53,7 @@ test.describe('auth — fluxo jogável (M19)', () => {
     await signupViaUI(page, uniqueEmail('logout'), 'Sai Daqui');
     await expect(page).toHaveURL('/');
 
-    await page.getByRole('button', { name: 'Sair' }).click();
+    await logoutViaMenu(page);
     await expect(page).toHaveURL(/\/login$/);
 
     await page.goto('/');
@@ -75,9 +81,8 @@ test.describe('auth — fluxo jogável (M19)', () => {
     await expect(page).toHaveURL(/\/maps\/[^/]+$/, { timeout: 5_000 });
     const mapUrl = page.url();
 
-    // Sair só existe no header da Home (M19-15) — desloga a partir de lá.
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Sair' }).click();
+    // O menu de conta (M20) leva o "Sair" também pra tela de mapa — desloga direto daqui.
+    await logoutViaMenu(page);
     await expect(page).toHaveURL(/\/login$/);
 
     await page.goto(mapUrl);
