@@ -18,7 +18,7 @@ export const MapCardMenu = ({ onRename, onDelete, className }: MapCardMenuProps)
           className,
         )}
       >
-        <DotsThreeIcon className="size-5" weight="bold" />
+        <DotsThreeIcon className="size-5" />
       </MenuTrigger>
       <MenuContent align="end">
         <MenuItem onClick={onRename}>Renomear</MenuItem>

@@ -178,7 +178,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
               className="mt-2.5 border-t pt-2.5"
               style={{ borderColor: dividerColor, color: effectiveText }}
             >
-              <NodeTaskIndicators node={{ ...node, status, assignee: trimmedAssignee || null, isCritical }} />
+              <NodeTaskIndicators node={{ ...node, status, assignee: trimmedAssignee || null }} />
             </div>
           )}
         </div>
@@ -259,7 +259,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
         </FieldLabel>
         <InputGroup className="h-auto py-1">
           <InputGroupAddon align="inline-start">
-            <Avatar size="sm" className="size-6">
+            <Avatar className="size-6">
               <AvatarFallback className="bg-primary/20 text-xs font-bold text-primary-foreground/80">
                 {initials || '—'}
               </AvatarFallback>

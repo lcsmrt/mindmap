@@ -30,7 +30,7 @@ export function NodeTaskIndicators({ node }: NodeTaskIndicatorsProps) {
       )}
 
       {assignee && (
-        <Avatar size="sm" className="ml-auto size-5" title={assignee} aria-label={assignee}>
+        <Avatar className="ml-auto size-5" title={assignee} aria-label={assignee}>
           <AvatarFallback className="bg-primary/20 text-xs font-bold text-primary-foreground/80">
             {getInitials(assignee)}
           </AvatarFallback>

@@ -23,7 +23,7 @@ export const EmptyState = ({ title, subtitle, onCreate, onClear }: EmptyStatePro
           onClick={onCreate}
           className="h-auto gap-2 rounded-md px-4 py-2.5 text-sm font-semibold hover:bg-primary-hover"
         >
-          <PlusIcon className="size-4" weight="bold" />
+          <PlusIcon className="size-4" />
           Criar primeiro mapa
         </Button>
       )}

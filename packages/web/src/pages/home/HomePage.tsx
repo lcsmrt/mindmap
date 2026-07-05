@@ -88,7 +88,7 @@ export const HomePage = () => {
             onClick={() => setCreating(true)}
             className="h-auto gap-2 rounded-md px-4 py-3 text-sm font-semibold shadow-sm hover:bg-primary-hover"
           >
-            <PlusIcon className="size-4" weight="bold" /> Novo mapa
+            <PlusIcon className="size-4" /> Novo mapa
           </Button>
         </div>
 
