@@ -187,10 +187,15 @@ Fundação de que todo o resto depende; parte mais crítica de segurança. Plane
 - Endpoints: `signup`, `login`, `logout`, `me`.
 - **Guarda global + escopo por dono**: toda query de maps/nodes filtra por `ownerId`; toda mutação checa posse (um usuário não toca no mapa/nó de outro).
 
-### M19 — Tela de auth + guarda no front 🔴 alta · **1ª fatia jogável ponta-a-ponta (email+senha)** · depende de M18
+### M19 — Tela de auth + guarda no front 🔴 alta · **1ª fatia jogável ponta-a-ponta (email+senha)** · depende de M18 · ✅ EXECUTADO (2026-07-04) — review AD-013 pendente
 
-- Tela KAOS: modos **Entrar** / **Criar conta** (nome só no cadastro), toggle de olho na senha.
-- react-router: rotas protegidas, redirect p/ login, bootstrap de sessão via `/me`, "manter conectado neste dispositivo" (duração do cookie), logout.
+Planejado e executado em `.specs/features/m19-auth-frontend/` (spec 20 req. M19-NN, context, design, 6/6 tasks; ver AD-026 + Current Work em STATE.md). Só `packages/web`; backend/schema/contrato do M18 intocados.
+
+- Tela KAOS: modos **Entrar** / **Criar conta** (nome só no cadastro), toggle de olho na senha, "manter conectado" só no Entrar. Google/reset/menu/footer escondidos (voltam em M20–M22).
+- Sessão modelada como a query `['auth','me']` (fonte única, sem context/store); `signup`/`login`/`logout`/`me` em `src/api/auth.ts`.
+- react-router: `RequireAuth` (rota-layout) protege `/` e `/maps/:id` com redirect + return-to; `RedirectIfAuthed` no `/login`; `AuthSplash` no bootstrap; `401` global derruba a sessão.
+- Feedback híbrido: validação client-side por campo + banner do servidor (401/409); botão em loading. Logout = botão temporário no header da Home.
+- Gates verdes: typecheck, lint, unit web 140/api 97 (idêntico), e2e 41/41 (`auth.spec.ts` novo + suíte pré-existente reconciliada via `storageState` fixo).
 
 ### M20 — Menu de conta, perfil e tema 🟡 média · depende de M19
 
