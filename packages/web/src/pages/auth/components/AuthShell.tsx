@@ -4,9 +4,10 @@ import { BrandMark } from '@/components/BrandMark.js';
 type AuthShellProps = {
   title: string;
   children: ReactNode;
+  footer?: ReactNode;
 };
 
-export const AuthShell = ({ title, children }: AuthShellProps) => (
+export const AuthShell = ({ title, children, footer }: AuthShellProps) => (
   <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
     <div className="relative w-full max-w-103">
       <div className="mb-5 flex items-center justify-center gap-2.5">
@@ -20,6 +21,7 @@ export const AuthShell = ({ title, children }: AuthShellProps) => (
           {children}
         </div>
       </div>
+      {footer && <div className="mt-4 text-center text-sm text-fg-subtle">{footer}</div>}
     </div>
   </div>
 );

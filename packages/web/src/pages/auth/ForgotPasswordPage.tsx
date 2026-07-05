@@ -6,6 +6,12 @@ import { isValidEmail } from './validation.js';
 import { AuthShell } from './components/AuthShell.js';
 import { AuthField } from './components/AuthField.js';
 
+const backToLogin = (
+  <Link to="/login" className="font-semibold text-primary hover:text-primary-hover">
+    Voltar para entrar
+  </Link>
+);
+
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
@@ -31,22 +37,17 @@ export const ForgotPasswordPage = () => {
 
   if (sent) {
     return (
-      <AuthShell title="Verifique seu e-mail">
+      <AuthShell title="Verifique seu e-mail" footer={backToLogin}>
         <p className="mt-4 text-sm text-fg-subtle">
           Se existe uma conta com esse e-mail, enviamos um link para redefinir sua senha. O link
           expira em 60 minutos.
         </p>
-        <div className="mt-5 text-center text-sm text-fg-subtle">
-          <Link to="/login" className="font-semibold text-primary hover:text-primary-hover">
-            Voltar para entrar
-          </Link>
-        </div>
       </AuthShell>
     );
   }
 
   return (
-    <AuthShell title="Recuperar acesso">
+    <AuthShell title="Recuperar acesso" footer={backToLogin}>
       <p className="mt-2 text-sm text-fg-subtle">
         Informe seu e-mail e enviaremos um link para redefinir sua senha.
       </p>
@@ -69,11 +70,6 @@ export const ForgotPasswordPage = () => {
           {isPending ? 'Enviando…' : 'Enviar link de acesso'}
         </Button>
       </form>
-      <div className="mt-4 text-center text-sm text-fg-subtle">
-        <Link to="/login" className="font-semibold text-primary hover:text-primary-hover">
-          Voltar para entrar
-        </Link>
-      </div>
     </AuthShell>
   );
 };

@@ -6,6 +6,7 @@ import type {
   UpdateProfileBody,
   ForgotPasswordBody,
   ResetPasswordBody,
+  ResetTokenStatus,
 } from '@mindmap/shared';
 import type { MutationOptions } from './types.js';
 import { request, ApiError } from './_request.js';
@@ -56,8 +57,10 @@ async function resetPasswordRequest(body: ResetPasswordBody): Promise<void> {
   });
 }
 
-async function validateResetTokenRequest(token: string): Promise<void> {
-  return request<void>(`/api/auth/reset-password/validate?token=${encodeURIComponent(token)}`);
+async function validateResetTokenRequest(token: string): Promise<ResetTokenStatus> {
+  return request<ResetTokenStatus>(
+    `/api/auth/reset-password/validate?token=${encodeURIComponent(token)}`,
+  );
 }
 
 async function fetchMe(): Promise<AuthUser | null> {
@@ -133,10 +136,7 @@ export const useResetPassword = (options?: MutationOptions<void, ResetPasswordBo
 export const useValidateResetToken = (token: string) =>
   useQuery({
     queryKey: ['auth', 'reset-validate', token],
-    queryFn: async () => {
-      await validateResetTokenRequest(token);
-      return true;
-    },
+    queryFn: () => validateResetTokenRequest(token),
     enabled: !!token,
     retry: false,
     staleTime: Infinity,

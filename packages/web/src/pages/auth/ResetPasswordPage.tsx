@@ -44,20 +44,22 @@ export const ResetPasswordPage = () => {
     );
   }
 
-  if (!token || validation.isError) {
+  if (!token || !validation.data?.valid) {
     return (
-      <AuthShell title="Link inválido">
-        <p className="mt-4 text-sm text-fg-subtle">
-          Este link de redefinição é inválido ou expirou. Peça um novo para continuar.
-        </p>
-        <div className="mt-5 text-center text-sm text-fg-subtle">
+      <AuthShell
+        title="Link inválido"
+        footer={
           <Link
             to="/forgot-password"
             className="font-semibold text-primary hover:text-primary-hover"
           >
             Pedir novo link
           </Link>
-        </div>
+        }
+      >
+        <p className="mt-4 text-sm text-fg-subtle">
+          Este link de redefinição é inválido ou expirou. Peça um novo para continuar.
+        </p>
       </AuthShell>
     );
   }

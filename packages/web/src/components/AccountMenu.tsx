@@ -3,13 +3,7 @@ import { UserIcon, SignOutIcon } from '@phosphor-icons/react';
 import { useSession, useLogout } from '@/api/auth.js';
 import { getInitials } from '@/lib/getInitials.js';
 import { Avatar, AvatarFallback } from './ui/avatar.js';
-import {
-  Menu,
-  MenuTrigger,
-  MenuContent,
-  MenuItem,
-  MenuSeparator,
-} from './ui/menu.js';
+import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from './ui/menu.js';
 
 export const AccountMenu = () => {
   const navigate = useNavigate();
@@ -26,7 +20,7 @@ export const AccountMenu = () => {
         className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label="Menu de conta"
       >
-        <Avatar>
+        <Avatar className="hover:cursor-pointer">
           <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
         </Avatar>
       </MenuTrigger>

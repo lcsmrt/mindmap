@@ -163,8 +163,8 @@ describe('reset de senha (M21)', () => {
     );
   });
 
-  it('useValidateResetToken consulta o endpoint de validação quando há token', async () => {
-    requestMock.mockResolvedValueOnce(undefined);
+  it('useValidateResetToken consulta o endpoint e expõe { valid: true }', async () => {
+    requestMock.mockResolvedValueOnce({ valid: true });
     const queryClient = new QueryClient();
 
     const { result } = renderHook(() => useValidateResetToken('abc'), {
@@ -172,14 +172,27 @@ describe('reset de senha (M21)', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ valid: true });
     expect(requestMock).toHaveBeenCalledWith('/api/auth/reset-password/validate?token=abc');
   });
 
-  it('useValidateResetToken propaga erro de token inválido (400)', async () => {
-    requestMock.mockRejectedValueOnce(new ApiError('Invalid or expired token', 400));
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  it('useValidateResetToken expõe { valid: false } para token inválido (verdict, não erro)', async () => {
+    requestMock.mockResolvedValueOnce({ valid: false });
+    const queryClient = new QueryClient();
 
     const { result } = renderHook(() => useValidateResetToken('bad'), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ valid: false });
+  });
+
+  it('useValidateResetToken propaga falha real de rede (500)', async () => {
+    requestMock.mockRejectedValueOnce(new ApiError('Server error', 500));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    const { result } = renderHook(() => useValidateResetToken('boom'), {
       wrapper: wrapper(queryClient),
     });
 

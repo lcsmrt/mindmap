@@ -365,7 +365,7 @@ describe('Auth API', () => {
       userId = signup.json<{ id: string }>().id;
     });
 
-    it('token válido → 204 sem consumir (validar não apaga)', async () => {
+    it('token válido → 200 { valid: true } sem consumir (validar não apaga)', async () => {
       const token = await createPasswordResetToken(userId);
 
       const first = await app.inject({
@@ -377,17 +377,19 @@ describe('Auth API', () => {
         url: `/auth/reset-password/validate?token=${token}`,
       });
 
-      expect(first.statusCode).toBe(204);
-      expect(second.statusCode).toBe(204);
+      expect(first.statusCode).toBe(200);
+      expect(first.json()).toEqual({ valid: true });
+      expect(second.statusCode).toBe(200);
       expect(await prisma.passwordResetToken.count()).toBe(1);
     });
 
-    it('token inválido → 400', async () => {
+    it('token inválido → 200 { valid: false } (verdict como dado, não erro)', async () => {
       const res = await app.inject({
         method: 'GET',
         url: '/auth/reset-password/validate?token=inexistente',
       });
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ valid: false });
     });
   });
 

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BrandMark } from '@/components/BrandMark.js';
 import { Button } from '@/components/ui/button.js';
 import { Checkbox } from '@/components/ui/checkbox.js';
 import { resolveReturnTo } from '@/auth/returnTo.js';
@@ -11,6 +10,7 @@ import {
   type AuthMode,
   type AuthFieldErrors,
 } from './validation.js';
+import { AuthShell } from './components/AuthShell.js';
 import { AuthField } from './components/AuthField.js';
 import { PasswordField } from './components/PasswordField.js';
 import { ErrorBanner } from './components/ErrorBanner.js';
@@ -69,109 +69,10 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
-      <div className="relative w-full max-w-103">
-        <div className="mb-5 flex items-center justify-center gap-2.5">
-          <BrandMark size={36} glow />
-          <span className="font-heading text-2xl font-semibold tracking-[0.2em]">KAOS</span>
-        </div>
-        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-          <div className="h-1 bg-linear-to-r from-primary via-destructive to-primary" />
-          <div className="px-6 py-6">
-            <h1 className="font-heading text-lg font-semibold">
-              {isEntrar ? 'Acessar conta' : 'Criar sua conta'}
-            </h1>
-
-            {isEntrar && resetSuccess && !serverError && (
-              <div
-                role="status"
-                className="mt-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm text-primary"
-              >
-                Senha redefinida com sucesso. Entre com a nova senha.
-              </div>
-            )}
-
-            {serverError && (
-              <div className="mt-4">
-                <ErrorBanner message={serverError} />
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4" noValidate>
-              {!isEntrar && (
-                <AuthField
-                  id="auth-name"
-                  label="Nome"
-                  placeholder="Como te chamamos"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  error={fieldErrors.name}
-                />
-              )}
-
-              <AuthField
-                id="auth-email"
-                label="E-mail"
-                type="email"
-                placeholder="voce@exemplo.com"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={fieldErrors.email}
-              />
-
-              <PasswordField
-                id="auth-password"
-                label="Senha"
-                placeholder={isEntrar ? 'Sua senha' : 'Crie uma senha forte'}
-                autoComplete={isEntrar ? 'current-password' : 'new-password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={fieldErrors.password}
-              />
-
-              {isEntrar && (
-                <label
-                  htmlFor="auth-remember"
-                  className="-mt-1 flex items-center gap-2 text-xs text-fg-subtle select-none"
-                >
-                  <Checkbox
-                    id="auth-remember"
-                    checked={remember}
-                    onCheckedChange={setRemember}
-                  />
-                  Manter conectado neste dispositivo
-                </label>
-              )}
-
-              {isEntrar && (
-                <Link
-                  to="/forgot-password"
-                  className="-mt-2 self-end text-xs font-medium text-primary hover:text-primary-hover"
-                >
-                  Esqueci a senha
-                </Link>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="mt-1 h-auto w-full rounded-md py-3 text-sm font-semibold hover:bg-primary-hover"
-              >
-                {isPending
-                  ? isEntrar
-                    ? 'Entrando…'
-                    : 'Criando…'
-                  : isEntrar
-                    ? 'Entrar'
-                    : 'Criar conta'}
-              </Button>
-            </form>
-          </div>
-        </div>
-
-        <div className="mt-4 text-center text-sm text-fg-subtle">
+    <AuthShell
+      title={isEntrar ? 'Acessar conta' : 'Criar sua conta'}
+      footer={
+        <>
           {isEntrar ? 'Novo por aqui?' : 'Já tem conta?'}{' '}
           <Button
             variant="link"
@@ -181,8 +82,91 @@ export const AuthPage = () => {
           >
             {isEntrar ? 'Criar conta' : 'Entrar'}
           </Button>
+        </>
+      }
+    >
+      {isEntrar && resetSuccess && !serverError && (
+        <div
+          role="status"
+          className="mt-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm text-primary"
+        >
+          Senha redefinida com sucesso. Entre com a nova senha.
         </div>
-      </div>
-    </div>
+      )}
+
+      {serverError && (
+        <div className="mt-4">
+          <ErrorBanner message={serverError} />
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4" noValidate>
+        {!isEntrar && (
+          <AuthField
+            id="auth-name"
+            label="Nome"
+            placeholder="Como te chamamos"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={fieldErrors.name}
+          />
+        )}
+
+        <AuthField
+          id="auth-email"
+          label="E-mail"
+          type="email"
+          placeholder="voce@exemplo.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={fieldErrors.email}
+        />
+
+        <PasswordField
+          id="auth-password"
+          label="Senha"
+          placeholder={isEntrar ? 'Sua senha' : 'Crie uma senha forte'}
+          autoComplete={isEntrar ? 'current-password' : 'new-password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={fieldErrors.password}
+        />
+
+        {isEntrar && (
+          <label
+            htmlFor="auth-remember"
+            className="-mt-1 flex items-center gap-2 text-xs text-fg-subtle select-none"
+          >
+            <Checkbox id="auth-remember" checked={remember} onCheckedChange={setRemember} />
+            Manter conectado neste dispositivo
+          </label>
+        )}
+
+        {isEntrar && (
+          <Link
+            to="/forgot-password"
+            className="-mt-2 self-end text-xs font-medium text-primary hover:text-primary-hover"
+          >
+            Esqueci a senha
+          </Link>
+        )}
+
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="mt-1 h-auto w-full rounded-md py-3 text-sm font-semibold hover:bg-primary-hover"
+        >
+          {isPending
+            ? isEntrar
+              ? 'Entrando…'
+              : 'Criando…'
+            : isEntrar
+              ? 'Entrar'
+              : 'Criar conta'}
+        </Button>
+      </form>
+    </AuthShell>
   );
 };

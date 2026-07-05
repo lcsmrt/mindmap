@@ -205,14 +205,14 @@ Commits atômicos, um por task (todos `feat(m21)`/`test(m21)`):
 | T8 | `694a723` | `/reset-password` (splash/inválido/form) + banner de sucesso no login; `validateResetPassword`. |
 | T9 | `7287732` | e2e `password-reset.spec.ts` (happy path + token inválido); `NODE_ENV=test` no api do playwright. |
 
-**Desvios do plano (mínimos):**
-- 400 de token inválido usa `new ApiError(400, …)` direto (não subclasse) pra manter `errors.ts`
-  fora do escopo da task.
-- `useValidateResetToken` retorna `true` no sucesso (TanStack Query proíbe `undefined` como data)
-  — a rota `/validate` segue `204`/`400`; o `true` é só o dado da query no cliente.
-- `AuthShell` novo (`pages/auth/components/`) é reusado só pelas **novas** páginas; o `AuthPage`
-  (M19) não foi refatorado pra adotá-lo (evita escopo em M19). Duas representações do mesmo shell
-  coexistem — candidato a unificação futura se incomodar.
+**Desvios do plano — levantados e resolvidos num passo de ajustes (2026-07-05):**
+- **Erro 400:** virou `BadRequestError` em `errors.ts` (segue o padrão das outras subclasses de
+  `ApiError`); a rota `reset` usa. ✅
+- **`/validate`:** deixou de ser `204`/`400` + sentinela `true`; agora é `GET 200 { valid: boolean }`
+  (verdict como dado — revisa M21-05). `useValidateResetToken` expõe `data.valid` direto, sem
+  sentinela nem erro-como-fluxo. ✅ (ver AD-030)
+- **`AuthShell`:** ganhou slot `footer` e o `AuthPage` (M19) foi migrado pra usá-lo — **uma única**
+  representação da casca entre as três telas de auth. ✅
 
 **Gates finais:** `pnpm -r typecheck` ✓, `pnpm -r lint` ✓, unit api 124 ✓, unit web 162 ✓,
 `pnpm test:e2e` 47 ✓ (M21 verde + suíte anterior sem regressão).

@@ -31,4 +31,8 @@ export interface ResetPasswordBody {
   logoutOtherDevices?: boolean;
 }
 
+export interface ResetTokenStatus {
+  valid: boolean;
+}
+
 export type AuthResponse = AuthUser;

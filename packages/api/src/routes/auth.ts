@@ -5,11 +5,12 @@ import type {
   UpdateProfileBody,
   ForgotPasswordBody,
   ResetPasswordBody,
+  ResetTokenStatus,
 } from '@mindmap/shared';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { env } from '../env.js';
-import { ApiError, UnauthorizedError } from '../errors.js';
+import { BadRequestError, UnauthorizedError } from '../errors.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../lib/password.js';
 import { createSession, deleteSession, SESSION_COOKIE_NAME } from '../services/sessions.js';
 import {
@@ -154,10 +155,9 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/reset-password/validate', {
     schema: { querystring: ResetValidateQuerySchema },
-    handler: async (req, reply) => {
+    handler: async (req): Promise<ResetTokenStatus> => {
       const record = await findValidResetToken(req.query.token);
-      if (!record) throw new ApiError(400, 'Invalid or expired token');
-      return reply.status(204).send();
+      return { valid: record !== null };
     },
   });
 
@@ -166,7 +166,7 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
     handler: async (req, reply) => {
       const { token, password, logoutOtherDevices } = req.body;
       const record = await findValidResetToken(token);
-      if (!record) throw new ApiError(400, 'Invalid or expired token');
+      if (!record) throw new BadRequestError('Invalid or expired token');
 
       const passwordHash = await hashPassword(password);
       await prisma.$transaction(async (tx) => {

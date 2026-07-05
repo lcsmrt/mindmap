@@ -37,8 +37,10 @@ e-mail, sem vazar quais e-mails têm conta. Fecha o buraco deixado por M19 (o li
   Uma nova requisição de reset **invalida tokens anteriores** do mesmo usuário (só o último link vale).
 - **M21-04** — Para conta inexistente: **nenhum** token/e-mail; resposta idêntica à M21-02
   (não vaza existência da conta — nem por corpo, nem por status).
-- **M21-05** — `GET /auth/reset-password/validate?token=…` → `204` se válido, `400` se inválido
-  ou expirado. **Sem efeito colateral** (não consome o token).
+- **M21-05** — `GET /auth/reset-password/validate?token=…` → `200 { valid: boolean }`. O verdict é
+  **dado** (`valid: false` para inválido/expirado), não erro HTTP. **Sem efeito colateral** (não
+  consome o token). *(Revisado na execução — AD-030; era `204`/`400`, mas token inválido é uma
+  resposta legítima da checagem, não uma falha de request.)*
 - **M21-06** — `POST /auth/reset-password` com token válido troca a senha (hash argon2),
   **consome o token** (single-use) e responde `204`.
 - **M21-07** — Token inválido / expirado / já usado → `400`. Senha < 8 caracteres → `400`
