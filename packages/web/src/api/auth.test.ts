@@ -12,7 +12,16 @@ vi.mock('./_request.js', async () => {
   return { ...actual, request: requestMock };
 });
 
-const { useSession, useSignup, useLogin, useLogout, useUpdateProfile } = await import('./auth.js');
+const {
+  useSession,
+  useSignup,
+  useLogin,
+  useLogout,
+  useUpdateProfile,
+  useForgotPassword,
+  useResetPassword,
+  useValidateResetToken,
+} = await import('./auth.js');
 
 const USER: AuthUser = { id: 'u1', email: 'user@example.com', name: 'User' };
 
@@ -122,5 +131,69 @@ describe('mutações de auth atualizam o cache', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(queryClient.getQueryData(['auth', 'me'])).toEqual(USER);
+  });
+});
+
+describe('reset de senha (M21)', () => {
+  it('useForgotPassword chama POST /api/auth/forgot-password', async () => {
+    requestMock.mockResolvedValueOnce(undefined);
+    const queryClient = new QueryClient();
+
+    const { result } = renderHook(() => useForgotPassword(), { wrapper: wrapper(queryClient) });
+    result.current.mutate({ email: 'user@example.com' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/auth/forgot-password',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('useResetPassword chama POST /api/auth/reset-password', async () => {
+    requestMock.mockResolvedValueOnce(undefined);
+    const queryClient = new QueryClient();
+
+    const { result } = renderHook(() => useResetPassword(), { wrapper: wrapper(queryClient) });
+    result.current.mutate({ token: 't', password: 'novasenha123', logoutOtherDevices: true });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/auth/reset-password',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('useValidateResetToken consulta o endpoint de validação quando há token', async () => {
+    requestMock.mockResolvedValueOnce(undefined);
+    const queryClient = new QueryClient();
+
+    const { result } = renderHook(() => useValidateResetToken('abc'), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(requestMock).toHaveBeenCalledWith('/api/auth/reset-password/validate?token=abc');
+  });
+
+  it('useValidateResetToken propaga erro de token inválido (400)', async () => {
+    requestMock.mockRejectedValueOnce(new ApiError('Invalid or expired token', 400));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    const { result } = renderHook(() => useValidateResetToken('bad'), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('useValidateResetToken fica desabilitado sem token', async () => {
+    const queryClient = new QueryClient();
+
+    const { result } = renderHook(() => useValidateResetToken(''), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+    expect(requestMock).not.toHaveBeenCalled();
   });
 });

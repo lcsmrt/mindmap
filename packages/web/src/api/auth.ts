@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AuthUser, SignupBody, LoginBody, UpdateProfileBody } from '@mindmap/shared';
+import type {
+  AuthUser,
+  SignupBody,
+  LoginBody,
+  UpdateProfileBody,
+  ForgotPasswordBody,
+  ResetPasswordBody,
+} from '@mindmap/shared';
 import type { MutationOptions } from './types.js';
 import { request, ApiError } from './_request.js';
 
@@ -31,6 +38,26 @@ async function updateProfileRequest(body: UpdateProfileBody): Promise<AuthUser> 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+async function forgotPasswordRequest(body: ForgotPasswordBody): Promise<void> {
+  return request<void>('/api/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+async function resetPasswordRequest(body: ResetPasswordBody): Promise<void> {
+  return request<void>('/api/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+async function validateResetTokenRequest(token: string): Promise<void> {
+  return request<void>(`/api/auth/reset-password/validate?token=${encodeURIComponent(token)}`);
 }
 
 async function fetchMe(): Promise<AuthUser | null> {
@@ -88,6 +115,32 @@ export const useUpdateProfile = (options?: MutationOptions<AuthUser, UpdateProfi
     onError: (error) => options?.onError?.(error),
   });
 };
+
+export const useForgotPassword = (options?: MutationOptions<void, ForgotPasswordBody>) =>
+  useMutation({
+    mutationFn: forgotPasswordRequest,
+    onSuccess: (data, variables) => options?.onSuccess?.(data, variables),
+    onError: (error) => options?.onError?.(error),
+  });
+
+export const useResetPassword = (options?: MutationOptions<void, ResetPasswordBody>) =>
+  useMutation({
+    mutationFn: resetPasswordRequest,
+    onSuccess: (data, variables) => options?.onSuccess?.(data, variables),
+    onError: (error) => options?.onError?.(error),
+  });
+
+export const useValidateResetToken = (token: string) =>
+  useQuery({
+    queryKey: ['auth', 'reset-validate', token],
+    queryFn: async () => {
+      await validateResetTokenRequest(token);
+      return true;
+    },
+    enabled: !!token,
+    retry: false,
+    staleTime: Infinity,
+  });
 
 export const useLogout = (options?: MutationOptions<void, void>) => {
   const queryClient = useQueryClient();
