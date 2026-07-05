@@ -20,7 +20,8 @@ export const AuthPage = () => {
   const location = useLocation();
   const [mode, setMode] = useState<AuthMode>('entrar');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
@@ -49,15 +50,20 @@ export const AuthPage = () => {
     e.preventDefault();
     setServerError(null);
 
-    const errors = validateAuth(mode, { name, email, password });
+    const errors = validateAuth(mode, { name, identifier, username, password });
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedIdentifier = identifier.trim().toLowerCase();
     if (isEntrar) {
-      login({ email: normalizedEmail, password, remember });
+      login({ identifier: normalizedIdentifier, password, remember });
     } else {
-      signup({ email: normalizedEmail, password, name: name.trim() });
+      signup({
+        email: normalizedIdentifier,
+        username: username.trim().toLowerCase(),
+        password,
+        name: name.trim(),
+      });
     }
   };
 
@@ -113,15 +119,27 @@ export const AuthPage = () => {
           />
         )}
 
+        {!isEntrar && (
+          <AuthField
+            id="auth-username"
+            label="Usuário"
+            placeholder="seu-usuario"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            error={fieldErrors.username}
+          />
+        )}
+
         <AuthField
-          id="auth-email"
-          label="E-mail"
-          type="email"
-          placeholder="voce@exemplo.com"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={fieldErrors.email}
+          id="auth-identifier"
+          label={isEntrar ? 'Usuário ou e-mail' : 'E-mail'}
+          type={isEntrar ? 'text' : 'email'}
+          placeholder={isEntrar ? 'voce@exemplo.com ou seu-usuario' : 'voce@exemplo.com'}
+          autoComplete={isEntrar ? 'username' : 'email'}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          error={fieldErrors.identifier}
         />
 
         <PasswordField
