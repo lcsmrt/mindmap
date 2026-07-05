@@ -41,9 +41,39 @@ pnpm dev
 | `pnpm dev` | Inicia frontend e backend em paralelo |
 | `pnpm build` | Build de produção de todos os pacotes |
 | `pnpm typecheck` | Type-check em todos os pacotes |
-| `pnpm test` | Testes unitários (Vitest) |
 | `pnpm lint` | ESLint em todos os pacotes |
-| `pnpm --filter @mindmap/web test:e2e` | Testes e2e (Playwright — sobe api e web automaticamente) |
+
+## Testes
+
+Os testes **não** rodam automaticamente durante o desenvolvimento — execute-os
+manualmente quando necessário. Um CI para barrar regressões antes do merge fica
+para depois.
+
+### Unitários (Vitest)
+
+```bash
+# Todos os pacotes
+pnpm test
+
+# Um pacote específico
+pnpm --filter @mindmap/web test
+pnpm --filter @mindmap/api test
+pnpm --filter @mindmap/shared test
+```
+
+> ⚠️ **A suíte da `api` é destrutiva.** Ela carrega `packages/api/.env.test`, que
+> aponta para o banco `dev_mindmap` local (via túnel SSH), e limpa os dados nos
+> testes. Não rode com um túnel apontando para produção nem com dados que você
+> queira preservar em `dev_mindmap`.
+
+### E2E (Playwright)
+
+```bash
+pnpm --filter @mindmap/web test:e2e
+```
+
+Sobe api (:3000) e web (:5173) automaticamente (reusa instâncias já rodando).
+Requer o túnel SSH aberto e o Playwright instalado (`pnpm --filter @mindmap/web exec playwright install`).
 
 ## Estrutura
 
