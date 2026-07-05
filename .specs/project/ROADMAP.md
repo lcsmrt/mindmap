@@ -65,7 +65,7 @@ Retrofit multi-usuário sobre o app antes single-user. Decisões fixadas em **AD
 
 ```
 M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
-                ├─ M21     (reset por e-mail)   pendente
+                ├─ M21 ✅  (reset por e-mail)
                 └─ M22     (Google OAuth)        pendente
 ```
 
@@ -73,9 +73,10 @@ M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
 - **M19 — Tela de auth + guarda no front** ✅ (AD-026 · `m19-auth-frontend/`) — 1ª fatia jogável email+senha. Sessão modelada como a query `['auth','me']`; `RequireAuth` + return-to; 401 global derruba a sessão. Só frontend. Acompanhado de uma limpeza de UI (lucide→phosphor, 7 primitivos shadcn, grade 4px) — ver Current Work em `STATE.md`.
 - **M20 — Menu de conta e perfil** ✅ executado; review AD-013 pendente (AD-027/AD-028 · `m20-account-menu/`) — `AppHeader` compartilhado + `AccountMenu` (avatar + dropdown), página `/profile` (edita nome, e-mail read-only), `PATCH /auth/me`. Tema claro/escuro fatiado pra fora. Full-stack pequeno.
 
-### M21 — Reset de senha por e-mail 🟡 pendente · depende de M18/M19 · puxa infra de e-mail
+### M21 — Reset de senha por e-mail ✅ executado; review AD-013 pendente (AD-029/AD-030 · `m21-password-reset/`)
 
 - Provedor de e-mail/SMTP + `PasswordResetToken` (uso único, expira); fluxo "Esqueci a senha" → "Link enviado" (mensagem neutra, não vaza existência de conta) → página de nova senha.
+- **Entregue (AD-030):** `PasswordResetToken` espelha `Session` (sha256 + TTL 60 min, uso único); `services/email.ts` provider-agnóstico (nodemailer/SMTP por env; console sem SMTP); 3 rotas no `authPlugin` (`forgot` sempre 204 neutro / `validate` / `reset` em transação) + seam de teste; `/forgot-password` e `/reset-password` no front; sem auto-login; flag `logoutOtherDevices` (default on). 9 commits T1–T9; gates verdes (unit api 124 / web 162 / e2e 47). **Ops:** setar `APP_URL`+`SMTP_*` no Portainer pra envio real em prod.
 
 ### M22 — Google OAuth 🟡 pendente · depende de M18 · puxa app OAuth no Google Cloud
 
