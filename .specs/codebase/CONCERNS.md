@@ -1,170 +1,88 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-05-19
+**Analysis Date:** 2026-05-19 · **Última limpeza:** 2026-07-05
 
-Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resolvidos ou novos forem descobertos.
+Só concerns **abertos**. Itens resolvidos foram removidos — o histórico de como cada um foi corrigido está no git e nas ADs/Lessons de `STATE.md`.
 
 ## Known Bugs
 
-**Rename com Enter sob falha de API pode disparar o PATCH duas vezes (2 toasts) — flaky, descoberto no gate e2e do M19, 2026-07-04 — ABERTO:** `persistence.spec.ts` ("toast de erro aparece e estado reverte quando API falha") falha intermitentemente com `strict mode violation: locator('[role="alert"]') resolved to 2 elements` (3 de 4 runs no gate do M19, depois estabilizou por alguns runs — condição de corrida, não determinística). Causa provável: `MindNode.tsx`/`useNodeEditing.ts` — `handleKeyDown` no Enter chama `commit()` → `onSubmitEdit(value)` → `setEditingId(null)`, que desmonta o `<input>` no próximo render; se o desmonte disparar o evento nativo `blur` antes de o componente sumir da árvore, o handler `onBlur={commit}` roda de novo → 2ª chamada a `onSubmitEdit` → 2 mutações `PATCH` → 2 toasts de erro quando a API falha. Não é causado nem exercitado pelo M19 (auth) — confirmado por diff byte-a-byte de `MindNode.tsx`, `useNodeEditing.ts` e `persistence.spec.ts` contra o commit anterior ao início do M18 (`aa15970`), idênticos. Severity: Low/Medium (só visível com API falhando, ex.: erro de rede real durante rename) — candidato a guard (`isSubmittedRef`/desabilitar `onBlur` após o Enter) numa quick task futura.
+**Rename com Enter sob falha de API pode disparar o `PATCH` duas vezes (2 toasts) — flaky (descoberto no e2e do M19, 2026-07-04):** `persistence.spec.ts` ("toast de erro aparece e estado reverte quando API falha") falha intermitentemente com `strict mode violation: locator('[role="alert"]') resolved to 2 elements`. Causa provável (`MindNode.tsx`/`useNodeEditing.ts`): `handleKeyDown` no Enter chama `commit()`→`onSubmitEdit(value)`→`setEditingId(null)`, que desmonta o `<input>`; se o desmonte disparar o `blur` nativo antes de sumir da árvore, `onBlur={commit}` roda de novo → 2ª mutação `PATCH` → 2 toasts quando a API falha. Não é causado pelo M19 (confirmado por diff byte-a-byte contra `aa15970`). Severity: Low/Medium (só com API falhando). Candidato a guard (`isSubmittedRef` / desabilitar `onBlur` após o Enter).
 
-**Zoom por pinça no trackpad sempre dá zoom out (relato do usuário, Linux, 2026-07-04) — ABERTO:** abrindo ou fechando a pinça, o canvas sempre afasta (zoom out). Causa provável: no Linux a pinça do trackpad chega ao browser como `wheel + ctrlKey`, que o `@use-gesture` sintetiza como gesto de pinça; o `defaultPinchDelta` do visx decide a direção por `offset − lastOffset` (offset acumulado vs. início do gesto), e nesse caminho sintético o offset não acompanha → sinal trava em `0.9`. **Tentativa 1 (no código, `MapCanvas.tsx` `pinchZoomDelta`, NÃO resolveu):** `pinchDelta` custom baseado em `direction` (sinal do delta do evento) em vez de `offset` — usuário confirmou que continuou zoom out, logo `direction` também não é confiável nesse caminho (ou o evento sequer chega como pinça). **Próximo passo a investigar:** ignorar o caminho de pinça e tratar `ctrl+wheel` pelo `wheelDelta` (que funciona: scroll de dois dedos zooma certo). Workaround atual pro usuário: usar scroll de dois dedos em vez da pinça. Sem cobertura de teste (gesto de trackpad).
-
-~~**Trepidação da árvore durante o resize horizontal do card (relato do usuário, pós-M15, 2026-06-27):**~~ — **RESOLVIDO (2026-07-04).** Causa-raiz: o **pan do `<Zoom>` disparava concorrente ao gesto de resize** — não a remedição de altura (por isso congelar a altura, testado antes, nunca resolveu). O `@use-gesture` (drag do `<Zoom>`) escuta num listener **nativo no container**, que no bubble roda **antes** do handler React do resize (delegado na raiz), então o `stopPropagation` chegava tarde e o pan armava junto; a cada frame o `translate` do canvas oscilava contra o relayout do resize = tremor. **Fix:** mover a detecção da alça + `stopPropagation` para **`onPointerDownCapture`** (fase de captura, na raiz, antes do listener nativo do container) → o pan nunca arma durante o resize. Confirmado empiricamente pelo usuário (trepidação sumiu; canvas parou de arrastar junto). `MapCanvas.tsx`. Symptom original: ao arrastar a alça, a árvore "tremia" a cada frame. Test coverage: nenhum teste de render/trepidação (comportamento de animação; `card-resize.spec.ts` funcional segue passando).
-
-~~**`persistence.spec.ts:136` — teste e2e "mover nó para outro pai" falha consistentemente (descoberto no review AD-013 de M6):**~~ — **resolvido (2026-07-02):** o teste foi reescrito para criar os dois filhos **via API** (`POST /nodes` com título único `m4-move-<ts>`) em vez dos cliques de UI via `.first()`/hover que assumiam "o 1º nó no DOM é a raiz" (causa raiz da falha). Removidos os `waitForTimeout` e a asserção circular `children.length >= 2`. Ao final deleta o `target` (cascateia o `source`, agora sua subárvore) → não polui mais o mapa compartilhado. 6/6 specs de `persistence.spec.ts` verdes. A dívida estrutural de **DB de teste isolado** segue aberta em "Test Infrastructure" (mas este teste deixou de depender dela).
-
-~~**Rename inline do card da home não fecha ao confirmar com sucesso (descoberto no review AD-013 de M10):**~~ — **resolvido (2026-07-02):** o prop `onCancel` de `RenameMapInput` virou `onClose` (semântica real: "fechar o editor", disparado em cancelar/vazio/inalterado/erro **e** no sucesso) e o `handleBlur` troca o `catch { onClose }` por `finally { onClose }` → toda tentativa de confirmar fecha a edição (sucesso volta ao `MapCard`; erro fecha com rollback+toast do hook). `RenameMapInput.tsx` + `HomePage.tsx`.
-
-~~**Root ("Central") não é renomeável via UI (relato do usuário):**~~ — resolvido em Q-003: clique no texto do nó dispara edição via `onStartEdit`, sem depender de `onNodeDoubleClick`.
-
-~~**Lint quebra Success Criteria de M3:**~~ — resolvido em Q-001.
-
-~~**`smoke.spec.ts:9` — teste de foco no inline edit falha consistentemente (pré-M5):**~~ — resolvido em Q-007: causa raiz era o componente `Input` (shadcn/ui Base UI) sem `forwardRef` — em React 18, o ref nunca chegava ao `<input>` nativo. Fix: `forwardRef` no Input + ref callback no MindNode com foco imediato + rAF + setTimeout(0) como fallback + `onMouseDown.stopPropagation` no span do título.
+**Zoom por pinça no trackpad sempre dá zoom out (Linux, 2026-07-04):** abrindo ou fechando a pinça, o canvas sempre afasta. Provável: no Linux a pinça chega como `wheel + ctrlKey`, sintetizada pelo `@use-gesture` como pinça; o `defaultPinchDelta` do visx decide a direção por `offset − lastOffset`, que nesse caminho sintético não acompanha → trava em `0.9`. **Tentativa 1 (não resolveu):** `pinchDelta` custom por `direction` — usuário confirmou que continuou zoom out. **Próximo passo:** ignorar o caminho de pinça e tratar `ctrl+wheel` pelo `wheelDelta` (scroll de dois dedos zooma certo). Workaround atual: usar scroll de dois dedos. Sem cobertura de teste.
 
 ## Test Gaps
 
-~~**`useTreeLayout.test.ts:165-189` — teste "alturas variáveis não se sobrepõem" é vacuoso (review AD-013 de M8):**~~ — **resolvido no M9** (confirmado 2026-07-02): o teste agora força **3 filhos co-laterais** (mesmo `side: 'RIGHT'`) com alturas distintas (com/sem props de tarefa), assere `length === 3`, que as alturas realmente variam (`Set(heights).size > 1` — guarda anti-vacuidade) e a não-sobreposição vertical real (`curr.y >= prev.y + prev.height`). Ver `useTreeLayout.test.ts:195-220`.
+**Card-fantasma (M9): o e2e usa `toBeVisible()`, que não valida tamanho nem oclusão** (`packages/web/e2e/drag-to-place.spec.ts`) — o bug do placeholder cortado/atrás dos cards (sem `zIndex`) passou pelo e2e; só smoke visual o pega. A cobertura visual do fantasma depende de smoke manual. Severity: Low.
 
-**Seleção de slot (`slots.ts`) — testes do M13 cobriam só coluna única (review AD-013 de M13, 2026-06-26 — corrigido):**
+**Smoke M12: `lineCount` assume `line-height` em px** (`packages/web/e2e/smoke-visual.spec.ts`) — `parseFloat(getComputedStyle(el).lineHeight)` vira `NaN` (asserção quebra em silêncio) se a tipografia virar `line-height: normal`. Robusto hoje (`text-sm` = 20px). Severity: Low.
 
-- Files: `packages/web/src/pages/map/lib/slots.test.ts`, `packages/web/src/pages/map/lib/slots.ts`
-- Symptom: a T4/T5 do M13 só exercitaram um grupo/coluna; o caso **inter-grupo co-coluna** (dois pais de mesma profundidade/lado com `colX` idêntico) passou verde apesar de a barra mirar o grupo errado (roubo pela ordem de enumeração no empate `dx + dy`).
-- **Resolvido** no próprio review: `nearestSlot` virou lexicográfico (coluna → grupo por `groupDy` → banda; `Slot` ganhou `groupTop`/`groupBottom`), commit `94fbe68`. Cobertura adicionada (2 testes de regressão: sintético + layout real). Ver AD-021 addendum / L-006 em STATE.md.
-- Severity: era Medium (bug funcional visível em uso); agora fechado. Pendente só o **smoke visual no app** (túnel Postgres) confirmando o caso co-coluna.
-
-**Reviews AD-013 de M9/M11/M12 (2026-06-27) — lacunas de teste não-bloqueantes:**
-
-- **Card-fantasma (M9): o e2e usa `toBeVisible()`, que não valida tamanho nem oclusão** (`packages/web/e2e/drag-to-place.spec.ts`). O bug do `81d1028` (placeholder do tamanho do card, sem `zIndex`, cortado e atrás dos cards) passou pelo e2e — só smoke visual o pegaria. A cobertura visual do fantasma depende exclusivamente de smoke manual. Severity: Low.
-- **Smoke M12: `lineCount` assume `line-height` em px** (`packages/web/e2e/smoke-visual.spec.ts`, `parseFloat(getComputedStyle(el).lineHeight)`). Se a tipografia virar `line-height: normal`, `parseFloat` → `NaN` e a asserção quebra silenciosamente. Robusto hoje (`text-sm` = 20px). Severity: Low.
-
-**Review AD-013 de M15 (2026-07-02) — lacunas de teste não-bloqueantes:**
-
-- ~~**`card-resize.spec.ts:99` — asserção fraca de persistência:**~~ — **resolvido (2026-07-02):** trocado por `expect(persisted?.width).toBeGreaterThan(180)` — arrastar para a direita alarga além do default, então a asserção agora pega um valor persistido errado (mas não-nulo).
-- ~~**Backend: `width` não-inteiro e nó-novo-null sem asserção direta**~~ — **resolvido (2026-07-02):** adicionados dois testes em `nodes.test.ts` — PATCH `width: 1.5` → 400 (ramo `.int()`) e `POST /` seguido de read-back via `GET /maps/:id/nodes` assere `width === null` (M15-10 direto). API 61→63.
-
-**CONCERNS.md desatualizado pós-M7 (descoberto no review AD-013 de M8):**
-
-- As entradas abaixo referenciam arquivos/símbolos que o M7 (migração React Flow → visx, AD-015) **removeu** e portanto estão obsoletas: a Fragile Area `rfNodes`↔`useNodesState` (eliminada por design — ver L-004), os Performance Bottlenecks de `useLayoutedTree.ts`/`treeLayout.ts`/`simpleTreeLayout` (arquivos removidos), e o seletor `.react-flow__node` citado no Known Bug `persistence.spec.ts:136` (migrado para `data-testid` em M7-T5 — o bug em si pode ter mudado de natureza).
-- Severity: Medium (documentação enganosa) — candidato a reconciliação dedicada (não feito aqui para não extrapolar o escopo do review de M8).
-
-## Fragile Areas
-
-> ⚠️ Seção parcialmente obsoleta pós-M7 — ver "CONCERNS.md desatualizado pós-M7" acima.
-
-**Sincronização entre `rfNodes` derivado e `useNodesState` do React Flow:**
-
-- Files: `packages/web/src/pages/map/components/MapCanvas.tsx:155-159`
-- Why fragile: Há dois "donos" do mesmo estado — o estado interno de `useNodesState` e o `rfNodes` memoizado. Um `useEffect` força `setNodes(rfNodes)` toda vez que `rfNodes` muda (que é toda vez que `editingId`, `collapsedIds`, `data` ou `positioned` mudam). Cada sync pode interferir com o que o React Flow está fazendo internamente (drag em andamento, foco no input do MindNode, seleção).
-- Common failures: Os 4 commits `fix(web): ...` recentes (`b0f1c85`, `92a4c0e`, `8df0e6a`, `6967671`) giram em torno desse padrão.
-- Safe modification: Trocar por modo controlado — passar `nodes={rfNodes}` direto sem `useNodesState`, capturando drag intermediário num `useRef`. Ou usar `useNodesState` como única fonte de verdade e aplicar mudanças derivadas (`editingId`, `collapsedIds`) via `setNodes(prev => ...)` em vez de reatribuição.
-- Test coverage: Nenhum — UI interativa não tem testes (AD-007). Regressões só aparecem em uso manual.
-
-**Input de rename inline usa `defaultValue` (uncontrolled):**
-
-- Files: `packages/web/src/pages/map/components/MindNode.tsx:92`
-- Why fragile: Se o MindNode re-monta durante a edição (provável durante o sync acima), o input recria com `defaultValue=node.title` e o que o usuário digitou é perdido silenciosamente.
-- Safe modification: Subir o valor para state local (`useState` no MindNode) com handler `onChange`, e usar controlled input.
-- Test coverage: Nenhum.
+**Slot co-coluna (M13): smoke visual no app ainda não confirmado** — o fix lexicográfico (AD-021 addendum / L-006) tem cobertura unit (sintético + layout real), mas o caso inter-grupo co-coluna nunca foi confirmado por smoke visual no app rodando (dependia do túnel Postgres). Severity: Low.
 
 ## Performance Bottlenecks
 
-**`simpleTreeLayout` síncrono no main thread em todo update:**
-
-- Problem: O fallback de layout corre síncrono em `useMemo` toda vez que `nodes` ou `edges` mudam, mesmo quando o worker do elkjs ainda vai sobrescrever. Para mapas grandes (RNF-01: 500 nós), bloqueia o main thread por instantes — exatamente o que AD-009 quis evitar.
-- Files: `packages/web/src/lib/useLayoutedTree.ts:24`, `packages/web/src/lib/treeLayout.ts:9-57`
-- Measurement: Sem medição. Para mindmap pessoal pequeno (≤ ~30 nós) imperceptível.
-- Cause: O fallback foi introduzido (commit `6967671`) para evitar tela vazia enquanto o worker calcula, mas ficou no caminho crítico de todo render, não só do primeiro.
-- Improvement path: Rodar o fallback só quando ainda não há resultado do worker para o input atual (gate por `workerPositioned == null`). Ou rodá-lo dentro do próprio worker como degradado em caso de erro.
+**Layout síncrono no main thread — RNF-01 (500 nós) nunca validado:** `computeTreeLayout` (d3-flextree) roda síncrono em `useMemo` a cada mudança de `nodes`. Para mindmap pessoal (≤ ~30 nós) imperceptível; a 500 nós (RNF-01) pode travar pan/zoom/drag — **nunca medido**. O worker de layout (elkjs) que a AD-009 previa foi removido no M7. Files: `packages/web/src/pages/map/lib/useTreeLayout.ts`. Rodar o Gate de qualidade v1 antes de declarar v1. Severity: latente.
 
 ## UX Inconsistencies
 
-**`NodeEditDialog` persiste cada campo no clique; a AC M10-21 ("cancelar/fechar descarta") não é literalmente cumprida (descoberto no review AD-013 de M10):**
+**`NodeEditDialog` persiste cada campo no clique; a AC M10-21 ("cancelar/fechar descarta") não é literalmente cumprida (review AD-013 de M10):**
 
-- Files: `packages/web/src/pages/map/components/NodeEditDialog.tsx:108-127`
-- Symptom: cor de fundo/texto, status e criticidade chamam `onUpdateNode` imediatamente no clique (optimistic); título/responsável persistem no blur/Enter. Não há botão Confirmar/Descartar — fechar o dialog **não** desfaz nada. A spec (M10-21 / AC P1-Dialog-4) diz "WHEN cancela/fecha THEN descartar sem persistir", mas a traceability marca M10-21 como "Verified".
-- **Por design, não é regressão:** o `design.md` decidiu "optimistic atual intacta" e o dialog pré-M10 (`81d1028`) já persistia cada campo no clique. O estado-espelho local adicionado em M10 serve só ao preview ao vivo, não a um modelo confirm/discard.
-- Severity: Low — discrepância de rastreabilidade (spec vs. implementação), sem impacto funcional; condiz com o "espírito do export" (escolha livre).
-- Fix: alinhar a spec à realidade (anotar que o dialog é optimistic, sem confirm/discard) **ou**, se confirm/discard for desejado, bufferizar as edições e só persistir no Confirmar. Decisão de produto.
+- Files: `packages/web/src/pages/map/components/NodeEditDialog.tsx`
+- Cor/status/criticidade chamam `onUpdateNode` no clique (optimistic); título/responsável no blur/Enter. Não há Confirmar/Descartar — fechar o dialog **não** desfaz nada. A spec (M10-21) diz "cancela/fecha → descartar", mas a traceability marca "Verified".
+- **Por design, não é regressão** (o dialog pré-M10 já persistia por campo; o estado-espelho local serve só ao preview). Severity: Low — discrepância spec vs. implementação.
+- Fix: alinhar a spec à realidade **ou** bufferizar edições e só persistir no Confirmar (decisão de produto).
 
 **Inline edit ignora `textColor` customizado:**
 
-- Files: `packages/web/src/pages/map/components/MindNode.tsx:101`
-- Symptom: Quando um nó tem `textColor` customizado e o usuário inicia edição inline (clique no texto), o `<Input>` tem classe `text-foreground` que sobrescreve a cor herdada do inline style do wrapper. O texto do input aparece na cor do tema, não na cor customizada.
-- Severity: Low/Cosmetic — não viola spec (spec cobre renderização no canvas, não estado de edição). A edição é transiente.
-- Fix: Remover `text-foreground` da className do Input de edição, ou aplicar `style={{ color: node.textColor ?? undefined }}` diretamente no Input.
+- Files: `packages/web/src/pages/map/components/MindNode.tsx`
+- Quando um nó tem `textColor` customizado e o usuário inicia edição inline, o `<Input>` tem `text-foreground`, que sobrescreve a cor herdada → o texto aparece na cor do tema, não na customizada.
+- Severity: Low/Cosmetic (edição é transiente; spec cobre render no canvas, não estado de edição). Fix: remover `text-foreground` do Input de edição ou aplicar `style={{ color: node.textColor ?? undefined }}`.
 
 ## Test Infrastructure
 
-**E2E (Playwright) roda contra o DB de dev, não um banco isolado (descoberto na execução de M6/T9):**
+**E2E/dev compartilham banco; isolamento estrutural pendente (histórico: M6 → L-007 → M19):**
 
-- Files: `packages/web/playwright.config.ts`, `packages/web/e2e/*.spec.ts`
-- Symptom: A suíte e2e compartilha o mesmo mapa/DB entre testes sem reset automático. Durante T9, runs intermediários poluíram o DB de dev com nós órfãos (limpos manualmente ao final). Indexar `.react-flow__node` por posição é não-confiável porque acumula nós de execuções anteriores.
-- Workaround adotado em M6: cada spec de `task-properties.spec.ts` cria seu próprio nó com título único via `POST /api/nodes`, localiza por título e remove num `afterEach` via `DELETE`. Mantém o mapa estável, mas é boilerplate por teste.
-- Severity: Medium — não quebra os testes (verdes), mas é frágil e suja dados reais de dev. Contradiz a intenção de "banco de testes isolado" de Q-002/Q-003 (validar se o isolamento existe só p/ Vitest API e não p/ Playwright).
-- Improvement path: apontar o `webServer` do Playwright para um DATABASE_URL de teste dedicado com reset por run (truncate/migrate), espelhando o setup dos testes de API. Candidato a quick task pós-M6.
-- **Validado no review AD-013 de M6:** confirmado — o DB compartilhado/acumulativo já está quebrando um teste preexistente (`persistence.spec.ts:136`, ver "Known Bugs"). As specs de M6 não foram afetadas (usam o workaround de título único + cleanup). Reforça a prioridade do DB de teste isolado.
-- **Addendum (2026-06-27, reviews AD-013 de M9/M11/M12 + deploy AD-022) — mecanismo confirmado e severidade escalada para HIGH:** o `webServer` do Playwright (`playwright.config.ts:33`) sobe a API com `pnpm --filter @mindmap/api run dev` = `tsx watch src/server.ts`, que carrega `.env` via `src/env.ts:2` (`config()` sem path). O `.env` local aponta para o banco **`mindmap`** — que, **pós-deploy (AD-022)**, é o banco de **PRODUÇÃO** servido pelo app na VPS (mesmo Postgres, via túnel SSH). Logo **rodar `pnpm test:e2e` cria/altera mapas no banco de produção do usuário** — não mais só "dados de dev". `pnpm dev` local idem (todo desenvolvimento local mexe em prod). Os testes de integração da API (vitest) **estão isolados** (`vitest.config.ts:4` força `dotenv.config({ path: '.env.test', override: true })` → `dev_mindmap`), confirmando a suspeita registrada acima de que o isolamento só valia para o Vitest, não para o Playwright. Fixes: **(a) aplicado (2026-06-27)** — o `packages/api/.env` local (gitignored) foi repontado de `mindmap` para **`dev_mindmap`**; como o `pnpm dev` e o `webServer` do e2e leem esse `.env`, **ambos deixaram de tocar produção** (prod `mindmap` fica só com o app deployado, que usa o env do Portainer). **Residual:** dev/e2e **ainda precisam do túnel** (`dev_mindmap` mora na VPS) e agora **compartilham** o `dev_mindmap` com o `vitest` da API (`.env.test`), então `pnpm test` (que faz `deleteMany`) limpa os dados do `pnpm dev` — aceito por ora. Reabre risco só se alguém repontar `.env` para prod manualmente e rodar e2e na sequência. **(b) estrutural (adiado pelo usuário — "pipeline pra dev mais pra frente")** — Postgres **local** (Docker) para dev, banco de **teste dedicado** (separado do dev) para vitest+e2e, eliminando a dependência do túnel e a partilha dev↔teste.
-- **Addendum (M19, 2026-07-04) — guarda de auth (M18) tornou o DB acumulativo problemático de um jeito novo:** com escopo por dono, cada sessão só vê os próprios mapas — o "1º mapa qualquer" que as specs pré-existentes assumem (`.first()`) deixou de existir por padrão pra qualquer usuário novo. Fix: `e2e/auth.setup.ts` (Playwright `globalSetup`) autentica um usuário fixo (`e2e-m19@mindmap.test`, signup ou login se já existir) e salva `storageState` em `e2e/.auth/user.json` (gitignored), injetado via `playwright.config.ts` `use.storageState`; specs pré-existentes rodam sem alteração. Na 1ª vez que esse usuário não tem mapas, o setup cria um mapa seed ("E2E Seed") **com um 2º nó fixo** ("Filial fixa (fixture e2e)"), porque `edit-dialog.spec.ts` (M5) assume um `nth(1)` permanente (a raiz não recebe cor de usuário — M16) — o mesmo papel que o mapa "Legacy" (órfão, nunca reclamado) cumpria antes da guarda. `e2e/auth.spec.ts` (M19) roda com `storageState` vazio (`test.use`) pra testar o fluxo deslogado. Reforça a prioridade do banco de teste isolado (item (b) acima) — o fixture fica acumulativo do mesmo jeito que o "Legacy" ficava.
+- **Estado atual:** `packages/api/.env` local (gitignored) aponta para **`dev_mindmap`** (não mais `mindmap`/prod). Tanto `pnpm dev` quanto o `webServer` do Playwright leem esse `.env` → **nenhum toca produção** (prod `mindmap` fica só com o app deployado, via env do Portainer). O vitest da API força `.env.test` → também `dev_mindmap`.
+- **⚠️ Armadilha latente:** o isolamento é por **convenção do `.env`, não estrutural**. Se alguém repontar `.env` para `mindmap` e rodar `pnpm dev`/`pnpm test:e2e`, escreve direto em **produção** (mesmo Postgres da VPS via túnel SSH).
+- **Residuais abertos:** (a) dev e teste partilham `dev_mindmap`, então `pnpm test` (`deleteMany`) limpa os dados do `pnpm dev`; (b) dev/e2e ainda dependem do **túnel SSH** (`dev_mindmap` mora na VPS). **Estrutural adiado pelo usuário** ("pipeline pra dev mais pra frente"): Postgres local (Docker) para dev + banco de teste dedicado. Ver Deferred Ideas em `STATE.md`.
+- **Fixture e2e acumulativo (M19):** a guarda de auth (M18) fez cada sessão ver só os próprios mapas; `e2e/auth.setup.ts` (globalSetup) autentica um usuário fixo (`e2e-m19@mindmap.test`) + salva `storageState` (gitignored) e semeia um mapa + 2º nó fixo na 1ª vez (specs pré-existentes assumem `nth(1)`). Fica acumulativo até o banco de teste dedicado existir.
 
 ## Tech Debt
 
-**401 global só cobre `useQuery`, não `useMutation` (descoberto durante M20, 2026-07-05):**
+**401 global só cobre `useQuery`, não `useMutation` (M20, 2026-07-05):**
 
 - Files: `packages/web/src/main.tsx` (`QueryCache.onError`)
-- O handler que zera `['auth','me']` em qualquer `401` (derrubando a guarda `RequireAuth`) está no `QueryCache`, que só observa `useQuery`. Mutations (`useUpdateProfile`, e as de `api/nodes.ts` — create/update/delete/move) não passam por ali; TanStack Query expõe um `MutationCache` separado para isso, que o projeto não configura. Na prática, se a sessão expira **durante** uma mutation, o erro 401 chega ao `onError` local do hook (que hoje não sabe derrubar a sessão) e a guarda só reage na próxima `useQuery` que rodar. Pré-existente desde o M19 (nenhuma mutation cobria isso); o M20 herdou o comportamento em `useUpdateProfile` por consistência com o resto do código, sem tentar consertar.
-- **Recomendação:** configurar um `MutationCache` global em `main.tsx` espelhando a lógica do `QueryCache.onError` (zera `['auth','me']` em qualquer 401 de mutation). Severity: Low (janela estreita — a próxima navegação/query já corrige; nenhuma AC de milestone pediu isso).
+- O handler que zera `['auth','me']` em qualquer 401 (derrubando `RequireAuth`) está no `QueryCache`, que só observa queries. Mutations (`useUpdateProfile`, `api/nodes.ts`) não passam por ali. Se a sessão expira **durante** uma mutation, a guarda só reage na próxima query. Pré-existente desde o M19.
+- **Recomendação:** configurar um `MutationCache` global espelhando a lógica do `QueryCache.onError`. Severity: Low (janela estreita).
 
 **Cookie de sessão sem `Secure` em prod HTTP (M18, 2026-07-04):**
 
-- Files: `packages/api/src/env.ts` (`COOKIE_SECURE`), `packages/api/src/plugins/auth-guard.ts` (`setSessionCookie`)
-- A prod atual é `http://72.60.1.97:8080` (AD-022, sem TLS). O flag `Secure` do cookie é **gated por env** (`COOKIE_SECURE`, default `false`) justamente porque um cookie `Secure` não trafega sobre HTTP puro — ligá-lo agora quebraria o login em prod. Consequência: o token de sessão trafega **em claro** na rede. Tolerável para ferramenta pessoal por IP, mas é uma exposição real.
-- **Recomendação:** provisionar TLS (domínio + certificado) e então setar `COOKIE_SECURE=true` no ambiente de prod. CSRF já coberto por `SameSite=Lax` (SPA + API mesma origem via nginx, AD-022). Severity: Medium (segredo em trânsito sem TLS).
-
-~~**`useMeasuredHeights`: `refCallbacks` não é podado no unregister (review AD-013 de M12, 2026-06-27):**~~ — **resolvido (2026-07-02):** o ramo `el == null` do ref callback agora faz `refCallbacks.current.delete(id)` junto de `elements`/`heights`, podando a closure memoizada quando o nó desmonta. Um remount do mesmo id recria o callback via `registerNode`. `useMeasuredHeights.ts`.
+- Files: `packages/api/src/env.ts` (`COOKIE_SECURE`), `packages/api/src/plugins/auth-guard.ts`
+- Prod é `http://72.60.1.97:8080` (AD-022, sem TLS). `Secure` é gated por env (default `false`) porque um cookie `Secure` não trafega sobre HTTP puro → o token de sessão trafega **em claro**.
+- **Recomendação:** provisionar TLS (domínio + certificado) e setar `COOKIE_SECURE=true` em prod. CSRF já coberto por `SameSite=Lax`. Severity: Medium (segredo em trânsito sem TLS).
 
 **`<Zoom>` render-prop do visx exige `eslint-disable react-hooks/refs` em `CanvasLayers` (M17, 2026-07-03):**
 
-- Files: `packages/web/src/pages/map/components/MapCanvas.tsx` (bloco `CanvasLayers`)
-- O visx armazena o estado de zoom internamente em refs e o entrega via render-prop. Ler `zoom.transformMatrix`, `zoom.toString()` e `zoom.containerRef` durante o render viola `react-hooks/refs` v7 → 5 erros sem o disable. O disable é o workaround mínimo para o padrão render-prop do visx.
-- Alternativa investigar: migrar de `<Zoom>` (render-prop) para `useZoom()` (hook do visx), subindo o estado de zoom para `MapCanvasInner` via `useState`/`useReducer`. O zoom passaria como prop para `CanvasLayers`, que deixaria de ler refs durante o render. Eliminaria o disable e alinharia ao modelo preferido pelo react-hooks v7.
-- Severity: Low (lint silenciado, sem impacto funcional). Candidato a refactor isolado em milestone de polish.
+- Files: `packages/web/src/pages/map/components/MapCanvas.tsx` (`CanvasLayers`)
+- O visx guarda o estado de zoom em refs e entrega via render-prop; ler `zoom.transformMatrix`/`toString()`/`containerRef` no render viola `react-hooks/refs` v7 (5 erros sem o disable).
+- Alternativa: migrar de `<Zoom>` (render-prop) para `useZoom()` (hook), subindo o estado de zoom para `MapCanvasInner`. Severity: Low. Candidato a refactor isolado.
 
 **`move` para a raiz sem `side` assume `RIGHT` (review AD-013 de M9, 2026-06-27):**
 
-- Files: `packages/api/src/routes/nodes.ts:159`
-- Salvaguarda que pode flipar silenciosamente um nó `LEFT` se um cliente futuro omitir `side` num `move` cujo destino é a raiz. Hoje **inalcançável** (o frontend sempre envia `side` via `slotToMoveBody`). Considerar exigir `side` quando `newParentId` é a raiz. Severity: Low (latente).
-
-~~**Gesto de resize sem handler de `pointercancel` (review AD-013 de M15, 2026-07-02):**~~ — **resolvido (2026-07-02):** adicionado `onPointerCancel` que chama o mesmo `endResize` do `pointerup`, liberando o estado preso (e persistindo o que foi arrastado) se o SO cancelar o ponteiro no meio do gesto. `MapCanvas.tsx`.
-
-~~**Resize persiste a largura do closure de estado, não de um ref (review AD-013 de M15, 2026-07-02):**~~ — **resolvido (2026-07-02):** o `resizeRef` passou a carregar a `width` corrente (atualizada no `pointermove`); `endResize` persiste a partir do ref, não do estado React — determinístico. Persiste só se `width !== startWidth` (preserva o no-op do clique simples, M15-24). `MapCanvas.tsx`.
+- Files: `packages/api/src/routes/nodes.ts`
+- Salvaguarda que pode flipar silenciosamente um nó `LEFT` se um cliente futuro omitir `side` num `move` cujo destino é a raiz. Hoje **inalcançável** (o frontend sempre envia `side`). Severity: Low (latente). Considerar exigir `side` quando `newParentId` é a raiz.
 
 **Doc drift: `design.md` do M15 descreve a alça via callbacks que não existem (review AD-013 de M15, 2026-07-02):**
 
-- Files: `.specs/features/m15-card-resize/design.md` (componente 5) vs `MapCanvas.tsx` (linhas deslocadas pós-M17-T5), `MindNode.tsx`, `types.ts`
-- O design especifica a alça com `onPointerDown`→`stopPropagation`+`setPointerCapture`+`onResizeStart` e callbacks de resize em `MindNodeData`. A implementação real detecta o resize no wrapper do `MapCanvas` via `closest('[data-testid="resize-handle"]')` (if/else que isola resize de drag-to-place), então `types.ts` **não** tem callbacks de resize (não é resíduo — é a abordagem escolhida) e a alça é um `<div>` puro. Satisfaz M15-03, mas diverge do doc. Severity: cosmético — alinhar o design ao código.
-
-~~**Comentário datado em `nodeSize.ts` pós-M12 (review AD-013 de M11, 2026-06-27):**~~ — **resolvido (M17-T2, 2026-07-03):** o comentário foi reescrito para 1 linha descritiva sem a referência enganosa ao `GAP_Y`; `estimateNodeHeight` perdeu o JSDoc. `packages/web/src/pages/map/lib/nodeSize.ts` (caminho atualizado — movido de `lib/` em M17-T3).
-
-~~**Helper `request<T>` duplicado entre módulos de API web:**~~ — resolvido: extraído para `packages/web/src/api/_request.ts`.
-
-~~**Verificação anti-ciclo redundante no `move`:**~~ — resolvido: guard `if (newParentId === id)` removido; CTE recursivo já cobre.
-
-~~**Código morto `allNodeIds`:**~~ — resolvido em Q-004.
-
-~~**`persistence.spec.ts` tem mudanças não commitadas (teste de move node):**~~ — resolvido em Q-006 (commit `ad520ec`).
+- Files: `.specs/features/m15-card-resize/design.md` vs `MapCanvas.tsx`/`MindNode.tsx`/`types.ts`
+- O design especifica a alça com `onResizeStart` + callbacks em `MindNodeData`; a implementação real detecta o resize no wrapper via `closest('[data-testid="resize-handle"]')` — a alça é um `<div>` puro e `types.ts` não tem esses callbacks (é a abordagem escolhida, não resíduo). Satisfaz M15-03 mas diverge do doc. Severity: cosmético — alinhar o design ao código.
 
 ## Design Notes
 
 **`useMeasuredHeights` — por que o effect re-observa todos os elementos no setup (resiliência ao StrictMode):**
 
 - Files: `packages/web/src/pages/map/components/useMeasuredHeights.ts` (`useEffect`)
-- A cada (re)mount, o effect cria um novo `ResizeObserver` **e re-observa todos os elementos já registrados pelos ref callbacks** (iterando `elements.current`). Sem isso, o `ResizeObserver` criado no commit inicial seria desconectado pelo cleanup do double-invoke do `StrictMode` (mount→cleanup→mount), e os ref callbacks — que rodam só uma vez no commit — nunca recriariam o observer, deixando as alturas sem medição ao reabrir um mapa com dados cacheados. O pattern "effect é o dono do observer + re-observa no setup" é a invariante que garante a convergência do pipeline medir→layout mesmo no StrictMode.
+- A cada (re)mount, o effect cria um novo `ResizeObserver` **e re-observa todos os elementos já registrados** (iterando `elements.current`). Sem isso, o observer criado no commit inicial seria desconectado pelo cleanup do double-invoke do StrictMode, e os ref callbacks (que rodam só uma vez no commit) nunca recriariam o observer → alturas sem medição ao reabrir um mapa cacheado. O pattern "effect é dono do observer + re-observa no setup" é a invariante que garante a convergência do pipeline medir→layout no StrictMode.
 
 ## Dependencies at Risk
 
-~~**`@xyflow/react` com `hideAttribution: true` exige licença paga:**~~ — resolvido: `proOptions` removido, atribuição visível.
-
----
-
-_Concerns audit: 2026-05-20 (M5 review)_
+*(nenhuma no momento)*
