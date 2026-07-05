@@ -1,5 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import type { SignupBody, LoginBody } from '@mindmap/shared';
+import type { SignupBody, LoginBody, UpdateProfileBody } from '@mindmap/shared';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { UnauthorizedError } from '../errors.js';
@@ -7,17 +7,19 @@ import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../lib/passwo
 import { createSession, deleteSession, SESSION_COOKIE_NAME } from '../services/sessions.js';
 import {
   requireAuth,
+  requireUser,
   setSessionCookie,
   clearSessionCookie,
 } from '../plugins/auth-guard.js';
 import { toAuthUser } from '../mappers/users.js';
 
 const EmailField = z.string().trim().toLowerCase().pipe(z.email());
+const NameField = z.string().trim().min(1).max(100);
 
 const SignupBodySchema = z.object({
   email: EmailField,
   password: z.string().min(8),
-  name: z.string().trim().min(1),
+  name: NameField,
   remember: z.boolean().optional(),
 }) satisfies z.ZodType<SignupBody>;
 
@@ -26,6 +28,10 @@ const LoginBodySchema = z.object({
   password: z.string(),
   remember: z.boolean().optional(),
 }) satisfies z.ZodType<LoginBody>;
+
+const UpdateProfileBodySchema = z.object({
+  name: NameField,
+}) satisfies z.ZodType<UpdateProfileBody>;
 
 const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/signup', {
@@ -85,6 +91,19 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.get('/me', {
     preHandler: requireAuth,
     handler: async (req) => req.user,
+  });
+
+  app.patch('/me', {
+    preHandler: requireAuth,
+    schema: { body: UpdateProfileBodySchema },
+    handler: async (req) => {
+      const { id } = requireUser(req);
+      const user = await prisma.user.update({
+        where: { id },
+        data: { name: req.body.name },
+      });
+      return toAuthUser(user);
+    },
   });
 };
 

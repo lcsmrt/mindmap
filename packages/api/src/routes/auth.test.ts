@@ -191,6 +191,102 @@ describe('Auth API', () => {
     });
   });
 
+  describe('PATCH /auth/me', () => {
+    it('sem sessão — 401', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        payload: { name: 'Novo Nome' },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('nome válido — atualiza e retorna o AuthUser', async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+      const userId = signup.json<{ id: string }>().id;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: 'Alice Nova' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ id: userId, email: 'alice@example.com', name: 'Alice Nova' });
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).name).toBe(
+        'Alice Nova',
+      );
+    });
+
+    it('nome vazio/só espaços — 400, sem tocar o banco', async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+      const userId = signup.json<{ id: string }>().id;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: '   ' },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).name).toBe('Alice');
+    });
+
+    it('nome acima do limite — 400', async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: 'a'.repeat(101) },
+      });
+
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('campos extras (email/id) no body são ignorados — só o nome muda', async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const token = sessionCookie(signup)!.value;
+      const userId = signup.json<{ id: string }>().id;
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: token },
+        payload: { name: 'Alice Nova', email: 'other@example.com', id: 'someone-else' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ id: userId, email: 'alice@example.com', name: 'Alice Nova' });
+    });
+
+    it('afeta só o próprio usuário — outro user permanece intocado', async () => {
+      const signupA = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      const tokenA = sessionCookie(signupA)!.value;
+      const signupB = await app.inject({
+        method: 'POST',
+        url: '/auth/signup',
+        payload: { ...validSignup, email: 'bob@example.com', name: 'Bob' },
+      });
+      const userBId = signupB.json<{ id: string }>().id;
+
+      await app.inject({
+        method: 'PATCH',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: tokenA },
+        payload: { name: 'Alice Nova' },
+      });
+
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: userBId } })).name).toBe('Bob');
+    });
+  });
+
   describe('herança dos mapas órfãos', () => {
     it('primeiro signup herda todos os mapas órfãos; segundo não herda', async () => {
       const orphanA = await prisma.map.create({ data: { title: 'Órfão A' } });

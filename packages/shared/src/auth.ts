@@ -17,4 +17,8 @@ export interface LoginBody {
   remember?: boolean;
 }
 
+export interface UpdateProfileBody {
+  name: string;
+}
+
 export type AuthResponse = AuthUser;
