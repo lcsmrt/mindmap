@@ -24,6 +24,9 @@ export default defineConfig({
       command: 'pnpm --filter @mindmap/api run dev',
       port: 3000,
       cwd: '../..',
+      // NODE_ENV=test monta o seam GET /auth/__test/last-reset (M21) pro e2e
+      // capturar o link de reset sem e-mail real.
+      env: { NODE_ENV: 'test' },
       reuseExistingServer: !process.env.CI,
       timeout: 15_000,
     },
