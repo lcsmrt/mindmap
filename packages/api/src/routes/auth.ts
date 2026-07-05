@@ -1,8 +1,9 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import type { SignupBody, LoginBody } from '@mindmap/shared';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { UnauthorizedError } from '../errors.js';
-import { hashPassword, verifyPassword } from '../lib/password.js';
+import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../lib/password.js';
 import { createSession, deleteSession, SESSION_COOKIE_NAME } from '../services/sessions.js';
 import {
   requireAuth,
@@ -13,22 +14,22 @@ import { toAuthUser } from '../mappers/users.js';
 
 const EmailField = z.string().trim().toLowerCase().pipe(z.email());
 
-const SignupBody = z.object({
+const SignupBodySchema = z.object({
   email: EmailField,
   password: z.string().min(8),
   name: z.string().trim().min(1),
   remember: z.boolean().optional(),
-});
+}) satisfies z.ZodType<SignupBody>;
 
-const LoginBody = z.object({
+const LoginBodySchema = z.object({
   email: EmailField,
   password: z.string(),
   remember: z.boolean().optional(),
-});
+}) satisfies z.ZodType<LoginBody>;
 
 const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/signup', {
-    schema: { body: SignupBody },
+    schema: { body: SignupBodySchema },
     handler: async (req, reply) => {
       const { email, password, name, remember } = req.body;
       const passwordHash = await hashPassword(password);
@@ -54,12 +55,15 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post('/login', {
-    schema: { body: LoginBody },
+    schema: { body: LoginBodySchema },
     handler: async (req, reply) => {
       const { email, password, remember } = req.body;
 
       const user = await prisma.user.findUnique({ where: { email } });
-      if (!user || !(await verifyPassword(user.passwordHash, password))) {
+      // verifica sempre (contra hash dummy quando o e-mail não existe) p/ não vazar
+      // existência da conta por tempo de resposta
+      const passwordOk = await verifyPassword(user?.passwordHash ?? DUMMY_PASSWORD_HASH, password);
+      if (!user || !passwordOk) {
         throw new UnauthorizedError('Invalid credentials');
       }
 
