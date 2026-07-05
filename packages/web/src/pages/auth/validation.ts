@@ -16,6 +16,10 @@ export interface AuthFieldErrors {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export function isValidEmail(email: string): boolean {
+  return EMAIL_PATTERN.test(email.trim());
+}
+
 export function validateAuth(mode: AuthMode, values: AuthFormValues): AuthFieldErrors {
   const errors: AuthFieldErrors = {};
 
@@ -23,7 +27,7 @@ export function validateAuth(mode: AuthMode, values: AuthFormValues): AuthFieldE
     errors.name = 'Informe seu nome';
   }
 
-  if (!EMAIL_PATTERN.test(values.email.trim())) {
+  if (!isValidEmail(values.email)) {
     errors.email = 'E-mail inválido';
   }
 

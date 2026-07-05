@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark } from '@/components/BrandMark.js';
 import { Button } from '@/components/ui/button.js';
 import { Checkbox } from '@/components/ui/checkbox.js';
@@ -132,6 +132,15 @@ export const AuthPage = () => {
                   />
                   Manter conectado neste dispositivo
                 </label>
+              )}
+
+              {isEntrar && (
+                <Link
+                  to="/forgot-password"
+                  className="-mt-2 self-end text-xs font-medium text-primary hover:text-primary-hover"
+                >
+                  Esqueci a senha
+                </Link>
               )}
 
               <Button
