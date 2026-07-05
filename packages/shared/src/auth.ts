@@ -21,4 +21,14 @@ export interface UpdateProfileBody {
   name: string;
 }
 
+export interface ForgotPasswordBody {
+  email: string;
+}
+
+export interface ResetPasswordBody {
+  token: string;
+  password: string;
+  logoutOtherDevices?: boolean;
+}
+
 export type AuthResponse = AuthUser;
