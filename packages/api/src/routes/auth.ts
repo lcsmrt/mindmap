@@ -1,10 +1,23 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import type { SignupBody, LoginBody, UpdateProfileBody } from '@mindmap/shared';
+import type {
+  SignupBody,
+  LoginBody,
+  UpdateProfileBody,
+  ForgotPasswordBody,
+  ResetPasswordBody,
+} from '@mindmap/shared';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
-import { UnauthorizedError } from '../errors.js';
+import { env } from '../env.js';
+import { ApiError, UnauthorizedError } from '../errors.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../lib/password.js';
 import { createSession, deleteSession, SESSION_COOKIE_NAME } from '../services/sessions.js';
+import {
+  createPasswordResetToken,
+  findValidResetToken,
+  consumeResetToken,
+} from '../services/password-reset.js';
+import { sendPasswordResetEmail, getLastResetEmail } from '../services/email.js';
 import {
   requireAuth,
   requireUser,
@@ -32,6 +45,20 @@ const LoginBodySchema = z.object({
 const UpdateProfileBodySchema = z.object({
   name: NameField,
 }) satisfies z.ZodType<UpdateProfileBody>;
+
+const ForgotPasswordBodySchema = z.object({
+  email: EmailField,
+}) satisfies z.ZodType<ForgotPasswordBody>;
+
+const ResetPasswordBodySchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+  logoutOtherDevices: z.boolean().optional(),
+}) satisfies z.ZodType<ResetPasswordBody>;
+
+const ResetValidateQuerySchema = z.object({
+  token: z.string().min(1),
+});
 
 const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/signup', {
@@ -105,6 +132,62 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
       return toAuthUser(user);
     },
   });
+
+  app.post('/forgot-password', {
+    schema: { body: ForgotPasswordBodySchema },
+    handler: async (req, reply) => {
+      const user = await prisma.user.findUnique({ where: { email: req.body.email } });
+      if (user) {
+        // Falha de envio não pode virar 500 nem vazar a existência da conta (M21-02/04):
+        // logamos server-side e respondemos o mesmo 204 neutro.
+        try {
+          const token = await createPasswordResetToken(user.id);
+          const resetUrl = `${env.APP_URL}/reset-password?token=${token}`;
+          await sendPasswordResetEmail(user.email, resetUrl);
+        } catch (err) {
+          req.log.error(err, 'failed to send password reset email');
+        }
+      }
+      return reply.status(204).send();
+    },
+  });
+
+  app.get('/reset-password/validate', {
+    schema: { querystring: ResetValidateQuerySchema },
+    handler: async (req, reply) => {
+      const record = await findValidResetToken(req.query.token);
+      if (!record) throw new ApiError(400, 'Invalid or expired token');
+      return reply.status(204).send();
+    },
+  });
+
+  app.post('/reset-password', {
+    schema: { body: ResetPasswordBodySchema },
+    handler: async (req, reply) => {
+      const { token, password, logoutOtherDevices } = req.body;
+      const record = await findValidResetToken(token);
+      if (!record) throw new ApiError(400, 'Invalid or expired token');
+
+      const passwordHash = await hashPassword(password);
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
+        await consumeResetToken(record.id, tx);
+        if (logoutOtherDevices ?? true) {
+          await tx.session.deleteMany({ where: { userId: record.userId } });
+        }
+      });
+
+      return reply.status(204).send();
+    },
+  });
+
+  // Seam de teste: expõe o último link de reset capturado em memória para o e2e
+  // (evita e-mail real). Montada só em test — nunca em prod.
+  if (process.env.NODE_ENV === 'test') {
+    app.get('/__test/last-reset', {
+      handler: async () => getLastResetEmail() ?? {},
+    });
+  }
 };
 
 export default authPlugin;

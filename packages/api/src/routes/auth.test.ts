@@ -1,13 +1,21 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from '../app.js';
 import { prisma } from '../prisma.js';
 import { SESSION_COOKIE_NAME } from '../services/sessions.js';
+import { createPasswordResetToken } from '../services/password-reset.js';
+import { sendPasswordResetEmail } from '../services/email.js';
+
+vi.mock('../services/email.js', () => ({
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  getLastResetEmail: vi.fn().mockReturnValue(null),
+}));
 
 async function cleanAll() {
   await prisma.node.deleteMany();
   await prisma.map.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -30,6 +38,7 @@ describe('Auth API', () => {
 
   beforeEach(async () => {
     await cleanAll();
+    vi.mocked(sendPasswordResetEmail).mockClear();
   });
 
   describe('POST /auth/signup', () => {
@@ -284,6 +293,233 @@ describe('Auth API', () => {
       });
 
       expect((await prisma.user.findUniqueOrThrow({ where: { id: userBId } })).name).toBe('Bob');
+    });
+  });
+
+  describe('POST /auth/forgot-password', () => {
+    beforeEach(async () => {
+      await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+    });
+
+    it('sempre 204 e corpo idêntico — conta existente ou não (neutro)', async () => {
+      const existing = await app.inject({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        payload: { email: 'alice@example.com' },
+      });
+      const ghost = await app.inject({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        payload: { email: 'ghost@example.com' },
+      });
+
+      expect(existing.statusCode).toBe(204);
+      expect(ghost.statusCode).toBe(204);
+      expect(existing.body).toBe(ghost.body);
+    });
+
+    it('conta existente gera 1 token e dispara o e-mail', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        payload: { email: 'alice@example.com' },
+      });
+
+      expect(await prisma.passwordResetToken.count()).toBe(1);
+      expect(vi.mocked(sendPasswordResetEmail)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(sendPasswordResetEmail).mock.calls[0]?.[0]).toBe('alice@example.com');
+    });
+
+    it('conta inexistente não cria token nem envia e-mail', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        payload: { email: 'ghost@example.com' },
+      });
+
+      expect(await prisma.passwordResetToken.count()).toBe(0);
+      expect(vi.mocked(sendPasswordResetEmail)).not.toHaveBeenCalled();
+    });
+
+    it('novo pedido invalida o token anterior (só o último vale)', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        payload: { email: 'alice@example.com' },
+      });
+      await app.inject({
+        method: 'POST',
+        url: '/auth/forgot-password',
+        payload: { email: 'alice@example.com' },
+      });
+
+      expect(await prisma.passwordResetToken.count()).toBe(1);
+    });
+  });
+
+  describe('GET /auth/reset-password/validate', () => {
+    let userId: string;
+
+    beforeEach(async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      userId = signup.json<{ id: string }>().id;
+    });
+
+    it('token válido → 204 sem consumir (validar não apaga)', async () => {
+      const token = await createPasswordResetToken(userId);
+
+      const first = await app.inject({
+        method: 'GET',
+        url: `/auth/reset-password/validate?token=${token}`,
+      });
+      const second = await app.inject({
+        method: 'GET',
+        url: `/auth/reset-password/validate?token=${token}`,
+      });
+
+      expect(first.statusCode).toBe(204);
+      expect(second.statusCode).toBe(204);
+      expect(await prisma.passwordResetToken.count()).toBe(1);
+    });
+
+    it('token inválido → 400', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/auth/reset-password/validate?token=inexistente',
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  describe('POST /auth/reset-password', () => {
+    let userId: string;
+    let sessionToken: string;
+
+    beforeEach(async () => {
+      const signup = await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
+      userId = signup.json<{ id: string }>().id;
+      sessionToken = sessionCookie(signup)!.value;
+    });
+
+    it('token válido troca a senha e permite login com a nova (204 + single-use)', async () => {
+      const token = await createPasswordResetToken(userId);
+
+      const reset = await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'novasenha123', logoutOtherDevices: false },
+      });
+      expect(reset.statusCode).toBe(204);
+
+      const withNew = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        payload: { email: 'alice@example.com', password: 'novasenha123' },
+      });
+      const withOld = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        payload: { email: 'alice@example.com', password: 'password123' },
+      });
+
+      expect(withNew.statusCode).toBe(200);
+      expect(withOld.statusCode).toBe(401);
+    });
+
+    it('single-use: reutilizar o token → 400', async () => {
+      const token = await createPasswordResetToken(userId);
+
+      const first = await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'novasenha123', logoutOtherDevices: false },
+      });
+      const second = await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'outrasenha123', logoutOtherDevices: false },
+      });
+
+      expect(first.statusCode).toBe(204);
+      expect(second.statusCode).toBe(400);
+    });
+
+    it('token expirado → 400', async () => {
+      const token = await createPasswordResetToken(userId);
+      await prisma.passwordResetToken.updateMany({
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'novasenha123' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('senha < 8 caracteres → 400', async () => {
+      const token = await createPasswordResetToken(userId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'curta' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('logoutOtherDevices default (true) derruba as sessões existentes', async () => {
+      const token = await createPasswordResetToken(userId);
+
+      await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'novasenha123' },
+      });
+
+      const me = await app.inject({
+        method: 'GET',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: sessionToken },
+      });
+      expect(me.statusCode).toBe(401);
+    });
+
+    it('logoutOtherDevices false preserva as sessões existentes', async () => {
+      const token = await createPasswordResetToken(userId);
+
+      await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token, password: 'novasenha123', logoutOtherDevices: false },
+      });
+
+      const me = await app.inject({
+        method: 'GET',
+        url: '/auth/me',
+        cookies: { [SESSION_COOKIE_NAME]: sessionToken },
+      });
+      expect(me.statusCode).toBe(200);
+    });
+  });
+
+  describe('seam de teste /auth/__test/last-reset', () => {
+    it('existe em NODE_ENV=test', async () => {
+      const res = await app.inject({ method: 'GET', url: '/auth/__test/last-reset' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('ausente fora de NODE_ENV=test', async () => {
+      const original = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      const prodApp = buildApp();
+      try {
+        const res = await prodApp.inject({ method: 'GET', url: '/auth/__test/last-reset' });
+        expect(res.statusCode).toBe(404);
+      } finally {
+        process.env.NODE_ENV = original;
+      }
     });
   });
 
