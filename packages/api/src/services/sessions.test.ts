@@ -11,8 +11,9 @@ import {
 const DAY_SECONDS = 24 * 60 * 60;
 
 async function createUser(email = 'u@example.com') {
+  const username = email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9-]/g, '');
   return prisma.user.create({
-    data: { email, passwordHash: 'x', name: 'User' },
+    data: { email, username, passwordHash: 'x', name: 'User' },
   });
 }
 
@@ -27,7 +28,12 @@ describe('sessions service', () => {
     const { token } = await createSession(user.id, false);
 
     const authUser = await findValidSession(token);
-    expect(authUser).toEqual({ id: user.id, email: user.email, name: user.name });
+    expect(authUser).toEqual({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+    });
   });
 
   it('maxAge reflete remember: 7d default, 30d com remember', async () => {

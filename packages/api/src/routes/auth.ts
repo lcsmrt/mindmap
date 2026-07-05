@@ -8,9 +8,10 @@ import type {
   ResetTokenStatus,
 } from '@mindmap/shared';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { env } from '../env.js';
-import { BadRequestError, UnauthorizedError } from '../errors.js';
+import { BadRequestError, ConflictError, UnauthorizedError } from '../errors.js';
 import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from '../lib/password.js';
 import { createSession, deleteSession, SESSION_COOKIE_NAME } from '../services/sessions.js';
 import {
@@ -29,9 +30,15 @@ import { toAuthUser } from '../mappers/users.js';
 
 const EmailField = z.string().trim().toLowerCase().pipe(z.email());
 const NameField = z.string().trim().min(1).max(100);
+const UsernameField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.string().min(1).max(39).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/));
 
 const SignupBodySchema = z.object({
   email: EmailField,
+  username: UsernameField,
   password: z.string().min(8),
   name: NameField,
   remember: z.boolean().optional(),
@@ -65,22 +72,33 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/signup', {
     schema: { body: SignupBodySchema },
     handler: async (req, reply) => {
-      const { email, password, name, remember } = req.body;
+      const { email, username, password, name, remember } = req.body;
       const passwordHash = await hashPassword(password);
 
-      const user = await prisma.$transaction(async (tx) => {
-        const created = await tx.user.create({
-          data: { email, passwordHash, name },
-        });
-        const userCount = await tx.user.count();
-        if (userCount === 1) {
-          await tx.map.updateMany({
-            where: { ownerId: null },
-            data: { ownerId: created.id },
+      let user;
+      try {
+        user = await prisma.$transaction(async (tx) => {
+          const created = await tx.user.create({
+            data: { email, username, passwordHash, name },
           });
+          const userCount = await tx.user.count();
+          if (userCount === 1) {
+            await tx.map.updateMany({
+              where: { ownerId: null },
+              data: { ownerId: created.id },
+            });
+          }
+          return created;
+        });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          const target = err.meta?.target as string[] | string | undefined;
+          const field = Array.isArray(target) ? target.join(',') : String(target ?? '');
+          if (field.includes('email')) throw new ConflictError('E-mail já cadastrado');
+          if (field.includes('username')) throw new ConflictError('Nome de usuário já em uso');
         }
-        return created;
-      });
+        throw err;
+      }
 
       const { token, maxAgeSeconds } = await createSession(user.id, remember ?? false);
       setSessionCookie(reply, token, maxAgeSeconds);

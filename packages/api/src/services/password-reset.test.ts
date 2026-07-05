@@ -10,7 +10,8 @@ import {
 const MINUTE_MS = 60 * 1000;
 
 async function createUser(email = 'reset@example.com') {
-  return prisma.user.create({ data: { email, passwordHash: 'x', name: 'User' } });
+  const username = email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return prisma.user.create({ data: { email, username, passwordHash: 'x', name: 'User' } });
 }
 
 describe('password-reset service', () => {

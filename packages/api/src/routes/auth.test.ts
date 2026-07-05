@@ -21,6 +21,7 @@ async function cleanAll() {
 
 const validSignup = {
   email: 'alice@example.com',
+  username: 'alice',
   password: 'password123',
   name: 'Alice',
 };
@@ -50,6 +51,7 @@ describe('Auth API', () => {
       expect(body).toEqual({
         id: expect.any(String),
         email: 'alice@example.com',
+        username: 'alice',
         name: 'Alice',
       });
       expect(body.passwordHash).toBeUndefined();
@@ -60,7 +62,7 @@ describe('Auth API', () => {
       expect(cookie?.sameSite?.toLowerCase()).toBe('lax');
     });
 
-    it('normaliza e-mail (trim+lowercase) e rejeita duplicata case-insensitive — 409', async () => {
+    it('normaliza e-mail (trim+lowercase) e rejeita duplicata case-insensitive — 409 mensagem de e-mail', async () => {
       await app.inject({
         method: 'POST',
         url: '/auth/signup',
@@ -69,11 +71,38 @@ describe('Auth API', () => {
       const dup = await app.inject({
         method: 'POST',
         url: '/auth/signup',
-        payload: { ...validSignup, email: '  ALICE@EXAMPLE.COM ', name: 'Outra' },
+        payload: { ...validSignup, email: '  ALICE@EXAMPLE.COM ', username: 'outra', name: 'Outra' },
       });
 
       expect(dup.statusCode).toBe(409);
+      expect(dup.json<{ error: string }>().error).toBe('E-mail já cadastrado');
       expect(await prisma.user.count()).toBe(1);
+    });
+
+    it('normaliza username (trim+lowercase) e rejeita duplicata — 409 mensagem de usuário', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/auth/signup',
+        payload: { ...validSignup, username: 'Alice' },
+      });
+      const dup = await app.inject({
+        method: 'POST',
+        url: '/auth/signup',
+        payload: { ...validSignup, email: 'outra@example.com', username: '  ALICE  ', name: 'Outra' },
+      });
+
+      expect(dup.statusCode).toBe(409);
+      expect(dup.json<{ error: string }>().error).toBe('Nome de usuário já em uso');
+      expect(await prisma.user.count()).toBe(1);
+    });
+
+    it('username com formato inválido — 400', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/signup',
+        payload: { ...validSignup, username: '-alice-' },
+      });
+      expect(res.statusCode).toBe(400);
     });
 
     it('senha com menos de 8 caracteres — 400', async () => {
@@ -223,7 +252,12 @@ describe('Auth API', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ id: userId, email: 'alice@example.com', name: 'Alice Nova' });
+      expect(res.json()).toEqual({
+        id: userId,
+        email: 'alice@example.com',
+        username: 'alice',
+        name: 'Alice Nova',
+      });
       expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).name).toBe(
         'Alice Nova',
       );
@@ -272,7 +306,12 @@ describe('Auth API', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ id: userId, email: 'alice@example.com', name: 'Alice Nova' });
+      expect(res.json()).toEqual({
+        id: userId,
+        email: 'alice@example.com',
+        username: 'alice',
+        name: 'Alice Nova',
+      });
     });
 
     it('afeta só o próprio usuário — outro user permanece intocado', async () => {
@@ -281,7 +320,7 @@ describe('Auth API', () => {
       const signupB = await app.inject({
         method: 'POST',
         url: '/auth/signup',
-        payload: { ...validSignup, email: 'bob@example.com', name: 'Bob' },
+        payload: { ...validSignup, email: 'bob@example.com', username: 'bob', name: 'Bob' },
       });
       const userBId = signupB.json<{ id: string }>().id;
 
@@ -541,7 +580,7 @@ describe('Auth API', () => {
       const second = await app.inject({
         method: 'POST',
         url: '/auth/signup',
-        payload: { ...validSignup, email: 'bob@example.com', name: 'Bob' },
+        payload: { ...validSignup, email: 'bob@example.com', username: 'bob', name: 'Bob' },
       });
       const secondId = second.json<{ id: string }>().id;
 

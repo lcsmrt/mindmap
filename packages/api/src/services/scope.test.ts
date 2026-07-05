@@ -4,7 +4,8 @@ import { NotFoundError } from '../errors.js';
 import { findOwnedMap, findOwnedNode } from './scope.js';
 
 async function createUser(email: string) {
-  return prisma.user.create({ data: { email, passwordHash: 'x', name: email } });
+  const username = email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return prisma.user.create({ data: { email, username, passwordHash: 'x', name: email } });
 }
 
 async function createMapWithRoot(ownerId: string, title = 'M') {
