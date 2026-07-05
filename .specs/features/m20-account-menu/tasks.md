@@ -24,7 +24,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 
 ---
 
-## T1 — Backend: `PATCH /auth/me` (editar nome) `[P]`
+## T1 — Backend: `PATCH /auth/me` (editar nome) `[P]` ✅
 
 - **What**: endpoint autenticado que atualiza **só o nome** do usuário da sessão; DTO compartilhado `UpdateProfileBody` (`{ name }`) com validação; retorna o `AuthUser` atualizado.
 - **Where**: `packages/api/src/routes/auth.ts` (add rota), `packages/shared` DTO de `UpdateProfileBody` + schema zod, `packages/api/src/routes/auth.test.ts` (add casos).
@@ -39,7 +39,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 - **Traces**: M20-12, M20-13, M20-14.
 - **Gate**: `pnpm -r typecheck` ✓, lint ✓, unit api ✓.
 
-## T2 — Front: hook `useUpdateProfile`
+## T2 — Front: hook `useUpdateProfile` ✅
 
 - **What**: request fn `updateProfileRequest(body)` → `PATCH /api/auth/me` e hook `useUpdateProfile`; em `onSuccess`, atualiza o cache da sessão pra refletir o novo nome sem reload.
 - **Where**: `packages/web/src/api/auth.ts` (add), `src/api/auth.test.ts` (add casos).
@@ -52,7 +52,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 - **Traces**: M20-15, M20-16.
 - **Gate**: typecheck ✓, lint ✓, unit web ✓.
 
-## T3 — Front: util `getInitials(name)` `[P]`
+## T3 — Front: util `getInitials(name)` `[P]` ✅
 
 - **What**: função pura que deriva as iniciais do nome pro avatar (degrada com 1 palavra vs. várias; lida com espaços/acentos).
 - **Where**: `packages/web/src/lib/getInitials.ts` (novo), `src/lib/getInitials.test.ts` (novo).
@@ -63,7 +63,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 - **Traces**: M20-05.
 - **Gate**: typecheck ✓, lint ✓, unit web ✓ (não-vacuoso).
 
-## T4 — Front: `AccountMenu` (avatar + dropdown)
+## T4 — Front: `AccountMenu` (avatar + dropdown) ✅
 
 - **What**: avatar de iniciais como gatilho de um dropdown com cabeçalho (nome + e-mail), item "Perfil" (→ `/profile`) e item "Sair" (logout).
 - **Where**: `packages/web/src/components/AccountMenu.tsx` (novo).
@@ -78,7 +78,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 - **Traces**: M20-04, M20-05, M20-06, M20-07, M20-08, M20-09.
 - **Gate**: typecheck ✓, lint (grep-guard hex) ✓.
 
-## T5 — Front: `AppHeader` compartilhado + migração das duas telas
+## T5 — Front: `AppHeader` compartilhado + migração das duas telas ✅
 
 - **What**: header compartilhado (shell) com *slot* à esquerda e `AccountMenu` fixo à direita; migrar Home e Map pra ele; **remover** os dois `<header>` inline e o botão "Sair" provisório da Home.
 - **Where**: `packages/web/src/components/AppHeader.tsx` (novo); `src/pages/home/HomePage.tsx` e `src/pages/map/MapPage.tsx` (migrar); remover markup inline de header.
@@ -92,7 +92,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 - **Traces**: M20-01, M20-02, M20-03.
 - **Gate**: typecheck ✓, lint ✓, unit web ✓ (regressão).
 
-## T6 — Front: página `/profile` (editar nome) + rota
+## T6 — Front: página `/profile` (editar nome) + rota ✅
 
 - **What**: página de Perfil com form de nome (pré-preenchido) + e-mail read-only; salvar via `useUpdateProfile`; validação client-side, erro e feedback de sucesso; registrar rota `/profile` sob `RequireAuth`.
 - **Where**: `packages/web/src/pages/profile/ProfilePage.tsx` (novo); `src/App.tsx` (add `<Route path="/profile">` dentro de `RequireAuth`).
@@ -107,7 +107,7 @@ T3 (util getInitials) [P] ─→ T4 (AccountMenu) ─→ T5 (AppHeader) ──�
 - **Traces**: M20-10, M20-11, M20-12 (front), M20-15, M20-16.
 - **Gate**: typecheck ✓, lint (grep-guard hex) ✓, unit web ✓.
 
-## T7 — E2E do fluxo + gate final
+## T7 — E2E do fluxo + gate final ✅
 
 - **What**: e2e cobrindo menu de conta nas duas telas + "Sair", e editar nome persistindo/refletindo; smoke visual; fechar todos os gates.
 - **Where**: suíte e2e (`packages/web` playwright — alinhar ao arquivo do M19).

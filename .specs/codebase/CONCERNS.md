@@ -109,6 +109,12 @@ Catalogado a partir da review pós-M3. Atualizar à medida que itens forem resol
 
 ## Tech Debt
 
+**401 global só cobre `useQuery`, não `useMutation` (descoberto durante M20, 2026-07-05):**
+
+- Files: `packages/web/src/main.tsx` (`QueryCache.onError`)
+- O handler que zera `['auth','me']` em qualquer `401` (derrubando a guarda `RequireAuth`) está no `QueryCache`, que só observa `useQuery`. Mutations (`useUpdateProfile`, e as de `api/nodes.ts` — create/update/delete/move) não passam por ali; TanStack Query expõe um `MutationCache` separado para isso, que o projeto não configura. Na prática, se a sessão expira **durante** uma mutation, o erro 401 chega ao `onError` local do hook (que hoje não sabe derrubar a sessão) e a guarda só reage na próxima `useQuery` que rodar. Pré-existente desde o M19 (nenhuma mutation cobria isso); o M20 herdou o comportamento em `useUpdateProfile` por consistência com o resto do código, sem tentar consertar.
+- **Recomendação:** configurar um `MutationCache` global em `main.tsx` espelhando a lógica do `QueryCache.onError` (zera `['auth','me']` em qualquer 401 de mutation). Severity: Low (janela estreita — a próxima navegação/query já corrige; nenhuma AC de milestone pediu isso).
+
 **Cookie de sessão sem `Secure` em prod HTTP (M18, 2026-07-04):**
 
 - Files: `packages/api/src/env.ts` (`COOKIE_SECURE`), `packages/api/src/plugins/auth-guard.ts` (`setSessionCookie`)

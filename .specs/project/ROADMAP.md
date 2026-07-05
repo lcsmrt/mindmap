@@ -199,11 +199,16 @@ Planejado e executado em `.specs/features/m19-auth-frontend/` (spec 20 req. M19-
 
 **Limpeza de UI pós-M19 (2026-07-05, quick task junto da review AD-013 — não é milestone):** só `packages/web`, sem schema/contrato. Troca `lucide-react`→`@phosphor-icons/react` (`IconContext` global bold), 7 primitivos shadcn/base-ui novos em `components/ui/` (`avatar`/`checkbox`/`field`/`input-group`/`label`/`separator`/`textarea`), reskin de auth/home/map, alinhamento à grade de 4px (dezenas de arbitrários fora da grade corrigidos) e CSS anti-flash de `:-webkit-autofill`. As 7 correções da review AD-013 (a11y dos campos, timing do login, `satisfies z.ZodType`, ordem do logout, util de return-to, checkbox labelable, paths da skill `mindmap-canvas`) foram junto. Ver Current Work em STATE.md.
 
-### M20 — Menu de conta e perfil 🟡 média · depende de M19
+### M20 — Menu de conta e perfil 🟡 média · depende de M19 · ✅ EXECUTADO (2026-07-05)
 
-- Avatar no header + dropdown (Perfil, Sair); editar nome. (Preferências / Ajuda & atalhos do design: mínimos ou deferred.)
-- **Consolidar o header (decisão do usuário, 2026-07-05):** hoje há dois `<header>` inline divergentes e duplicados — `HomePage.tsx` (branding KAOS + botão "Sair" provisório) e `MapPage.tsx` (voltar + título, **sem Sair**). Extrair um header compartilhado para `components/` (regra `frontend-structure`) que hospeda o **menu de conta à direita** nos dois, com o lado esquerdo variando por página (Home = branding; Mapas = voltar + título). Remove a inconsistência e leva o menu de conta pra tela de mapas.
-- **Tema claro/escuro fatiado para fora do M20 (decisão do usuário, 2026-07-05)** — não implementar agora; vira milestone/quick task própria depois. Some do dropdown do M20.
+Planejado e executado em `.specs/features/m20-account-menu/` (spec 16 req. M20-NN, context, 7/7 tasks; `design.md` pulado — decisões inline no `tasks.md`; ver AD-027 + Current Work em STATE.md). Full-stack pequeno: `packages/api` (`PATCH /auth/me`) + `packages/shared` (`UpdateProfileBody`) + `packages/web`.
+
+- `AppHeader` compartilhado (`components/`) com slot à esquerda + `AccountMenu` fixo à direita; substitui os dois `<header>` inline divergentes de Home/Map (Home mantém branding KAOS; Map mantém voltar+título). Botão "Sair" provisório da Home removido.
+- `AccountMenu`: avatar de iniciais (`getInitials`, reuso de `ui/avatar.tsx`) + dropdown (`ui/menu.tsx`) com nome/e-mail e itens Perfil/Sair; a11y (teclado/Esc/click-fora) nativa do base-ui.
+- Página `/profile` (sob `RequireAuth`): nome editável (pré-preenchido) + e-mail read-only; salvar via `useUpdateProfile`, reflete no avatar sem reload (mesma query `['auth','me']`); toast de sucesso (nova variante `success` no `ui/toast`/`ui/toaster`, antes só `error`).
+- Backend: `PATCH /auth/me` reusa `authPlugin`/`requireAuth`, escopado por `req.user.id`; `NameField` (trim, min 1, max 100) compartilhada com o `signup`.
+- **Tema claro/escuro fatiado para fora do M20** (decisão do usuário, 2026-07-05) — não implementado; vira milestone/quick task própria depois.
+- Gates verdes: typecheck/lint, unit **api 97→103** (+6 `PATCH /auth/me`) / **web 140→154** (+7 `getInitials`, +2 `useUpdateProfile`, +5 `validateName`), **e2e 41→45/45** (`account-menu.spec.ts` novo + `auth.spec.ts` reconciliado — "Sair" agora mora no dropdown, não mais um botão direto).
 
 ### M21 — Reset de senha por e-mail 🟡 média · depende de M18/M19 · puxa infra de e-mail
 
