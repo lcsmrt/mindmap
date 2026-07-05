@@ -4,6 +4,7 @@ import { RedirectIfAuthed } from './auth/RedirectIfAuthed.js';
 import { AuthPage } from './pages/auth/AuthPage.js';
 import { HomePage } from './pages/home/HomePage.js';
 import { MapPage } from './pages/map/MapPage.js';
+import { ProfilePage } from './pages/profile/ProfilePage.js';
 import { VersionBadge } from './components/VersionBadge.js';
 
 export const App = () => (
@@ -20,6 +21,7 @@ export const App = () => (
       <Route element={<RequireAuth />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/maps/:id" element={<MapPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>
     <VersionBadge />

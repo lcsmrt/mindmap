@@ -1,6 +1,12 @@
-import { XIcon, WarningCircleIcon } from '@phosphor-icons/react';
+import { XIcon, WarningCircleIcon, CheckCircleIcon } from '@phosphor-icons/react';
+import { cn } from '@/lib/mergeClasses.js';
 import { Button } from './button.js';
 import { useToast } from './toast.js';
+
+const VARIANT_STYLES = {
+  error: 'border-destructive/30 bg-destructive/10 text-destructive',
+  success: 'border-border bg-card text-foreground',
+} as const;
 
 export function Toaster() {
   const { toasts, dismiss } = useToast();
@@ -13,14 +19,21 @@ export function Toaster() {
         <div
           key={t.id}
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive shadow-lg animate-in slide-in-from-right-full duration-200"
+          className={cn(
+            'flex items-start gap-2 rounded-lg border px-3 py-2 text-sm shadow-lg animate-in slide-in-from-right-full duration-200',
+            VARIANT_STYLES[t.variant],
+          )}
         >
-          <WarningCircleIcon className="mt-0.5 size-4 shrink-0" />
+          {t.variant === 'error' ? (
+            <WarningCircleIcon className="mt-0.5 size-4 shrink-0" />
+          ) : (
+            <CheckCircleIcon className="mt-0.5 size-4 shrink-0" />
+          )}
           <span className="flex-1 break-words">{t.description}</span>
           <Button
             variant="ghost"
             size="icon-xs"
-            className="shrink-0 text-destructive hover:text-destructive/80"
+            className="shrink-0 text-inherit hover:opacity-80"
             onClick={() => dismiss(t.id)}
           >
             <XIcon className="size-3" />

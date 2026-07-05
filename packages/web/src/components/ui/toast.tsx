@@ -4,7 +4,7 @@ import { uid } from '@/lib/uid.js';
 
 export interface Toast {
   id: string;
-  variant: 'error';
+  variant: 'error' | 'success';
   description: string;
 }
 
