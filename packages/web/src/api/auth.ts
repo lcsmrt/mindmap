@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AuthUser, SignupBody, LoginBody } from '@mindmap/shared';
+import type { AuthUser, SignupBody, LoginBody, UpdateProfileBody } from '@mindmap/shared';
 import type { MutationOptions } from './types.js';
 import { request, ApiError } from './_request.js';
 
@@ -23,6 +23,14 @@ async function loginRequest(body: LoginBody): Promise<AuthUser> {
 
 async function logoutRequest(): Promise<void> {
   return request<void>('/api/auth/logout', { method: 'POST' });
+}
+
+async function updateProfileRequest(body: UpdateProfileBody): Promise<AuthUser> {
+  return request<AuthUser>('/api/auth/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 async function fetchMe(): Promise<AuthUser | null> {
@@ -61,6 +69,18 @@ export const useLogin = (options?: MutationOptions<AuthUser, LoginBody>) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: loginRequest,
+    onSuccess: (user, variables) => {
+      queryClient.setQueryData(ME_KEY, user);
+      options?.onSuccess?.(user, variables);
+    },
+    onError: (error) => options?.onError?.(error),
+  });
+};
+
+export const useUpdateProfile = (options?: MutationOptions<AuthUser, UpdateProfileBody>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateProfileRequest,
     onSuccess: (user, variables) => {
       queryClient.setQueryData(ME_KEY, user);
       options?.onSuccess?.(user, variables);

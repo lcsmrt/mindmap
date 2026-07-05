@@ -12,7 +12,7 @@ vi.mock('./_request.js', async () => {
   return { ...actual, request: requestMock };
 });
 
-const { useSession, useSignup, useLogin, useLogout } = await import('./auth.js');
+const { useSession, useSignup, useLogin, useLogout, useUpdateProfile } = await import('./auth.js');
 
 const USER: AuthUser = { id: 'u1', email: 'user@example.com', name: 'User' };
 
@@ -97,5 +97,30 @@ describe('mutações de auth atualizam o cache', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryClient.getQueryData(['auth', 'me'])).toBeNull();
     expect(queryClient.getQueryData(['maps'])).toBeUndefined();
+  });
+
+  it('useUpdateProfile grava o usuário atualizado em [auth, me] no sucesso', async () => {
+    const updated = { ...USER, name: 'Novo Nome' };
+    requestMock.mockResolvedValueOnce(updated);
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['auth', 'me'], USER);
+
+    const { result } = renderHook(() => useUpdateProfile(), { wrapper: wrapper(queryClient) });
+    result.current.mutate({ name: 'Novo Nome' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(queryClient.getQueryData(['auth', 'me'])).toEqual(updated);
+  });
+
+  it('useUpdateProfile propaga erro sem tocar o cache', async () => {
+    requestMock.mockRejectedValueOnce(new ApiError('Server error', 500));
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['auth', 'me'], USER);
+
+    const { result } = renderHook(() => useUpdateProfile(), { wrapper: wrapper(queryClient) });
+    result.current.mutate({ name: 'Novo Nome' });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(queryClient.getQueryData(['auth', 'me'])).toEqual(USER);
   });
 });
