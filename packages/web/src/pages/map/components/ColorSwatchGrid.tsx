@@ -1,4 +1,4 @@
-import { Ban } from 'lucide-react';
+import { ProhibitIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/mergeClasses.js';
 import type { ColorSwatch } from './color-palette.js';
@@ -25,7 +25,7 @@ export function ColorSwatchGrid({ label, colors, value, onSelect }: ColorSwatchG
           onClick={() => onSelect(null)}
           aria-label="Padrão"
         >
-          <Ban className="h-3.5 w-3.5 text-muted-foreground" />
+          <ProhibitIcon className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
         {colors.map((swatch) => (
           <Button

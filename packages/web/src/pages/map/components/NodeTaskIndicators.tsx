@@ -1,4 +1,5 @@
 import type { NodeDto } from '@mindmap/shared';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar.js';
 import { statusMeta, getInitials, hasTaskProps } from './task-meta.js';
 
 interface NodeTaskIndicatorsProps {
@@ -19,9 +20,9 @@ export function NodeTaskIndicators({ node }: NodeTaskIndicatorsProps) {
       className="flex items-center gap-2.5 text-current"
     >
       {status && (
-        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold leading-none">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold leading-none">
           <span
-            className="h-[7px] w-[7px] shrink-0 rounded-full"
+            className="size-2 shrink-0 rounded-full"
             style={{ backgroundColor: status.color }}
           />
           {status.label}
@@ -29,13 +30,11 @@ export function NodeTaskIndicators({ node }: NodeTaskIndicatorsProps) {
       )}
 
       {assignee && (
-        <span
-          className="ml-auto flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold leading-none text-primary-foreground/80"
-          title={assignee}
-          aria-label={assignee}
-        >
-          {getInitials(assignee)}
-        </span>
+        <Avatar size="sm" className="ml-auto size-5" title={assignee} aria-label={assignee}>
+          <AvatarFallback className="bg-primary/20 text-xs font-bold text-primary-foreground/80">
+            {getInitials(assignee)}
+          </AvatarFallback>
+        </Avatar>
       )}
     </div>
   );

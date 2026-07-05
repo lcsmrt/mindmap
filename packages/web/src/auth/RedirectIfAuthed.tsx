@@ -1,12 +1,11 @@
-import { Navigate, useLocation, type Location } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useSession } from '@/api/auth.js';
 import { AuthSplash } from './AuthSplash.js';
+import { resolveReturnTo } from './returnTo.js';
 
 type RedirectIfAuthedProps = {
   children: React.ReactNode;
 };
-
-type AuthLocationState = { from?: Location };
 
 export const RedirectIfAuthed = ({ children }: RedirectIfAuthedProps) => {
   const { user, isLoading } = useSession();
@@ -14,12 +13,7 @@ export const RedirectIfAuthed = ({ children }: RedirectIfAuthedProps) => {
 
   if (isLoading) return <AuthSplash />;
 
-  if (user) {
-    const state = location.state as AuthLocationState | null;
-    const from = state?.from;
-    const to = from ? `${from.pathname}${from.search}` : '/';
-    return <Navigate to={to} replace />;
-  }
+  if (user) return <Navigate to={resolveReturnTo(location)} replace />;
 
   return <>{children}</>;
 };

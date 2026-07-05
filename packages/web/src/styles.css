@@ -97,6 +97,16 @@
   html {
     @apply font-sans;
   }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--color-foreground) !important;
+    -webkit-box-shadow: inset 0 0 0 1000px var(--color-field) !important;
+    caret-color: var(--color-foreground);
+    transition: background-color 9999s ease-out 0s;
+  }
 }
 
 @keyframes sprout {

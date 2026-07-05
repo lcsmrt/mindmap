@@ -64,16 +64,16 @@ export const MapCard = ({ map, onOpen, onRename, onDelete, className }: MapCardP
         }
       }}
       className={cn(
-        'relative cursor-pointer rounded-md border border-border bg-card px-4 pt-4 pb-[14px] outline-none transition-[border-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-border-hover hover:shadow-[0_4px_24px_rgba(0,0,0,.4)] focus-visible:border-border-hover',
+        'relative cursor-pointer rounded-md border border-border bg-card px-4 pt-4 pb-3 outline-none transition-[border-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-border-hover hover:shadow-[0_4px_24px_rgba(0,0,0,.4)] focus-visible:border-border-hover',
         className,
       )}
     >
-      <div className="mb-[13px] flex items-start justify-between gap-2">
-        <h3 className="flex-1 overflow-hidden text-[15.5px] font-semibold tracking-[-0.01em] overflow-ellipsis whitespace-nowrap">
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <h3 className="flex-1 overflow-hidden text-base font-semibold tracking-[-0.01em] overflow-ellipsis whitespace-nowrap">
           {map.title}
         </h3>
         <div
-          className="-mt-[3px] -mr-1"
+          className="-mt-1 -mr-1"
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}
         >
@@ -81,20 +81,20 @@ export const MapCard = ({ map, onOpen, onRename, onDelete, className }: MapCardP
         </div>
       </div>
 
-      <div className="mb-[11px] flex items-center justify-between gap-2">
-        <span className="font-mono text-[11.5px] text-muted-foreground">{nodesLabel}</span>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="font-mono text-xs text-muted-foreground">{nodesLabel}</span>
         {map.criticalCount > 0 && (
           <span
             title="Nós com prioridade alta"
-            className="inline-flex items-center gap-[5px] rounded-full bg-primary/10 px-2 py-[3px] font-mono text-[11px] font-semibold text-critical-foreground"
+            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 font-mono text-xs font-semibold text-critical-foreground"
           >
-            <span className="h-[5px] w-[5px] rounded-full bg-critical" />
+            <span className="size-1 rounded-full bg-critical" />
             {criticalLabel}
           </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-divider pt-[11px] font-mono text-[11.5px] text-fg-subtle">
+      <div className="flex items-center justify-between gap-2 border-t border-divider pt-3 font-mono text-xs text-fg-subtle">
         <span>Criado {dateFmt.format(new Date(map.createdAt))}</span>
         <span>Editado {formatRelative(map.updatedAt)}</span>
       </div>

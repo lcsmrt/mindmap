@@ -74,9 +74,9 @@ export const useLogout = (options?: MutationOptions<void, void>) => {
   return useMutation({
     mutationFn: logoutRequest,
     onSuccess: (data, variables) => {
+      options?.onSuccess?.(data, variables);
       queryClient.clear();
       queryClient.setQueryData(ME_KEY, null);
-      options?.onSuccess?.(data, variables);
     },
     onError: (error) => options?.onError?.(error),
   });

@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeftIcon } from '@phosphor-icons/react';
 import { useMap } from '@/api/maps.js';
 import { MapCanvas } from './components/MapCanvas.js';
 
@@ -20,7 +20,7 @@ export const MapPage = () => {
           to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground underline hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeftIcon className="h-4 w-4" />
           Voltar para mapas
         </Link>
       </div>
@@ -34,7 +34,7 @@ export const MapPage = () => {
           to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeftIcon className="h-4 w-4" />
           Mapas
         </Link>
         <h1 className="text-lg font-semibold text-foreground">{map?.title}</h1>

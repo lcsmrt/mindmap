@@ -6,14 +6,15 @@ import { useMaps, useCreateMap, useUpdateMap, useDeleteMap } from '@/api/maps.js
 import { useLogout } from '@/api/auth.js';
 import { BrandMark } from '@/components/BrandMark.js';
 import { ConfirmDialog } from '@/components/ConfirmDialog.js';
+import { MagnifyingGlassIcon, PlusIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button.js';
-import { Input } from '@/components/ui/input.js';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group.js';
 import { cn } from '@/lib/mergeClasses.js';
 import { MapCard } from './components/MapCard.js';
 import { CreateMapModal } from './components/CreateMapModal.js';
 import { RenameMapInput } from './components/RenameMapInput.js';
 import { filterAndSortMaps, type MapSort } from './components/map-sort.js';
-import { EmptyState, SearchIcon } from './components/EmptyState.js';
+import { EmptyState } from './components/EmptyState.js';
 
 const SORT_OPTIONS: { value: MapSort; label: string }[] = [
   { value: 'recent', label: 'Recentes' },
@@ -78,8 +79,8 @@ export const HomePage = () => {
       <main className="mx-auto w-full max-w-270 flex-1 px-8 pt-10 pb-16">
         <div className="mb-6 flex items-end justify-between gap-5">
           <div>
-            <h1 className="font-heading text-[26px] font-bold tracking-[-0.02em]">Meus Mapas</h1>
-            <p className="mt-1 font-mono text-[13px] text-fg-subtle">{countLabel}</p>
+            <h1 className="font-heading text-2xl font-bold tracking-[-0.02em]">Meus Mapas</h1>
+            <p className="mt-1 font-mono text-xs text-fg-subtle">{countLabel}</p>
           </div>
           <Button
             type="button"
@@ -87,21 +88,23 @@ export const HomePage = () => {
             onClick={() => setCreating(true)}
             className="h-auto gap-2 rounded-md px-4 py-3 text-sm font-semibold shadow-sm hover:bg-primary-hover"
           >
-            <span className="-mt-px text-[17px] leading-none">+</span> Novo mapa
+            <PlusIcon className="size-4" weight="bold" /> Novo mapa
           </Button>
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="flex min-w-55 max-w-85 flex-1 items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
-            <SearchIcon />
-            <Input
+          <InputGroup className="h-auto min-w-55 max-w-85 flex-1 rounded-md border-border bg-card">
+            <InputGroupAddon align="inline-start">
+              <MagnifyingGlassIcon className="size-3.5 text-muted-foreground" />
+            </InputGroupAddon>
+            <InputGroupInput
               data-testid="map-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar mapas"
-              className="h-auto border-none bg-transparent p-0 text-[13.5px] text-foreground placeholder:text-fg-faint focus-visible:border-transparent focus-visible:ring-0"
+              className="py-2 text-sm text-foreground placeholder:text-fg-faint"
             />
-          </div>
+          </InputGroup>
           <div className="flex items-center gap-2" data-testid="map-sort">
             <span className="mr-0.5 font-mono text-xs text-fg-faint">Ordenar:</span>
             {SORT_OPTIONS.map((option) => {
@@ -114,7 +117,7 @@ export const HomePage = () => {
                   aria-pressed={active}
                   onClick={() => setSort(option.value)}
                   className={cn(
-                    'h-auto rounded-lg border px-3 py-2 text-[12.5px] font-medium',
+                    'h-auto rounded-lg border px-3 py-2 text-xs font-medium',
                     active
                       ? 'border-primary/50 bg-primary/5 text-primary hover:bg-primary/5 hover:text-primary'
                       : 'border-border bg-card text-muted-foreground hover:bg-card hover:text-foreground',
@@ -129,8 +132,8 @@ export const HomePage = () => {
 
         {noMapsAtAll ? (
           <EmptyState
-            title="Nenhum mapa ainda"
-            subtitle="Despejar o primeiro mapa para começar."
+            title="Nenhum mapa por aqui"
+            subtitle="Crie seu primeiro mapa e comece a dar estrutura às ideias."
             onCreate={() => setCreating(true)}
           />
         ) : noResults ? (

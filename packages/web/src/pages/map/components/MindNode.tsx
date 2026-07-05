@@ -1,6 +1,13 @@
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
-import { ChevronDown, ChevronRight, Pencil, Plus, Triangle, X } from 'lucide-react';
+import {
+  CaretDownIcon,
+  CaretRightIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  TriangleIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 import { memo, useCallback, useState } from 'react';
 import { autoTextColor, isDarkBg } from './contrast.js';
 import { DEFAULT_BG } from './color-palette.js';
@@ -12,7 +19,7 @@ interface MindNodeProps {
   data: MindNodeData;
 }
 
-/** Chrome fixo da toolbar do nó. Fica sobre o canvas escuro (posição `top:-23px`,
+/** Chrome fixo da toolbar do nó. Fica sobre o canvas escuro (posição `top:-24px`,
  * acima do card), então não varia com a cor do card. */
 const TOOLBAR = {
   bg: 'var(--color-node-toolbar)',
@@ -117,7 +124,7 @@ function MindNodeBase({ data }: MindNodeProps) {
 
   return (
     <div
-      className="group relative flex w-full flex-col rounded-md px-3.25 py-2.75"
+      className="group relative flex w-full flex-col rounded-md px-3 py-3"
       style={{
         backgroundColor: skin.background,
         color: skin.text,
@@ -125,7 +132,7 @@ function MindNodeBase({ data }: MindNodeProps) {
         boxShadow: skin.boxShadow,
       }}
     >
-      <div className="flex items-start gap-1.75 pr-4">
+      <div className="flex items-start gap-2 pr-4">
         {hasChildren && (
           <Button
             variant="ghost"
@@ -137,9 +144,9 @@ function MindNodeBase({ data }: MindNodeProps) {
             title={isCollapsed ? 'Expandir' : 'Colapsar'}
           >
             {isCollapsed ? (
-              <ChevronRight className="w-3 h-3" />
+              <CaretRightIcon className="w-3 h-3" />
             ) : (
-              <ChevronDown className="w-3 h-3" />
+              <CaretDownIcon className="w-3 h-3" />
             )}
           </Button>
         )}
@@ -151,7 +158,7 @@ function MindNodeBase({ data }: MindNodeProps) {
             title="Prioridade crítica"
             aria-label="Prioridade crítica"
           >
-            <Triangle className="h-3 w-3" fill="currentColor" />
+            <TriangleIcon className="h-3 w-3" weight="fill" />
           </span>
         )}
 
@@ -184,7 +191,7 @@ function MindNodeBase({ data }: MindNodeProps) {
       </div>
 
       <div
-        className="group/toolbar absolute -top-[23px] right-0.5 flex gap-px rounded-[5px] p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+        className="group/toolbar absolute -top-6 right-0.5 flex gap-px rounded-sm p-0.5 opacity-0 transition-opacity duration-100 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
         style={{
           backgroundColor: TOOLBAR.bg,
           border: `1px solid ${TOOLBAR.border}`,
@@ -204,10 +211,10 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onAddChild();
           }}
-          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
+          className="size-6 rounded-sm text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Adicionar filho"
         >
-          <Plus className="w-3 h-3" />
+          <PlusIcon className="w-3 h-3" />
         </Button>
 
         <Button
@@ -217,10 +224,10 @@ function MindNodeBase({ data }: MindNodeProps) {
             e.stopPropagation();
             onOpenEditDialog();
           }}
-          className="h-5.75 w-5.75 rounded-[5px] text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
+          className="size-6 rounded-sm text-(--tool-fg) hover:bg-(--tool-bg-h) hover:text-(--tool-fg-h)"
           title="Editar nó"
         >
-          <Pencil className="w-3 h-3" />
+          <PencilSimpleIcon className="w-3 h-3" />
         </Button>
 
         {!isRoot && (
@@ -231,10 +238,10 @@ function MindNodeBase({ data }: MindNodeProps) {
               e.stopPropagation();
               onDelete();
             }}
-            className="h-5.75 w-5.75 rounded-[5px] text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
+            className="size-6 rounded-sm text-(--del-fg) hover:bg-(--del-bg-h) hover:text-(--del-fg-h)"
             title="Excluir"
           >
-            <X className="w-3 h-3" />
+            <XIcon className="w-3 h-3" />
           </Button>
         )}
       </div>

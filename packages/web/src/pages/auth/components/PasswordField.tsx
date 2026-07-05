@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field.js';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group.js';
 import { Input } from '@/components/ui/input.js';
 import { cn } from '@/lib/mergeClasses.js';
 
@@ -11,41 +18,41 @@ type PasswordFieldProps = {
 
 export const PasswordField = ({ label, error, className, id, ...props }: PasswordFieldProps) => {
   const [visible, setVisible] = useState(false);
+  const errorId = error ? `${id}-error` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label
+    <Field data-invalid={error ? true : undefined} className="gap-1.5">
+      <FieldLabel
         htmlFor={id}
-        className="font-mono text-[10px] font-medium tracking-[0.06em] text-fg-subtle uppercase"
+        className="font-mono text-xs font-medium tracking-[0.06em] text-fg-subtle uppercase"
       >
         {label}
-      </label>
-      <div
-        className={cn(
-          'flex items-center gap-2 rounded-md border border-border-strong bg-field pr-2.5 focus-within:border-ring',
-          error && 'border-destructive',
-        )}
-      >
-        <Input
+      </FieldLabel>
+      <InputGroup className="h-auto overflow-hidden border-border-strong bg-field">
+        <InputGroupInput
           id={id}
           type={visible ? 'text' : 'password'}
           aria-invalid={!!error}
-          className={cn(
-            'h-auto flex-1 border-none bg-transparent px-3 py-2.5 text-sm focus-visible:ring-0',
-            className,
-          )}
+          aria-describedby={errorId}
+          className={cn('px-3 py-2.5 text-sm', className)}
           {...props}
         />
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'}
-          className="shrink-0 text-fg-faint hover:text-foreground"
-        >
-          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
-      </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
+        <InputGroupAddon align="inline-end" className="mr-0 pr-3">
+          <InputGroupButton
+            size="icon-xs"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'}
+            className="text-fg-faint hover:bg-transparent hover:text-foreground"
+          >
+            {visible ? <EyeSlashIcon className="size-4" /> : <EyeIcon className="size-4" />}
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+      {error && (
+        <FieldError id={errorId} className="text-xs">
+          {error}
+        </FieldError>
+      )}
+    </Field>
   );
 };

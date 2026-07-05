@@ -1,14 +1,19 @@
 import { useState } from 'react';
-import { useLocation, useNavigate, type Location } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark } from '@/components/BrandMark.js';
 import { Button } from '@/components/ui/button.js';
+import { Checkbox } from '@/components/ui/checkbox.js';
+import { resolveReturnTo } from '@/auth/returnTo.js';
 import { useSignup, useLogin } from '@/api/auth.js';
-import { validateAuth, messageForError, type AuthMode, type AuthFieldErrors } from './validation.js';
+import {
+  validateAuth,
+  messageForError,
+  type AuthMode,
+  type AuthFieldErrors,
+} from './validation.js';
 import { AuthField } from './components/AuthField.js';
 import { PasswordField } from './components/PasswordField.js';
 import { ErrorBanner } from './components/ErrorBanner.js';
-
-type AuthLocationState = { from?: Location };
 
 export const AuthPage = () => {
   const navigate = useNavigate();
@@ -24,10 +29,7 @@ export const AuthPage = () => {
   const isEntrar = mode === 'entrar';
 
   const redirectAfterAuth = () => {
-    const state = location.state as AuthLocationState | null;
-    const from = state?.from;
-    const to = from ? `${from.pathname}${from.search}` : '/';
-    navigate(to, { replace: true });
+    navigate(resolveReturnTo(location), { replace: true });
   };
 
   const { mutate: signup, isPending: isSigningUp } = useSignup({
@@ -61,27 +63,19 @@ export const AuthPage = () => {
     setMode(isEntrar ? 'cadastro' : 'entrar');
     setFieldErrors({});
     setServerError(null);
+    setPassword('');
   };
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
-      <BrandMark
-        size={440}
-        className="pointer-events-none absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.04]"
-      />
-
-      <div className="relative w-full max-w-[412px]">
+      <div className="relative w-full max-w-103">
+        <div className="mb-5 flex items-center justify-center gap-2.5">
+          <BrandMark size={36} glow />
+          <span className="font-heading text-2xl font-semibold tracking-[0.2em]">KAOS</span>
+        </div>
         <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-          <div className="h-[3px] bg-gradient-to-r from-primary via-destructive to-primary" />
+          <div className="h-1 bg-linear-to-r from-primary via-destructive to-primary" />
           <div className="px-6 py-6">
-            <div className="mb-5 flex items-center gap-2.5">
-              <BrandMark size={24} glow />
-              <span className="font-heading text-base font-semibold tracking-[0.2em]">KAOS</span>
-              <span className="ml-auto font-mono text-[10px] tracking-[0.06em] text-fg-faint uppercase">
-                {isEntrar ? 'entrar' : 'criar conta'}
-              </span>
-            </div>
-
             <h1 className="font-heading text-lg font-semibold">
               {isEntrar ? 'Acessar conta' : 'Criar sua conta'}
             </h1>
@@ -98,6 +92,7 @@ export const AuthPage = () => {
                   id="auth-name"
                   label="Nome"
                   placeholder="Como te chamamos"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   error={fieldErrors.name}
@@ -109,6 +104,7 @@ export const AuthPage = () => {
                 label="E-mail"
                 type="email"
                 placeholder="voce@exemplo.com"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 error={fieldErrors.email}
@@ -118,18 +114,21 @@ export const AuthPage = () => {
                 id="auth-password"
                 label="Senha"
                 placeholder={isEntrar ? 'Sua senha' : 'Crie uma senha forte'}
+                autoComplete={isEntrar ? 'current-password' : 'new-password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 error={fieldErrors.password}
               />
 
               {isEntrar && (
-                <label className="-mt-1 flex items-center gap-2 text-[12.5px] text-fg-subtle select-none">
-                  <input
-                    type="checkbox"
+                <label
+                  htmlFor="auth-remember"
+                  className="-mt-1 flex items-center gap-2 text-xs text-fg-subtle select-none"
+                >
+                  <Checkbox
+                    id="auth-remember"
                     checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="size-3.5 accent-primary"
+                    onCheckedChange={setRemember}
                   />
                   Manter conectado neste dispositivo
                 </label>
@@ -154,13 +153,14 @@ export const AuthPage = () => {
 
         <div className="mt-4 text-center text-sm text-fg-subtle">
           {isEntrar ? 'Novo por aqui?' : 'Já tem conta?'}{' '}
-          <button
+          <Button
+            variant="link"
             type="button"
             onClick={toggleMode}
             className="font-semibold text-primary hover:text-primary-hover"
           >
             {isEntrar ? 'Criar conta' : 'Entrar'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

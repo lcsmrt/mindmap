@@ -1,5 +1,13 @@
 import { useState, useRef, useCallback } from 'react';
-import { Flag, Triangle, Check, CircleAlert, TriangleAlert, Contrast, type LucideIcon } from 'lucide-react';
+import {
+  FlagIcon,
+  TriangleIcon,
+  CheckIcon,
+  WarningCircleIcon,
+  WarningIcon,
+  CircleHalfIcon,
+  type Icon,
+} from '@phosphor-icons/react';
 import {
   Dialog,
   DialogContent,
@@ -8,6 +16,9 @@ import {
 } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
 import { Button } from '@/components/ui/button.js';
+import { Field, FieldLabel } from '@/components/ui/field.js';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group.js';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar.js';
 import { cn } from '@/lib/mergeClasses.js';
 import { ColorSwatchGrid } from './ColorSwatchGrid.js';
 import { StatusSelector } from './StatusSelector.js';
@@ -55,10 +66,10 @@ const CONTRAST_TONE: Record<ContrastLevel, string> = {
   bad: 'text-rose-400',
 };
 
-const CONTRAST_ICON: Record<ContrastLevel, LucideIcon> = {
-  good: Check,
-  ok: CircleAlert,
-  bad: TriangleAlert,
+const CONTRAST_ICON: Record<ContrastLevel, Icon> = {
+  good: CheckIcon,
+  ok: WarningCircleIcon,
+  bad: WarningIcon,
 };
 
 function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
@@ -66,7 +77,6 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [assignee, setAssignee] = useState(node.assignee ?? '');
-  const assigneeRef = useRef<HTMLInputElement>(null);
 
   const [bgColor, setBgColor] = useState(node.bgColor);
   const [textColor, setTextColor] = useState(node.textColor);
@@ -98,7 +108,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAssigneeSubmit();
-      assigneeRef.current?.blur();
+      e.currentTarget.blur();
     }
   }
 
@@ -153,7 +163,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
                 style={{ color: criticalColor }}
                 title="Prioridade crítica"
               >
-                <Triangle className="h-3 w-3" fill="currentColor" />
+                <TriangleIcon className="h-3 w-3" weight="fill" />
               </span>
             )}
             <span
@@ -174,7 +184,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
         </div>
 
         {/* Medidor de contraste (WCAG) */}
-        <div className="flex items-center gap-1.5 font-mono text-[11.5px] font-semibold">
+        <div className="flex items-center gap-1.5 font-mono text-xs font-semibold">
           <VerdictIcon className={`h-3.5 w-3.5 ${CONTRAST_TONE[verdict.level]}`} />
           <span className={CONTRAST_TONE[verdict.level]}>{verdict.label}</span>
           <span className="font-normal text-muted-foreground">
@@ -183,10 +193,10 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="node-title" className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <Field className="gap-1.5">
+        <FieldLabel htmlFor="node-title" className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Título
-        </label>
+        </FieldLabel>
         <Input
           ref={inputRef}
           id="node-title"
@@ -196,7 +206,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
           onBlur={handleTitleSubmit}
           autoFocus
         />
-      </div>
+      </Field>
 
       <ColorSwatchGrid
         label="Cor de fundo"
@@ -225,13 +235,13 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
                 aria-pressed={selected}
                 onClick={() => selectTextColor(swatch.hex)}
                 className={cn(
-                  'h-7 w-[34px] rounded-md border border-border p-0 text-[13px] font-bold',
+                  'h-7 w-8 rounded-md border border-border p-0 text-xs font-bold',
                   selected && 'ring-2 ring-primary ring-offset-2',
                 )}
                 style={{ backgroundColor: previewBg, color: aaColor }}
                 title={swatch.name}
               >
-                {swatch.hex === null ? <Contrast className="h-4 w-4" /> : 'Aa'}
+                {swatch.hex === null ? <CircleHalfIcon className="h-4 w-4" /> : 'Aa'}
               </Button>
             );
           })}
@@ -243,16 +253,19 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
         <StatusSelector value={status} onSelect={selectStatus} />
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="node-assignee" className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <Field className="gap-1.5">
+        <FieldLabel htmlFor="node-assignee" className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Responsável
-        </label>
-        <div className="flex min-w-0 items-center gap-2.5 rounded-lg border border-input px-2.5 py-1 focus-within:border-ring">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10.5px] font-bold leading-none text-primary-foreground/80">
-            {initials || '—'}
-          </span>
-          <Input
-            ref={assigneeRef}
+        </FieldLabel>
+        <InputGroup className="h-auto py-1">
+          <InputGroupAddon align="inline-start">
+            <Avatar size="sm" className="size-6">
+              <AvatarFallback className="bg-primary/20 text-xs font-bold text-primary-foreground/80">
+                {initials || '—'}
+              </AvatarFallback>
+            </Avatar>
+          </InputGroupAddon>
+          <InputGroupInput
             id="node-assignee"
             data-testid="assignee-input"
             value={assignee}
@@ -260,10 +273,9 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
             onChange={(e) => setAssignee(e.target.value)}
             onKeyDown={handleAssigneeKeyDown}
             onBlur={handleAssigneeSubmit}
-            className="h-auto min-w-0 flex-1 border-none bg-transparent p-0 shadow-none focus-visible:ring-0"
           />
-        </div>
-      </div>
+        </InputGroup>
+      </Field>
 
       <div className="space-y-1.5">
         <span className="font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">Prioridade</span>
@@ -281,7 +293,7 @@ function NodeEditForm({ node, onUpdateNode }: NodeEditFormProps) {
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
-            <Flag className="h-3.5 w-3.5" />
+            <FlagIcon className="h-3.5 w-3.5" />
             Crítico
           </Button>
         </div>
