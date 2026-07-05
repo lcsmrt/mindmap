@@ -7,8 +7,8 @@ description: Builds and modifies the mindmap canvas using visx (@visx/zoom, @vis
 
 The canvas renders a hierarchical mindmap with **visx + d3**, not a general graph editor.
 It is deliberately **not** React Flow (removed in M7 — the attribution logo was a dealbreaker;
-see AD-015 in `STATE.md`). All canvas code lives under `packages/web/src/pages/map/components/`
-and `packages/web/src/lib/`.
+see AD-015 in `STATE.md`). All canvas code lives under `packages/web/src/pages/map/`
+(`components/` + `lib/`).
 
 ## The architecture in one picture: hybrid SVG + HTML
 
@@ -78,7 +78,7 @@ drift away from their edges as you zoom.
 - `references/nodes-edges.md` — HTML `MindNode` (no handles), SVG edges, inline edit
 - `references/interaction.md` — pan/zoom (visx Zoom, fitView, matrix), drag-to-reparent
 - `references/sync.md` — TanStack Query mutations, optimistic updates, AD-002
-- `references/structure.md` — actual folder layout under `pages/map/components/` + `lib/`
+- `references/structure.md` — actual folder layout under `pages/map/` (`components/` + `lib/`)
 
 ## Usage Guidance
 
@@ -88,4 +88,4 @@ Use this skill when:
 - Adding/changing the `MindNode` or the edge rendering
 - Wiring pan/zoom, drag, selection, or inline edit
 - Syncing canvas interactions with the backend
-- Touching anything under `pages/map/components/` or the layout helpers in `lib/`
+- Touching anything under `pages/map/components/` or the layout helpers in `pages/map/lib/`

@@ -1,24 +1,30 @@
 # Folder structure
 
-Canvas code lives under `packages/web/src/pages/map/components/` (page-scoped, per the project's
-frontend-structure rule) and the pure layout helpers under `packages/web/src/lib/`.
+Canvas code lives under `packages/web/src/pages/map/` (page-scoped, per the project's
+frontend-structure rule): rich components in `components/`, pure layout helpers in `lib/`.
 
 ```
 packages/web/src/
-├── pages/map/components/
-│   ├── MapCanvas.tsx          # Root: <Zoom> + SVG edge layer + HTML node layer; wires handlers/mutations
-│   ├── MindNode.tsx           # HTML node component (memo, no handles, controlled inline edit)
-│   ├── NodeTaskIndicators.tsx # Progressive task footer (status dot / initials / 🚩)  [M6]
-│   ├── StatusSelector.tsx     # Segmented status buttons (used by the dialog)           [M6]
-│   ├── ColorSwatchGrid.tsx    # Color palette swatches (used by the dialog)             [M5]
-│   ├── NodeEditDialog.tsx     # Edit dialog (title, colors, task props) — lib-agnostic
-│   ├── useNodeDrag.ts         # Pointer-event drag-to-reparent + pure findDropTarget
-│   ├── task-meta.ts           # STATUS_OPTIONS, getInitials, hasTaskProps (pure)
-│   └── types.ts               # MindNodeData and related prop types
-├── lib/
-│   ├── tree.ts                # buildTree + visibleNodes (adjacency list → visible tree)
-│   ├── nodeSize.ts            # NODE_WIDTH, NODE_HEIGHT_BASE/_WITH_FOOTER, nodeHeight(node)
-│   └── useTreeLayout.ts       # d3-flextree layout: computeTreeLayout (pure) + useTreeLayout hook
+├── pages/map/
+│   ├── components/
+│   │   ├── MapCanvas.tsx          # Root: <Zoom> + SVG edge layer + HTML node layer; wires handlers/mutations
+│   │   ├── GhostBar.tsx           # Drop placeholder rendered at the target slot during drag   [M17]
+│   │   ├── MindNode.tsx           # HTML node component (memo, no handles, controlled inline edit)
+│   │   ├── NodeTaskIndicators.tsx # Progressive task footer (status dot / initials / 🚩)  [M6]
+│   │   ├── StatusSelector.tsx     # Segmented status buttons (used by the dialog)           [M6]
+│   │   ├── ColorSwatchGrid.tsx    # Color palette swatches (used by the dialog)             [M5]
+│   │   ├── NodeEditDialog.tsx     # Edit dialog (title, colors, task props) — lib-agnostic
+│   │   ├── useNodeDrag.ts         # Pointer-event drag-to-reparent + pure findDropTarget
+│   │   ├── useContainerSize.ts    # ResizeObserver container size hook                       [M17]
+│   │   ├── useNodeEditing.ts      # Inline-edit + edit-dialog state extracted from MapCanvas [M17]
+│   │   ├── useMeasuredHeights.ts  # Shared ResizeObserver → measured node heights            [M12]
+│   │   ├── task-meta.ts           # STATUS_OPTIONS, getInitials, hasTaskProps (pure)
+│   │   └── types.ts               # MindNodeData and related prop types
+│   └── lib/
+│       ├── tree.ts                # buildTree + visibleNodes (adjacency list → visible tree)
+│       ├── slots.ts               # Drop-slot geometry: computeSlots / nearestSlot (pure)    [M9/M13]
+│       ├── nodeSize.ts            # NODE_WIDTH, MIN_NODE_WIDTH, nodeWidth / estimateNodeHeight
+│       └── useTreeLayout.ts       # d3-flextree layout: computeTreeLayout (pure) + useTreeLayout hook
 └── api/
     ├── nodes.ts               # useNodes + create/update/delete/move mutations (optimistic)
     ├── maps.ts                # map queries

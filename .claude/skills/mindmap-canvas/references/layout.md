@@ -7,9 +7,9 @@ pure and one-directional:
 
 ```
 server data (TanStack Query: useNodes)
-   → buildTree(nodes)              // lib/tree.ts — adjacency list → tree, sorted by sortOrder
-   → visibleNodes(tree, collapsed) // lib/tree.ts — drops collapsed subtrees
-   → useTreeLayout(nodes, edges)   // lib/useTreeLayout.ts — d3-flextree → positions
+   → buildTree(nodes)              // pages/map/lib/tree.ts — adjacency list → tree, sorted by sortOrder
+   → visibleNodes(tree, collapsed) // pages/map/lib/tree.ts — drops collapsed subtrees
+   → useTreeLayout(nodes, edges)   // pages/map/lib/useTreeLayout.ts — d3-flextree → positions
    → render (edges + HTML nodes)
 ```
 
@@ -25,9 +25,9 @@ Nodes are not uniform: 40px without a task footer, 58px with one. `d3.tree()` an
 take a single `nodeSize` for all nodes, so they can't express that. **`d3-flextree`** can.
 
 ```ts
-// lib/useTreeLayout.ts
+// pages/map/lib/useTreeLayout.ts
 import { flextree } from 'd3-flextree';
-import { NODE_WIDTH, nodeHeight } from './nodeSize';
+import { NODE_WIDTH, estimateNodeHeight } from './nodeSize';
 
 const GAP_X = 24;
 const GAP_Y = 16;
@@ -35,7 +35,7 @@ const GAP_Y = 16;
 export function computeTreeLayout(tree: TreeNode) {
   const layout = flextree<NodeDto>()
     // vertical layout: [breadth, depth] = [width, height]
-    .nodeSize((n) => [NODE_WIDTH + GAP_X, nodeHeight(n.data) + GAP_Y])
+    .nodeSize((n) => [NODE_WIDTH + GAP_X, estimateNodeHeight(n.data) + GAP_Y])
     .spacing(() => 0);
 
   const root = layout.hierarchy(tree, (d) => d.children); // builds a d3-hierarchy-derived node
@@ -43,7 +43,7 @@ export function computeTreeLayout(tree: TreeNode) {
 
   const positioned: PositionedNode[] = [];
   root.each((n) => {
-    positioned.push({ id: n.data.id, x: n.x, y: n.y, width: NODE_WIDTH, height: nodeHeight(n.data) });
+    positioned.push({ id: n.data.id, x: n.x, y: n.y, width: NODE_WIDTH, height: estimateNodeHeight(n.data) });
   });
 
   const links: LayoutLink[] = root.links().map((l) => ({
@@ -86,5 +86,5 @@ export function useTreeLayout(nodes: NodeDto[], edges: VisibleEdge[]): LayoutRes
   re-pushing derived state.
 - Layout is pure — keep `computeTreeLayout` free of React/DOM so it can be unit-tested
   (positions exist for every visible node; links = nodes − 1; deterministic; footer node → 58px).
-- Heights come from `nodeHeight(node)` in `lib/nodeSize.ts`. Don't hardcode 40/58 elsewhere.
+- Heights come from `estimateNodeHeight(node)` in `pages/map/lib/nodeSize.ts`. Don't hardcode 40/58 elsewhere.
 - Never write positions back to the server (AD-002).
