@@ -66,7 +66,8 @@ Retrofit multi-usuário sobre o app antes single-user. Decisões fixadas em **AD
 ```
 M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
                 ├─ M21 ✅  (reset por e-mail)
-                └─ M22     (Google OAuth)        pendente
+                ├─ M23 ✅  (login por username)  executado · review AD-013 pendente
+                └─ M22     (Google OAuth)         pendente
 ```
 
 - **M18 — Núcleo de auth backend (multi-tenancy)** ✅ (AD-025 · `m18-auth-core/`) — `User`/`Session`/`Map.ownerId`, sessão server-side opaca (argon2 + `sha256(token)` no banco), guarda + escopo por dono em todas as rotas maps/nodes, backfill (1º signup herda os mapas órfãos). Só backend.
@@ -78,9 +79,15 @@ M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
 - Provedor de e-mail/SMTP + `PasswordResetToken` (uso único, expira); fluxo "Esqueci a senha" → "Link enviado" (mensagem neutra, não vaza existência de conta) → página de nova senha.
 - **Entregue (AD-030):** `PasswordResetToken` espelha `Session` (sha256 + TTL 60 min, uso único); `services/email.ts` provider-agnóstico (nodemailer/SMTP por env; console sem SMTP); 3 rotas no `authPlugin` (`forgot` sempre 204 neutro / `validate` / `reset` em transação) + seam de teste; `/forgot-password` e `/reset-password` no front; sem auto-login; flag `logoutOtherDevices` (default on). 9 commits T1–T9; gates verdes (unit api 124 / web 162 / e2e 47). **Ops:** setar `APP_URL`+`SMTP_*` no Portainer pra envio real em prod.
 
-### M22 — Google OAuth 🟡 pendente · depende de M18 · puxa app OAuth no Google Cloud
+### M23 — Login por username (estilo GitHub) ✅ executado; review AD-013 pendente (AD-031/AD-032 · `m23-username-login/`)
 
-- `@fastify/oauth2` + "Continuar com Google"; criar conta nova ou **vincular** a conta existente com mesmo e-mail (política de account linking decidida no design).
+- Login por **username OU e-mail** no mesmo campo (`LoginBody.email` → `identifier`, resolve por `@`). Username **obrigatório e único**, lowercase-only, definido no signup e editável no `/profile`; `@username` no menu de conta. Sem infra nova, sem backfill (não há usuários). Full-stack pequeno-médio (11 tasks).
+- **Ordem (C7):** antes do M22 porque username obrigatório vira invariante do `User` — a criação de conta via OAuth (que só recebe e-mail + nome) vai precisar **gerar/pedir** username; melhor desenhar o M22 contra o `User` já estável, reusando a edição de username do `/profile` como escape.
+- **Entregue (AD-032):** 11 commits atômicos T1–T11 conforme planejado, sem desvios de escopo. Gates verdes: typecheck, lint, unit api 130, unit web 180, e2e 47/48 (1 falha pré-existente e documentada em `CONCERNS.md`, sem relação com M23).
+
+### M22 — Google OAuth 🟡 pendente · depende de M18 (e do `User` do M23) · puxa app OAuth no Google Cloud
+
+- `@fastify/oauth2` + "Continuar com Google"; criar conta nova ou **vincular** a conta existente com mesmo e-mail (política de account linking decidida no design). Conta nova via OAuth precisa **gerar/pedir** um username (invariante do M23) — gerador definido no design do M22.
 
 ---
 
