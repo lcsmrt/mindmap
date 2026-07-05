@@ -172,7 +172,7 @@ Retrofit de autenticação **multi-usuário** sobre o app hoje single-user/sem d
 ```
 M18 (núcleo backend)
  └─ M19 (tela + guarda)  ← portão fechado, email+senha (1ª fatia jogável)
-     ├─ M20 (menu/perfil/tema)      independentes entre si —
+     ├─ M20 (menu/perfil)           independentes entre si —
      ├─ M21 (reset por e-mail)      ordem flexível depois
      └─ M22 (Google OAuth)          que o portão existe
 ```
@@ -199,9 +199,11 @@ Planejado e executado em `.specs/features/m19-auth-frontend/` (spec 20 req. M19-
 
 **Limpeza de UI pós-M19 (2026-07-05, quick task junto da review AD-013 — não é milestone):** só `packages/web`, sem schema/contrato. Troca `lucide-react`→`@phosphor-icons/react` (`IconContext` global bold), 7 primitivos shadcn/base-ui novos em `components/ui/` (`avatar`/`checkbox`/`field`/`input-group`/`label`/`separator`/`textarea`), reskin de auth/home/map, alinhamento à grade de 4px (dezenas de arbitrários fora da grade corrigidos) e CSS anti-flash de `:-webkit-autofill`. As 7 correções da review AD-013 (a11y dos campos, timing do login, `satisfies z.ZodType`, ordem do logout, util de return-to, checkbox labelable, paths da skill `mindmap-canvas`) foram junto. Ver Current Work em STATE.md.
 
-### M20 — Menu de conta, perfil e tema 🟡 média · depende de M19
+### M20 — Menu de conta e perfil 🟡 média · depende de M19
 
-- Avatar no header + dropdown (Perfil, Tema claro/escuro, Sair); editar nome; tema persistido. (Preferências / Ajuda & atalhos do design: mínimos ou deferred.)
+- Avatar no header + dropdown (Perfil, Sair); editar nome. (Preferências / Ajuda & atalhos do design: mínimos ou deferred.)
+- **Consolidar o header (decisão do usuário, 2026-07-05):** hoje há dois `<header>` inline divergentes e duplicados — `HomePage.tsx` (branding KAOS + botão "Sair" provisório) e `MapPage.tsx` (voltar + título, **sem Sair**). Extrair um header compartilhado para `components/` (regra `frontend-structure`) que hospeda o **menu de conta à direita** nos dois, com o lado esquerdo variando por página (Home = branding; Mapas = voltar + título). Remove a inconsistência e leva o menu de conta pra tela de mapas.
+- **Tema claro/escuro fatiado para fora do M20 (decisão do usuário, 2026-07-05)** — não implementar agora; vira milestone/quick task própria depois. Some do dropdown do M20.
 
 ### M21 — Reset de senha por e-mail 🟡 média · depende de M18/M19 · puxa infra de e-mail
 
