@@ -138,44 +138,62 @@ describe('Auth API', () => {
       await app.inject({ method: 'POST', url: '/auth/signup', payload: validSignup });
     });
 
-    it('credenciais corretas — 200 + cookie', async () => {
+    it('credenciais corretas por e-mail — 200 + cookie (regressão)', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'alice@example.com', password: 'password123' },
+        payload: { identifier: 'alice@example.com', password: 'password123' },
       });
       expect(res.statusCode).toBe(200);
       expect(res.json<{ email: string }>().email).toBe('alice@example.com');
       expect(sessionCookie(res)?.value).toBeTruthy();
     });
 
-    it('senha errada e e-mail inexistente retornam 401 com a MESMA mensagem', async () => {
+    it('credenciais corretas por username — 200 + cookie', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        payload: { identifier: 'alice', password: 'password123' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ username: string }>().username).toBe('alice');
+      expect(sessionCookie(res)?.value).toBeTruthy();
+    });
+
+    it('senha errada, e-mail inexistente e username inexistente retornam 401 com a MESMA mensagem', async () => {
       const wrongPass = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'alice@example.com', password: 'errada__' },
+        payload: { identifier: 'alice@example.com', password: 'errada__' },
       });
-      const noUser = await app.inject({
+      const noUserByEmail = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'ghost@example.com', password: 'password123' },
+        payload: { identifier: 'ghost@example.com', password: 'password123' },
+      });
+      const noUserByUsername = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        payload: { identifier: 'ghost', password: 'password123' },
       });
 
       expect(wrongPass.statusCode).toBe(401);
-      expect(noUser.statusCode).toBe(401);
-      expect(wrongPass.json()).toEqual(noUser.json());
+      expect(noUserByEmail.statusCode).toBe(401);
+      expect(noUserByUsername.statusCode).toBe(401);
+      expect(wrongPass.json()).toEqual(noUserByEmail.json());
+      expect(noUserByUsername.json()).toEqual(noUserByEmail.json());
     });
 
     it('remember=true dura 30d; ausente dura 7d (maxAge do cookie)', async () => {
       const def = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'alice@example.com', password: 'password123' },
+        payload: { identifier: 'alice@example.com', password: 'password123' },
       });
       const rem = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'alice@example.com', password: 'password123', remember: true },
+        payload: { identifier: 'alice@example.com', password: 'password123', remember: true },
       });
 
       expect(sessionCookie(def)?.maxAge).toBe(7 * 24 * 60 * 60);
@@ -455,12 +473,12 @@ describe('Auth API', () => {
       const withNew = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'alice@example.com', password: 'novasenha123' },
+        payload: { identifier: 'alice@example.com', password: 'novasenha123' },
       });
       const withOld = await app.inject({
         method: 'POST',
         url: '/auth/login',
-        payload: { email: 'alice@example.com', password: 'password123' },
+        payload: { identifier: 'alice@example.com', password: 'password123' },
       });
 
       expect(withNew.statusCode).toBe(200);

@@ -45,7 +45,7 @@ const SignupBodySchema = z.object({
 }) satisfies z.ZodType<SignupBody>;
 
 const LoginBodySchema = z.object({
-  email: EmailField,
+  identifier: z.string().trim().toLowerCase().min(1),
   password: z.string(),
   remember: z.boolean().optional(),
 }) satisfies z.ZodType<LoginBody>;
@@ -109,10 +109,12 @@ const authPlugin: FastifyPluginAsyncZod = async (app) => {
   app.post('/login', {
     schema: { body: LoginBodySchema },
     handler: async (req, reply) => {
-      const { email, password, remember } = req.body;
+      const { identifier, password, remember } = req.body;
 
-      const user = await prisma.user.findUnique({ where: { email } });
-      // verifica sempre (contra hash dummy quando o e-mail não existe) p/ não vazar
+      const user = identifier.includes('@')
+        ? await prisma.user.findUnique({ where: { email: identifier } })
+        : await prisma.user.findUnique({ where: { username: identifier } });
+      // verifica sempre (contra hash dummy quando o identifier não existe) p/ não vazar
       // existência da conta por tempo de resposta
       const passwordOk = await verifyPassword(user?.passwordHash ?? DUMMY_PASSWORD_HASH, password);
       if (!user || !passwordOk) {
