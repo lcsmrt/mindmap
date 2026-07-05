@@ -149,7 +149,7 @@ Identidade visual própria: paleta de cores nova, tokens de design system, tipog
 - Correção de centralização do canvas ao reabrir um mapa.
 - Spec/design/tasks em `.specs/features/m16-kaos-rebrand/`. Commits: `bdd09a9`, `b603cdf`, `3aa8feb`, `8fedd23`. Gates verdes: typecheck/lint ✅, unit web 118/api 61 ✅; **e2e 37/37 pendente** de run limpo com API (DB dev necessário). Bug de trepidação do resize segue aberto (CONCERNS.md → Known Bugs).
 
-### M17 — Limpeza da base de código ✅ executado (review AD-013 pendente — chat separado)
+### M17 — Limpeza da base de código ✅ executado · review AD-013 APROVADA (2026-07-05, zero bloqueantes)
 
 Refactor puro — zero mudança de comportamento, contrato, schema, visual. Seis tasks atômicas:
 
@@ -177,7 +177,7 @@ M18 (núcleo backend)
      └─ M22 (Google OAuth)          que o portão existe
 ```
 
-### M18 — Núcleo de auth backend (multi-tenancy) 🔴 alta · só backend · ✅ EXECUTADO (2026-07-04) — review AD-013 pendente
+### M18 — Núcleo de auth backend (multi-tenancy) 🔴 alta · só backend · ✅ EXECUTADO (2026-07-04) · review AD-013 APROVADA (2026-07-05, zero bloqueantes)
 
 Fundação de que todo o resto depende; parte mais crítica de segurança. Planejamento concluído em `.specs/features/m18-auth-core/` (21 req. M18-NN, 12 tasks; ver AD-025 + Current Work em STATE.md). Decisões: backfill = 1º cadastro herda; sessão 7d/30d; senha mín. 8; sessão opaca com `sha256(token)` no banco.
 
@@ -187,7 +187,7 @@ Fundação de que todo o resto depende; parte mais crítica de segurança. Plane
 - Endpoints: `signup`, `login`, `logout`, `me`.
 - **Guarda global + escopo por dono**: toda query de maps/nodes filtra por `ownerId`; toda mutação checa posse (um usuário não toca no mapa/nó de outro).
 
-### M19 — Tela de auth + guarda no front 🔴 alta · **1ª fatia jogável ponta-a-ponta (email+senha)** · depende de M18 · ✅ EXECUTADO (2026-07-04) — review AD-013 pendente
+### M19 — Tela de auth + guarda no front 🔴 alta · **1ª fatia jogável ponta-a-ponta (email+senha)** · depende de M18 · ✅ EXECUTADO (2026-07-04) · review AD-013 APROVADA (2026-07-05, zero bloqueantes)
 
 Planejado e executado em `.specs/features/m19-auth-frontend/` (spec 20 req. M19-NN, context, design, 6/6 tasks; ver AD-026 + Current Work em STATE.md). Só `packages/web`; backend/schema/contrato do M18 intocados.
 
@@ -196,6 +196,8 @@ Planejado e executado em `.specs/features/m19-auth-frontend/` (spec 20 req. M19-
 - react-router: `RequireAuth` (rota-layout) protege `/` e `/maps/:id` com redirect + return-to; `RedirectIfAuthed` no `/login`; `AuthSplash` no bootstrap; `401` global derruba a sessão.
 - Feedback híbrido: validação client-side por campo + banner do servidor (401/409); botão em loading. Logout = botão temporário no header da Home.
 - Gates verdes: typecheck, lint, unit web 140/api 97 (idêntico), e2e 41/41 (`auth.spec.ts` novo + suíte pré-existente reconciliada via `storageState` fixo).
+
+**Limpeza de UI pós-M19 (2026-07-05, quick task junto da review AD-013 — não é milestone):** só `packages/web`, sem schema/contrato. Troca `lucide-react`→`@phosphor-icons/react` (`IconContext` global bold), 7 primitivos shadcn/base-ui novos em `components/ui/` (`avatar`/`checkbox`/`field`/`input-group`/`label`/`separator`/`textarea`), reskin de auth/home/map, alinhamento à grade de 4px (dezenas de arbitrários fora da grade corrigidos) e CSS anti-flash de `:-webkit-autofill`. As 7 correções da review AD-013 (a11y dos campos, timing do login, `satisfies z.ZodType`, ordem do logout, util de return-to, checkbox labelable, paths da skill `mindmap-canvas`) foram junto. Ver Current Work em STATE.md.
 
 ### M20 — Menu de conta, perfil e tema 🟡 média · depende de M19
 
