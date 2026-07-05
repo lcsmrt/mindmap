@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ApiError } from '@/api/_request.js';
-import { validateAuth, messageForError } from './validation.js';
+import { validateAuth, validateResetPassword, messageForError } from './validation.js';
 
 describe('validateAuth', () => {
   it('não retorna erros para cadastro válido', () => {
@@ -62,6 +62,22 @@ describe('validateAuth', () => {
       password: '12345678',
     });
     expect(errors.password).toBeUndefined();
+  });
+});
+
+describe('validateResetPassword', () => {
+  it('sem erros quando a senha tem 8+ e a confirmação bate', () => {
+    expect(validateResetPassword({ password: 'novasenha123', confirm: 'novasenha123' })).toEqual({});
+  });
+
+  it('barra senha com menos de 8 caracteres', () => {
+    const errors = validateResetPassword({ password: '1234567', confirm: '1234567' });
+    expect(errors.password).toBeDefined();
+  });
+
+  it('barra confirmação diferente da senha', () => {
+    const errors = validateResetPassword({ password: 'novasenha123', confirm: 'outrasenha123' });
+    expect(errors.confirm).toBeDefined();
   });
 });
 

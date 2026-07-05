@@ -38,6 +38,30 @@ export function validateAuth(mode: AuthMode, values: AuthFormValues): AuthFieldE
   return errors;
 }
 
+export interface ResetPasswordValues {
+  password: string;
+  confirm: string;
+}
+
+export interface ResetPasswordFieldErrors {
+  password?: string;
+  confirm?: string;
+}
+
+export function validateResetPassword(values: ResetPasswordValues): ResetPasswordFieldErrors {
+  const errors: ResetPasswordFieldErrors = {};
+
+  if (values.password.length < 8) {
+    errors.password = 'A senha precisa ter no mínimo 8 caracteres';
+  }
+
+  if (values.confirm !== values.password) {
+    errors.confirm = 'As senhas não conferem';
+  }
+
+  return errors;
+}
+
 export function messageForError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) return 'E-mail ou senha incorretos';

@@ -3,6 +3,7 @@ import { RequireAuth } from './auth/RequireAuth.js';
 import { RedirectIfAuthed } from './auth/RedirectIfAuthed.js';
 import { AuthPage } from './pages/auth/AuthPage.js';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage.js';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage.js';
 import { HomePage } from './pages/home/HomePage.js';
 import { MapPage } from './pages/map/MapPage.js';
 import { ProfilePage } from './pages/profile/ProfilePage.js';
@@ -27,6 +28,7 @@ export const App = () => (
           </RedirectIfAuthed>
         }
       />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route element={<RequireAuth />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/maps/:id" element={<MapPage />} />

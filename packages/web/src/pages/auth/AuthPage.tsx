@@ -27,6 +27,8 @@ export const AuthPage = () => {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const isEntrar = mode === 'entrar';
+  const resetSuccess =
+    (location.state as { resetSuccess?: boolean } | null)?.resetSuccess ?? false;
 
   const redirectAfterAuth = () => {
     navigate(resolveReturnTo(location), { replace: true });
@@ -79,6 +81,15 @@ export const AuthPage = () => {
             <h1 className="font-heading text-lg font-semibold">
               {isEntrar ? 'Acessar conta' : 'Criar sua conta'}
             </h1>
+
+            {isEntrar && resetSuccess && !serverError && (
+              <div
+                role="status"
+                className="mt-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm text-primary"
+              >
+                Senha redefinida com sucesso. Entre com a nova senha.
+              </div>
+            )}
 
             {serverError && (
               <div className="mt-4">
