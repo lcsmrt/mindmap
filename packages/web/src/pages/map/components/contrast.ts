@@ -57,6 +57,37 @@ export function autoTextColor(bgHex: string): string {
   return isDarkBg(bgHex) ? AUTO_TEXT_LIGHT : AUTO_TEXT_DARK;
 }
 
+/** Fundo do canvas (`--color-background`), contra o qual as edges precisam ser legíveis. */
+const CANVAS_BG = '#141316';
+
+/** Piso de contraste para um traço fino (mais baixo que o de texto — WCAG AA é para texto). */
+const MIN_STROKE_CONTRAST = 2;
+
+/** Mistura um hex em direção ao branco por `amount` (0-1), preservando o matiz. */
+function lighten(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const mix = (c: number) => Math.round(c + (255 - c) * amount);
+  return `#${[mix(r), mix(g), mix(b)].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Deriva um traço de edge legível sobre o canvas escuro a partir do `bgColor` da N2
+ * (cabeça de ramo). `null` quando não há cor custom — o caller cai no `stroke-edge` neutro.
+ * Tons já legíveis passam verbatim; tons escuros (ex.: `#2f3e57`) recebem um piso de
+ * luminância até atingir o contraste mínimo. Valores exatos calibram ao vivo (T6/C3).
+ */
+export function branchStroke(bgColor: string | null): string | null {
+  if (bgColor === null) return null;
+  if (contrastRatio(bgColor, CANVAS_BG) >= MIN_STROKE_CONTRAST) return bgColor;
+
+  let stroke = bgColor;
+  for (let amount = 0.1; amount <= 0.6; amount += 0.1) {
+    stroke = lighten(bgColor, amount);
+    if (contrastRatio(stroke, CANVAS_BG) >= MIN_STROKE_CONTRAST) break;
+  }
+  return stroke;
+}
+
 export type ContrastLevel = 'good' | 'ok' | 'bad';
 
 export interface ContrastVerdict {

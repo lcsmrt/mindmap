@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   autoTextColor,
+  branchStroke,
   contrastRatio,
   contrastVerdict,
   isDarkBg,
@@ -84,5 +85,21 @@ describe('autoTextColor', () => {
 
   it('returns the dark tone over a light background', () => {
     expect(autoTextColor('#ececec')).toBe('#23232a');
+  });
+});
+
+describe('branchStroke', () => {
+  it('returns null when there is no custom bgColor (N2 sem cor)', () => {
+    expect(branchStroke(null)).toBeNull();
+  });
+
+  it('passes a light pastel color through unchanged (already readable)', () => {
+    expect(branchStroke('#b6e6c1')).toBe('#b6e6c1');
+  });
+
+  it('lightens a dark color that lacks contrast against the canvas', () => {
+    const stroke = branchStroke('#2f3e57')!;
+    expect(stroke).not.toBe('#2f3e57');
+    expect(contrastRatio(stroke, '#141316')).toBeGreaterThanOrEqual(2);
   });
 });
