@@ -14,6 +14,7 @@ import { AuthShell } from './components/AuthShell.js';
 import { AuthField } from './components/AuthField.js';
 import { PasswordField } from './components/PasswordField.js';
 import { ErrorBanner } from './components/ErrorBanner.js';
+import { SuccessBanner } from './components/SuccessBanner.js';
 
 export const AuthPage = () => {
   const navigate = useNavigate();
@@ -28,8 +29,7 @@ export const AuthPage = () => {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const isEntrar = mode === 'entrar';
-  const resetSuccess =
-    (location.state as { resetSuccess?: boolean } | null)?.resetSuccess ?? false;
+  const resetSuccess = (location.state as { resetSuccess?: boolean } | null)?.resetSuccess ?? false;
 
   const redirectAfterAuth = () => {
     navigate(resolveReturnTo(location), { replace: true });
@@ -92,11 +92,8 @@ export const AuthPage = () => {
       }
     >
       {isEntrar && resetSuccess && !serverError && (
-        <div
-          role="status"
-          className="mt-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm text-primary"
-        >
-          Senha redefinida com sucesso. Entre com a nova senha.
+        <div className="mt-4">
+          <SuccessBanner message="Senha redefinida com sucesso. Entre com a nova senha." />
         </div>
       )}
 
@@ -176,13 +173,7 @@ export const AuthPage = () => {
           disabled={isPending}
           className="mt-1 h-auto w-full rounded-md py-3 text-sm font-semibold hover:bg-primary-hover"
         >
-          {isPending
-            ? isEntrar
-              ? 'Entrando…'
-              : 'Criando…'
-            : isEntrar
-              ? 'Entrar'
-              : 'Criar conta'}
+          {isPending ? (isEntrar ? 'Entrando…' : 'Criando…') : isEntrar ? 'Entrar' : 'Criar conta'}
         </Button>
       </form>
     </AuthShell>

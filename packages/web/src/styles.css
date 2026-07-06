@@ -41,6 +41,9 @@
   --color-destructive: #c4151f;
   --color-destructive-foreground: #ffffff;
 
+  --color-success: #20a053;
+  --color-success-foreground: #ffffff;
+
   --color-border: #26252c;
   --color-input: #2e2d36;
   --color-ring: #bf111b;
