@@ -94,13 +94,14 @@ M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
 
 ## Pós-v1 — outros pendentes
 
-### M14 — Hierarquia visual (estilo MindMeister) 🟡 pendente · muito design
+### M14 — Hierarquia visual (estilo MindMeister) + espaçamento 🟢 planejado (AD-034 · `m14-visual-hierarchy/`) · muito design
 
-Dar hierarquia aos nós por profundidade. Dependências já entregues (M12 = altura por nó; M15 = largura por nó). Sub-itens:
+Dar hierarquia aos nós por profundidade **e** aliviar o espaçamento (o mesmo pacote — o aperto atual quebra o drop-indicator). Dependências já entregues (M8 layout; M12 = altura por nó; M15 = largura por nó). Planejamento fechado; execução em chat separado. Escopo travado (ver AD-034 / `context.md` C1–C8):
 
-- **Central maior / 1º nível destacado / resto mais simples:** skin por profundidade (estender `cardSkin(depth)`). "Central maior **em largura**" usa a largura por nó do M15; sem isso, destaque por altura/estilo/fonte.
-- **Cor da edge herdada do nó de 1º nível:** hoje toda edge é `stroke-border` fixo e `LayoutLink` não carrega cor; propagar a cor do nó para a aresta.
-- Majoritariamente **design** — vale exploração visual antes de virar tarefa.
+- **Ênfase por tier (N1 central / N2 cabeça de ramo / N3+ resto):** por **tipografia/escala**, não largura (largura é do usuário/M15); fundo dos cards **intocado** (usuário é dono da cor). `cardSkin` passa a receber `depth`.
+- **Edge colorida por ramo:** herda a cor da **N2 ancestral** e propaga pra subárvore (MindMeister); central não propaga; nó intermediário pintado não muda a cor do ramo. Default **neutro** (sem auto-arco-íris) — cor emerge conforme o usuário pinta as N2. `LayoutLink` passa a carregar `branchHeadId`.
+- **Espaçamento:** subir `GAP_Y`/`GAP_X` (24→40, calibrar ao vivo) — separa faixas de drop de ramos vizinhos e destrava a ghost bar.
+- **Deferred:** fundo transparente, auto-arco-íris, reescrita da precedência do `nearestSlot` (ver STATE → Deferred Ideas).
 
 ### Tema claro/escuro (fatiado do M20, 2026-07-05) 🟡 pendente
 
