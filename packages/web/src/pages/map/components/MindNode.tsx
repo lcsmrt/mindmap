@@ -160,7 +160,7 @@ function MindNodeBase({ data }: MindNodeProps) {
       }}
     >
       <div className="flex items-start gap-2 pr-4">
-        {hasChildren && (
+        {hasChildren ? (
           <Button
             variant="ghost"
             onClick={(e) => {
@@ -176,6 +176,10 @@ function MindNodeBase({ data }: MindNodeProps) {
               <CaretDownIcon className="w-3 h-3" />
             )}
           </Button>
+        ) : (
+          // reserva o espaço do chevron mesmo sem filhos — senão o título reflui/quebra
+          // quando o nó ganha o 1º filho e o botão aparece (relato do usuário).
+          <span className="shrink-0 w-4" aria-hidden="true" />
         )}
 
         {node.isCritical && !isRoot && (
