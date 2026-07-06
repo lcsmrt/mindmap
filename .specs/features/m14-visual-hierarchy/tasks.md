@@ -123,6 +123,40 @@ T3 (branchStroke) [P] ───────────────────�
 
 ---
 
+## Execução (2026-07-05) — ✅ todas as tasks, gates verdes
+
+Commits atômicos, um por task (todos `feat(m14)`):
+
+| Task | Commit | Notas |
+|---|---|---|
+| T1 | `b4ad22a` | `GAP_Y`/`GAP_X` 24→40; fix hardcode `+24` em `slots.test.ts` → `GAP_X` importado; comentário do `GhostBar.tsx` atualizado. |
+| T2 | `a9f6035` | `PositionedNode.depth` (via `n.depth` do flextree, BFS de `each()`); `LayoutLink.branchHeadId` propagado por `Map` local; 2 testes novos (depth por nó, branchHeadId central→N2 e profunda). |
+| T3 | `67bf410` | `branchStroke()` em `contrast.ts`: `null` passa; piso de contraste 2 (mais baixo que texto — é traço fino) contra `--color-background` (`#141316`); lighten em passos de 10% até atingir o piso; 3 testes novos. |
+| T4 | `76c5d50` | `cardSkin(depth, …)` ganha `titleClassName`/`padding` por tier (N1 `text-lg font-bold`/`px-4 py-4`; N2 `text-base font-bold`/`px-3 py-3`; N3+ neutro atual); `MindNodeData.depth` injetado via `MapCanvas`. |
+| T5 | `4b93265` | Edges resolvem `branchHeadId → bgColor` (via `nodeById`) `→ branchStroke()`; `null` cai no `stroke-edge` neutro; senão `style={{ stroke }}`. |
+| T6 | (esta entrada) | Calibração ao vivo com o usuário (ver abaixo) + gate final. |
+
+**Calibração ao vivo (T6):** verificação visual feita com o app já rodando (dev server do usuário) via
+screenshot headless (Playwright, sessão de auth reaproveitada do e2e) — confirmado que a tipografia por
+tier renderiza como esperado (N1 18px/700/padding 16px; N2 16px/700/padding 12px) e que pintar uma N2
+colore a edge correspondente enquanto as demais seguem neutras (M14-05/06). Mudança de cor de teste
+revertida após a verificação (sem resíduo no mapa fixture do e2e). **Decisões do usuário:**
+- Gap final: **40** (proposta inicial), sem ajuste.
+- Escala tipográfica N1/N2/N3+: **aprovada como está**.
+- **M14-08 (espessura de edge por depth) e bump de largura do N1 (C1): ambos ficam de fora** — nenhum
+  entra no M14; não viram Deferred Idea (não foram pedidos, só descartados como não-necessários agora).
+
+**Caso relatado (drop-indicator):** não reproduzido ao vivo num mapa denso (só o fixture do e2e, raso,
+estava disponível na sessão) — mas coberto pelos testes de `slots.test.ts`/`useTreeLayout.test.ts`
+(54 testes, incluindo os casos de desempate co-coluna da AD-021), que já passavam com o gap antigo e
+continuam passando com `GAP_Y=40`. Se o usuário notar o bug remanescente em uso real, vira follow-up
+da precedência do `nearestSlot` (C8), não retrabalho deste milestone.
+
+**Gates finais:** `pnpm -r typecheck` ✓, `pnpm -r lint` ✓, unit web 186/186 (era 180, +6 novos) ✓,
+smoke visual do canvas (tipografia por tier + edge colorida) ✓.
+
+**Pendente:** Review AD-013 (chat separado) antes de marcar o milestone como "concluído" no STATE/ROADMAP.
+
 ## Definition of Done (milestone)
 
 - Requisitos M14-01..M14-11 implementados; M14-12 conscientemente fora (Deferred/rejeitados).
