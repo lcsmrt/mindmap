@@ -367,6 +367,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
       map.set(p.id, {
         node: nodeDto,
         isRoot,
+        depth: p.depth,
         hasChildren: hasChildrenMap.get(nodeDto.id) ?? false,
         isCollapsed: collapsedIds.has(nodeDto.id),
         isEditing: editingId === nodeDto.id,

@@ -38,35 +38,62 @@ interface CardSkin {
   boxShadow: string;
   critical: string;
   divider: string;
+  titleClassName: string;
+  padding: string;
 }
 
-function cardSkin(bgColor: string | null, textColor: string | null): CardSkin {
+/** Ênfase tipográfica por tier (N1 central / N2 cabeça de ramo / N3+ neutro) — fundo/borda/
+ * sombra não mudam com o tier (C2, [[feedback-no-inline-hex]] preservado). */
+const TIER_TITLE: Record<'n1' | 'n2' | 'n3', string> = {
+  n1: 'text-lg font-bold tracking-[-0.01em]',
+  n2: 'text-base font-bold tracking-[-0.01em]',
+  n3: 'text-sm font-semibold tracking-[-0.01em]',
+};
+
+const TIER_PADDING: Record<'n1' | 'n2' | 'n3', string> = {
+  n1: 'px-4 py-4',
+  n2: 'px-3 py-3',
+  n3: 'px-3 py-3',
+};
+
+function tierOf(depth: number): 'n1' | 'n2' | 'n3' {
+  if (depth === 0) return 'n1';
+  if (depth === 1) return 'n2';
+  return 'n3';
+}
+
+function cardSkin(depth: number, bgColor: string | null, textColor: string | null): CardSkin {
   const background = bgColor ?? DEFAULT_BG;
   const text = textColor ?? autoTextColor(bgColor ?? DEFAULT_BG);
   const dark = isDarkBg(bgColor ?? DEFAULT_BG);
-  return dark
+  const tier = tierOf(depth);
+  const base = dark
     ? {
-        background,
-        text,
         border: 'var(--color-node-root-border)',
         boxShadow: '0 4px 18px rgba(0,0,0,.35)',
         critical: 'var(--color-brand)',
         divider: 'rgba(255,255,255,.14)',
       }
     : {
-        background,
-        text,
         border: 'rgba(0,0,0,.08)',
         boxShadow: '0 3px 14px rgba(0,0,0,.25)',
         critical: 'var(--color-critical-strong)',
         divider: 'rgba(0,0,0,.1)',
       };
+  return {
+    ...base,
+    background,
+    text,
+    titleClassName: TIER_TITLE[tier],
+    padding: TIER_PADDING[tier],
+  };
 }
 
 function MindNodeBase({ data }: MindNodeProps) {
   const {
     node,
     isRoot,
+    depth,
     hasChildren,
     isCollapsed,
     isEditing,
@@ -120,11 +147,11 @@ function MindNodeBase({ data }: MindNodeProps) {
     }
   }
 
-  const skin = cardSkin(isRoot ? null : node.bgColor, isRoot ? null : node.textColor);
+  const skin = cardSkin(depth, isRoot ? null : node.bgColor, isRoot ? null : node.textColor);
 
   return (
     <div
-      className="group relative flex w-full flex-col rounded-md px-3 py-3"
+      className={`group relative flex w-full flex-col rounded-md ${skin.padding}`}
       style={{
         backgroundColor: skin.background,
         color: skin.text,
@@ -172,12 +199,12 @@ function MindNodeBase({ data }: MindNodeProps) {
               onBlur={commit}
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="w-full bg-transparent border-none shadow-none text-sm font-semibold tracking-[-0.01em] text-current h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className={`w-full bg-transparent border-none shadow-none ${skin.titleClassName} text-current h-auto p-0 focus-visible:ring-0 focus-visible:ring-offset-0`}
             />
           ) : (
             <span
               data-testid="node-title"
-              className="block w-fit max-w-full break-words cursor-text text-sm font-semibold tracking-[-0.01em]"
+              className={`block w-fit max-w-full break-words cursor-text ${skin.titleClassName}`}
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
