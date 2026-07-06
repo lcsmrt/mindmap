@@ -13,6 +13,7 @@ import { useTreeLayout } from '../lib/useTreeLayout.js';
 import type { PositionedNode, LayoutLink, LayoutBounds } from '../lib/useTreeLayout.js';
 import { slotToMoveBody, type Slot } from '../lib/slots.js';
 import { MindNode } from './MindNode.js';
+import { branchStroke } from './contrast.js';
 import type { MindNodeData } from './types.js';
 import { useNodeDrag } from './useNodeDrag.js';
 import { useMeasuredHeights } from './useMeasuredHeights.js';
@@ -51,6 +52,7 @@ interface CanvasLayersProps {
   bounds: LayoutBounds;
   tree: TreeNode | null;
   nodeDataById: Map<string, MindNodeData>;
+  nodeById: Map<string, NodeDto>;
   isRoot: (id: string) => boolean;
   onPlace: (draggedId: string, slot: Slot) => void;
   onInvalidDrop: () => void;
@@ -70,6 +72,7 @@ function CanvasLayers({
   bounds,
   tree,
   nodeDataById,
+  nodeById,
   isRoot,
   onPlace,
   onInvalidDrop,
@@ -150,17 +153,22 @@ function CanvasLayers({
     >
       <svg width={width} height={height} className="absolute inset-0">
         <g transform={transform}>
-          {links.map((l) => (
-            <LinkHorizontal
-              key={`${l.source.x},${l.source.y}-${l.target.x},${l.target.y}`}
-              data={l}
-              // LinkHorizontal troca x↔y por padrão (d3-tree); sobrescreve para usar coordenadas reais
-              x={(d: { x: number; y: number }) => d.x}
-              y={(d: { x: number; y: number }) => d.y}
-              className="stroke-edge fill-none"
-              strokeWidth={1.5}
-            />
-          ))}
+          {links.map((l) => {
+            const headBg = l.branchHeadId ? (nodeById.get(l.branchHeadId)?.bgColor ?? null) : null;
+            const stroke = branchStroke(headBg);
+            return (
+              <LinkHorizontal
+                key={`${l.source.x},${l.source.y}-${l.target.x},${l.target.y}`}
+                data={l}
+                // LinkHorizontal troca x↔y por padrão (d3-tree); sobrescreve para usar coordenadas reais
+                x={(d: { x: number; y: number }) => d.x}
+                y={(d: { x: number; y: number }) => d.y}
+                className={stroke === null ? 'stroke-edge fill-none' : 'fill-none'}
+                style={stroke === null ? undefined : { stroke }}
+                strokeWidth={1.5}
+              />
+            );
+          })}
         </g>
       </svg>
 
@@ -471,6 +479,7 @@ function MapCanvasInner({ mapId }: MapCanvasInnerProps) {
               bounds={bounds}
               tree={visTree}
               nodeDataById={nodeDataById}
+              nodeById={nodeById}
               isRoot={isRoot}
               onPlace={handlePlace}
               onInvalidDrop={handleInvalidDrop}
