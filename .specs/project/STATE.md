@@ -3,13 +3,26 @@
 **Last Updated:** 2026-07-05
 **Current Work:** **M23 — Login por username — EXECUTADO (2026-07-05); aguardando review AD-013.** Full-stack (shared/api/web/e2e) entregue em 11 commits atômicos T1–T11 (execução em **AD-032**; planejamento em AD-031), sem desvios de escopo. Gates verdes: typecheck, lint, unit api 130, unit web 180, e2e 47/48 (1 falha pré-existente/documentada, sem relação). **M21 — Reset de senha por e-mail** também segue **EXECUTADO (2026-07-05); aguardando review AD-013**, entregue em 9 commits T1–T9 (execução em AD-030; planejamento AD-029). Nada dos dois marcado "concluído" ainda — falta o review em chat separado ([[feedback-plan-execute-split]]).
 
-**Próximo passo:** review AD-013 do M23 e do M21 (chats separados) → depois marcar ambos concluídos no ROADMAP. Pendência paralela: review AD-013 do M20 (também sem review). Com o `User.username` estável, resta **M22 (Google OAuth)** pra fechar o lote de auth (AD-025). **Ops (deploy real de e-mail):** setar `APP_URL` + `SMTP_*` no Portainer pra reset por e-mail funcionar em prod (sem eles, o link só vai pro log da api).
+**Próximo passo:** review AD-013 do M23 e do M21 (chats separados) → depois marcar ambos concluídos no ROADMAP. Pendência paralela: review AD-013 do M20 (também sem review). **M22 (Google OAuth) está BLOQUEADO** por infra (prod é IP puro `72.60.1.97:8080`, sem domínio/HTTPS — o Google exige domínio + HTTPS na redirect URI; ver AD-033) — sai do "próximo passo" e vira pendência que destrava quando houver domínio. **Ops (deploy real de e-mail):** setar `APP_URL` + `SMTP_*` no Portainer pra reset por e-mail funcionar em prod (sem eles, o link só vai pro log da api).
 
 > O histórico dos milestones anteriores (M6–M19) não é repetido aqui — vive nas ADs de "Recent Decisions" (abaixo), no ROADMAP e nas feature folders. Este campo guarda só o trabalho atual + próximo passo.
 
 ---
 
 ## Recent Decisions (Last 60 days)
+
+### AD-033: M22 (Google OAuth) postergado — bloqueado por domínio + HTTPS; decisões de design pré-fechadas (2026-07-05)
+
+**Decision:** **Postergar o M22 (Google OAuth)** — não planejar/executar agora. Motivo: o Google **não aceita a redirect URI** que teríamos hoje. Prod roda em **IP puro sem domínio e sem HTTPS** (`http://72.60.1.97:8080`, AD-022); o Google só libera `http`/sem-domínio pra `localhost`, e **exige domínio + HTTPS** (ex.: cert Let's Encrypt) pra qualquer redirect URI de produção. O fluxo funcionaria em dev, mas não em prod — e o usuário vai subir pra prod em breve, então não faz sentido entregar um login pela metade. **Destrava quando houver domínio + HTTPS apontando pro servidor.** Não há mudança de código nesta AD — só registro da postergação e das decisões de design já refinadas com o usuário nesta conversa, pra um chat futuro de planejamento não re-derivar.
+**Reason:** Redirect URI é a trava de segurança central do OAuth: o Google só devolve o usuário (com o authorization code) pra URLs pré-cadastradas, e recusa IP puro/HTTP fora de `localhost`. Sem domínio+HTTPS, o M22 não tem prod viável. Bloqueio de infra, não de código.
+**Trade-off:** O lote de auth (AD-025) fica com **4 de 5 etapas** entregues (M18–M21, M23); o Google é a única peça faltando e fica represada por uma dependência de infra externa ao código. Mitigação: quando o domínio existir, o design abaixo já está fechado — o M22 vira quase só execução.
+**Impact (decisões de design pré-fechadas com o usuário, pra reuso quando destravar):**
+- **Account linking = vincular por e-mail verificado.** Se o Google devolve `email_verified: true` e o e-mail bate com uma conta existente, **vincular** (setar `googleId`, logar na conta) — prática de mercado (GitHub/GitLab). **Só** vincular com `email_verified === true` (a falha clássica de "Sign in with Google" é confiar no e-mail sem o flag verified → hijack). Não-verificado → recusar pedindo login por senha. Consequência de graça: usuário só-Google que queira senha usa o "Esqueci a senha" (M21), que já seta `passwordHash`.
+- **Username de conta nova = auto-gerar + editar no `/profile`.** OAuth entrega e-mail+nome, não handle. Gerar username único do local-part/slug do nome (sanitizado pro charset `^[a-z0-9]+(?:-[a-z0-9]+)*$`), colisão → sufixo `-2`/`-3`… em loop contra o `@unique`. Sem tela intermediária (o `/profile` editável do M23 é o escape). Gerador vai num service testável.
+- **DB:** `User.passwordHash` → **nullable** (conta só-Google não tem senha) + novo `googleId String? @unique`. Migration barata (banco vazio/reset — [[feedback-shared-dev-db-destructive]]).
+- **Backend:** `@fastify/oauth2` (não instalado) + `GET /auth/google` (start, redirect top-level) e `GET /auth/google/callback` (busca userinfo → link-if-verified / cria com username gerado → reusa `createSession`/`setSessionCookie` → redireciona pro app). Envs novos `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+- **Frontend:** reintroduzir "Continuar com Google" (`<a href>`, **não** fetch — OAuth exige navegação top-level) + divisória "ou" no `AuthPage` (ambos existiam no mock do M19, removidos de propósito lá); erro de callback volta pro `/login` com banner.
+- **Ops (quando destravar):** app OAuth no Google Cloud (consent screen, `client_id`/`secret`, redirect URIs dev `localhost` + **prod `https://<domínio>/auth/google/callback`**), + envs no Portainer.
 
 ### AD-032: M23 executado conforme AD-031, sem desvios de escopo (2026-07-05)
 

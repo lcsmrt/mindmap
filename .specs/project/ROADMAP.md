@@ -67,7 +67,7 @@ Retrofit multi-usuário sobre o app antes single-user. Decisões fixadas em **AD
 M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
                 ├─ M21 ✅  (reset por e-mail)
                 ├─ M23 ✅  (login por username)  executado · review AD-013 pendente
-                └─ M22     (Google OAuth)         pendente
+                └─ M22     (Google OAuth)         🔴 bloqueado (domínio+HTTPS)
 ```
 
 - **M18 — Núcleo de auth backend (multi-tenancy)** ✅ (AD-025 · `m18-auth-core/`) — `User`/`Session`/`Map.ownerId`, sessão server-side opaca (argon2 + `sha256(token)` no banco), guarda + escopo por dono em todas as rotas maps/nodes, backfill (1º signup herda os mapas órfãos). Só backend.
@@ -85,9 +85,10 @@ M18 ✅ ─ M19 ✅ ─┬─ M20 ✅  (menu/perfil)
 - **Ordem (C7):** antes do M22 porque username obrigatório vira invariante do `User` — a criação de conta via OAuth (que só recebe e-mail + nome) vai precisar **gerar/pedir** username; melhor desenhar o M22 contra o `User` já estável, reusando a edição de username do `/profile` como escape.
 - **Entregue (AD-032):** 11 commits atômicos T1–T11 conforme planejado, sem desvios de escopo. Gates verdes: typecheck, lint, unit api 130, unit web 180, e2e 47/48 (1 falha pré-existente e documentada em `CONCERNS.md`, sem relação com M23).
 
-### M22 — Google OAuth 🟡 pendente · depende de M18 (e do `User` do M23) · puxa app OAuth no Google Cloud
+### M22 — Google OAuth 🔴 bloqueado (infra) · depende de M18 (e do `User` do M23) · puxa app OAuth no Google Cloud
 
-- `@fastify/oauth2` + "Continuar com Google"; criar conta nova ou **vincular** a conta existente com mesmo e-mail (política de account linking decidida no design). Conta nova via OAuth precisa **gerar/pedir** um username (invariante do M23) — gerador definido no design do M22.
+- **Bloqueado por infra (AD-033):** o Google exige **domínio + HTTPS** na redirect URI e recusa IP puro/HTTP fora de `localhost`; prod hoje é `http://72.60.1.97:8080` (IP puro, AD-022). Destrava quando houver domínio + HTTPS. Design já pré-fechado com o usuário em **AD-033** (link-if-verified; username auto-gerado + editável no `/profile`; `passwordHash` nullable + `googleId @unique`; 2 rotas `@fastify/oauth2`; botão `<a href>` + divisória "ou").
+- `@fastify/oauth2` + "Continuar com Google"; criar conta nova ou **vincular** a conta existente com mesmo e-mail verificado. Conta nova via OAuth **gera** um username (invariante do M23), editável no `/profile`.
 
 ---
 
