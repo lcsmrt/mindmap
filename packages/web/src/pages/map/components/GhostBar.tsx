@@ -1,6 +1,6 @@
 import type { Slot } from '../lib/slots.js';
 
-const GHOST_BAR_HEIGHT = 6; // 6px cabe no GAP_Y=24 sem invadir cards
+const GHOST_BAR_HEIGHT = 6; // 6px cabe no GAP_Y=40 sem invadir cards
 
 interface GhostBarProps {
   targetSlot: Slot | null;

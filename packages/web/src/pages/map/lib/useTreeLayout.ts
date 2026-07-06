@@ -38,8 +38,8 @@ export interface LayoutResult {
 }
 
 // exportados para slots.ts usar a mesma geometria do layout
-export const GAP_X = 24;
-export const GAP_Y = 24;
+export const GAP_X = 40;
+export const GAP_Y = 40;
 
 const EMPTY_LAYOUT: LayoutResult = {
   positioned: [],

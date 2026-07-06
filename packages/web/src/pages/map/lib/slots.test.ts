@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { NodeDto } from '@mindmap/shared';
 import type { TreeNode } from './tree.js';
-import { computeTreeLayout } from './useTreeLayout.js';
+import { computeTreeLayout, GAP_X } from './useTreeLayout.js';
 import { computeSlots, nearestSlot, slotToMoveBody, isOriginSlot, type Slot } from './slots.js';
 
 function node(id: string, overrides: Partial<NodeDto> = {}): NodeDto {
@@ -329,7 +329,7 @@ describe('computeSlots — colX/colWidth por largura real do pai', () => {
     expect(slot).toBeDefined();
     // colX deve ser a borda direita do pai (parentPos.x + 300 + GAP_X)
     const widePos = positioned.find((p) => p.id === 'wide')!;
-    expect(slot!.colX).toBeCloseTo(widePos.x + widePos.width + 24);
+    expect(slot!.colX).toBeCloseTo(widePos.x + widePos.width + GAP_X);
     expect(slot!.colWidth).toBe(300);
   });
 
