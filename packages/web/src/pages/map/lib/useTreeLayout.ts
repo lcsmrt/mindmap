@@ -17,11 +17,13 @@ export interface PositionedNode {
   y: number;
   width: number;
   height: number;
+  depth: number;
 }
 
 export interface LayoutLink {
   source: { x: number; y: number };
   target: { x: number; y: number };
+  branchHeadId: string | null;
 }
 
 export interface LayoutBounds {
@@ -70,6 +72,7 @@ export function computeTreeLayout(
     y: -rootHeight / 2,
     width: rootW,
     height: rootHeight,
+    depth: 0,
   });
   const rootCenter = { x: 0, y: 0 };
 
@@ -91,6 +94,10 @@ export function computeTreeLayout(
     // n.y é borda-near (van der Ploeg 2013), não centro — constante rootW/2 evita sobreposição entre larguras distintas
     const depthShift = rootW / 2;
 
+    // branchHeadId por nó (id da N2 ancestral, ou o próprio nó quando ele é a N2) — cada
+    // nó só precisa do valor do pai, já visitado (each() percorre em breadth-first).
+    const branchHeadById = new Map<string, string>();
+
     sideRoot.each((n) => {
       if (n === sideRoot) return; // raiz já emitida uma única vez
 
@@ -99,18 +106,35 @@ export function computeTreeLayout(
       const cy = n.x - breadthOffset; // centro vertical do nó no mundo
       const nearX = dir * (n.y - depthShift); // borda do nó voltada para a raiz
       const worldX = dir === 1 ? nearX : nearX - w; // top-left (lado esq. espelhado)
-      positioned.push({ id: n.data.node.id, x: worldX, y: cy - height / 2, width: w, height });
+      positioned.push({
+        id: n.data.node.id,
+        x: worldX,
+        y: cy - height / 2,
+        width: w,
+        height,
+        depth: n.depth,
+      });
+
+      const branchHeadId =
+        n.parent === sideRoot
+          ? n.data.node.id
+          : (branchHeadById.get(n.parent!.data.node.id) ?? null);
+      if (branchHeadId) branchHeadById.set(n.data.node.id, branchHeadId);
 
       if (n.parent === sideRoot) {
         // 1º nível: sai do centro da raiz (M8-09) em direção ao lado.
-        links.push({ source: rootCenter, target: { x: nearX, y: cy } });
+        links.push({ source: rootCenter, target: { x: nearX, y: cy }, branchHeadId });
       } else {
         // Níveis profundos: horizontal pai→filho no mesmo lado (M8-10).
         const p = n.parent!;
         const parentCy = p.x - breadthOffset;
         const wp = nodeWidthFn(p.data.node);
         const parentFarX = dir * (p.y - depthShift + wp); // borda externa do pai
-        links.push({ source: { x: parentFarX, y: parentCy }, target: { x: nearX, y: cy } });
+        links.push({
+          source: { x: parentFarX, y: parentCy },
+          target: { x: nearX, y: cy },
+          branchHeadId,
+        });
       }
     });
   }

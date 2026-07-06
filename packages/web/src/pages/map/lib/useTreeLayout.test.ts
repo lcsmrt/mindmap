@@ -230,6 +230,50 @@ describe('computeTreeLayout', () => {
     expect(firstLevel.length).toBe(2);
   });
 
+  it('depth por nó: raiz 0, filhos 1, netos 2', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [
+        leaf('a', { side: 'RIGHT' }),
+        { node: node('b', { sortOrder: 1, side: 'RIGHT' }), children: [leaf('c')] },
+      ],
+    };
+    const { positioned } = computeTreeLayout(tree);
+    const byId = (id: string) => positioned.find((p) => p.id === id)!;
+    expect(byId('root').depth).toBe(0);
+    expect(byId('a').depth).toBe(1);
+    expect(byId('b').depth).toBe(1);
+    expect(byId('c').depth).toBe(2);
+  });
+
+  it('branchHeadId: edge central→N2 aponta para o próprio N2', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [leaf('a', { side: 'RIGHT' }), leaf('b', { sortOrder: 1, side: 'LEFT' })],
+    };
+    const { links } = computeTreeLayout(tree);
+    expect(links.find((l) => l.branchHeadId === 'a')).toBeDefined();
+    expect(links.find((l) => l.branchHeadId === 'b')).toBeDefined();
+  });
+
+  it('branchHeadId: edge profunda herda a N2 ancestral, não o pai intermediário', () => {
+    const tree: TreeNode = {
+      node: node('root'),
+      children: [
+        {
+          node: node('branch', { side: 'RIGHT' }),
+          children: [{ node: node('mid'), children: [leaf('deep')] }],
+        },
+      ],
+    };
+    const { links, positioned } = computeTreeLayout(tree);
+    const deep = positioned.find((p) => p.id === 'deep')!;
+    const deepCenterY = deep.y + deep.height / 2;
+    const edgeToDeep = links.find((l) => l.target.y === deepCenterY);
+    expect(edgeToDeep).toBeDefined();
+    expect(edgeToDeep!.branchHeadId).toBe('branch');
+  });
+
   it('alturas medidas injetadas alimentam o layout (sem sobreposição com valores reais)', () => {
     // Injeta alturas medidas arbitrárias (não as constantes 40/79) via nodeSizeFn —
     // prova que o layout posiciona pela altura medida, não pela fórmula.
