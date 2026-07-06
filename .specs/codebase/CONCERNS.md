@@ -31,7 +31,11 @@ Só concerns **abertos**. Itens resolvidos foram removidos — o histórico de c
 - **Por design, não é regressão** (o dialog pré-M10 já persistia por campo; o estado-espelho local serve só ao preview). Severity: Low — discrepância spec vs. implementação.
 - Fix: alinhar a spec à realidade **ou** bufferizar edições e só persistir no Confirmar (decisão de produto).
 
-**Inline edit ignora `textColor` customizado:**
+**Card do pai "encolhe" visualmente ao ganhar o 1º filho (relatado pelo usuário, 2026-07-05):**
+
+- Files: `packages/web/src/pages/map/components/MindNode.tsx` (header `flex items-start gap-2 pr-4`, título em `div.flex-1.min-w-0`)
+- **Não é bug de estado** — `Node.width` do pai não é sobrescrito em nenhum ponto do fluxo de criação de filho (confirmado em `MapCanvas.tsx`/`useCreateNode`/rota `POST /nodes`/`useTreeLayout.ts`; nenhum desses toca a largura de um nó existente). É ilusão de layout **interno** do card: ao ganhar o 1º filho, `hasChildren` vira `true` e o botão de colapsar (~24px, com `gap-2`) passa a ser renderizado dentro da mesma largura fixa — o espaço disponível pro título encolhe, dando a impressão de "o card ficou menor" quando na real o `width` externo não mudou.
+- Severity: Low/Cosmetic. Fix (se incomodar): compensar a largura reservada pro chevron (ex.: padding-right condicional no título quando `hasChildren`) ou medir a largura considerando o chevron desde o início (mesmo sem filhos).
 
 - Files: `packages/web/src/pages/map/components/MindNode.tsx`
 - Quando um nó tem `textColor` customizado e o usuário inicia edição inline, o `<Input>` tem `text-foreground`, que sobrescreve a cor herdada → o texto aparece na cor do tema, não na customizada.
