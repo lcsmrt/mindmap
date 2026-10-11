@@ -36,7 +36,9 @@ jobs:
             RepositoryReferenceName: "refs/heads/master",
             RepositoryAuthentication: false
           }')
-          curl -fsS -X PUT \
+          # A resposta é a stack inteira, com o Env (senhas, segredos) — nunca deixar
+          # chegar no log público do Actions.
+          curl -fsS -o /dev/null -X PUT \
             --connect-timeout 20 --max-time 600 --retry 4 --retry-delay 15 --retry-all-errors \
             -H "X-API-Key: $API_KEY" \
             -H 'Content-Type: application/json' \
