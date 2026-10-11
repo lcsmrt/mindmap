@@ -408,7 +408,7 @@ Ideias adiadas que apareceram durante planejamento. Veja também a seção "Pós
 
 ## Todos
 
-*(nenhum todo aberto)*
+- [ ] **Migrar o `.specs` para o layout do tlc-spec-driven v3.3** (skill atualizado de 2.0.0 → 3.3.0 em 2026-10-11, mesmo processo feito no finsight em `c595c02`). A v3 espera `.specs/STATE.md` só com `## Decisions` (AD-NNN no formato novo) e `## Handoff` (snapshot de pausa — substitui `HANDOFF.md`/arquivos de handoff); lições viram `lessons.json` via `scripts/lessons.py` (só as de verificação — lições de ambiente vão para `codebase/CONCERNS.md`); todos/deferred vão para o `ROADMAP.md`. Specs novas seguem EARS + `## Assumptions & Open Questions` (checado por `scripts/validate_spec.py`). Enquanto não migrar, este arquivo continua sendo a memória do projeto.
 
 ---
 
